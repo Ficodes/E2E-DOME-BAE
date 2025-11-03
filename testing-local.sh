@@ -39,30 +39,26 @@ clone_frontend () {
 
 wait_server() {
 URL=$1
-NAME=$2
 TIMEOUT=600
 INTERVAL=5
-echo -e "\033[35mwaiting until the server is ready ($NAME at $URL)...\033[0m"
+echo -e "\033[35mwaiting until the server is ready ($URL)...\033[0m"
 
 SECONDS_WAITED=0
 while true; do
     RESPONSE=$(curl -s --head --request GET "$URL")
-    STATUS=$(echo "$RESPONSE" | head -n 1)
-    echo -e "\033[33m[$NAME] Status: $STATUS\033[0m"
-
+    echo "$RESPONSE" | head -n 1
     if echo "$RESPONSE" | grep "200 OK" > /dev/null; then
         break
     fi
-
     sleep $INTERVAL
     SECONDS_WAITED=$((SECONDS_WAITED + INTERVAL))
     if [ $SECONDS_WAITED -ge $TIMEOUT ]; then
-        echo -e "\033[31m[$NAME] Timeout error: waited $TIMEOUT seconds.\033[0m"
+        echo -e "\033[31mTimeout error: waited $TIMEOUT seconds.\033[0m"
         exit 1
     fi
 done
 
-echo -e "\033[35m[$NAME] ready in $SECONDS_WAITED seconds\033[0m"
+echo -e "\033[35m$2 ready in $SECOND_WAITED seconds\033[0m"
 }
 echo "git token: $GIT_TOKEN"
 echo "test: $ERT"

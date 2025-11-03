@@ -53,7 +53,7 @@ while ! curl -s --head --request GET "$URL" | grep "200 OK" > /dev/null; do
     fi
 done
 
-echo -e "\033[35m$2 ready in $SECOND_WAITED seconds\033[0m"
+echo -e "\033[35m$2 ready in $SECONDS_WAITED seconds\033[0m"
 }
 echo "git token: $GIT_TOKEN"
 echo "test: $ERT"

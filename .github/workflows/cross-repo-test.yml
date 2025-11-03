@@ -44,3 +44,11 @@ jobs:
 
           ./testing-local.sh $BRANCH_A ${{ github.event.client_payload.repository_A }} $BRANCH_B ${{ github.event.client_payload.repository_B }} $BRANCH_FRONTEND ${{ github.event.client_payload.repository_frontend }} ${{ github.event.client_payload.tm_version }}
 
+      - name: Upload Cypress Screenshots
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          retention-days: 7
+

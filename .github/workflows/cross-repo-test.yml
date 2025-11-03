@@ -42,5 +42,5 @@ jobs:
           echo "final charging branch: $BRANCH_B"
           echo "final frontend branch: $BRANCH_FRONTEND"
 
-          ./testing-local.sh $BRANCH_A ${{ github.event.client_payload.repository_A }} $BRANCH_B ${{ github.event.client_payload.repository_B }} $BRANCH_FRONTEND ${{ github.event.client_payload.repository_frontend }} ${{ github.event.client_payload.tm_version }}
+          ./testing.sh $BRANCH_A ${{ github.event.client_payload.repository_A }} $BRANCH_B ${{ github.event.client_payload.repository_B }} $BRANCH_FRONTEND ${{ github.event.client_payload.repository_frontend }} ${{ github.event.client_payload.tm_version }}
 

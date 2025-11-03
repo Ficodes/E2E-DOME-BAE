@@ -442,6 +442,7 @@ echo -e "\033[35mEnvironment variables saved. Run: source .env_keys\033[0m"
 
 # 5. run system test
 echo -e "\033[35mrunning system test\033[0m"
+npm install
 npx cypress run --e2e --headless defaultCommandTimeout=10000 || { echo -e "system tests failed."; exit 1; }
 echo -e "\033[35msystem tests passed\033[0m"
 # 6. docker down

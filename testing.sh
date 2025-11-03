@@ -53,7 +53,7 @@ while ! curl -s --head --request GET "$URL" | grep "200 OK" > /dev/null; do
     fi
 done
 
-echo -e "\033[35m$2 ready in $SECOND_WAITED seconds\033[0m"
+echo -e "\033[35m$2 ready in $SECONDS_WAITED seconds\033[0m"
 }
 echo "git token: $GIT_TOKEN"
 echo "test: $ERT"
@@ -394,6 +394,7 @@ echo -e "\033[35mBUILD FINISHED\033[0m"
 
 # 5. run system test
 echo -e "\033[35mrunning system test\033[0m"
+npm install
 npx cypress run --e2e --headless defaultCommandTimeout=10000 || { echo -e "system tests failed."; exit 1; }
 echo -e "\033[35msystem tests passed\033[0m"
 # 6. docker down

@@ -130,7 +130,7 @@ describe('Happy Journey E2E', {
     // Step 9: create billing address
     // ============================================
 
-
+    cy.wait(2000)
     createCheckoutBilling({
       title: "billing 1",
       country: "ES",

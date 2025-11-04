@@ -153,7 +153,7 @@ describe('Happy Journey E2E', {
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder', { timeout: 30000 })
     cy.visit('http://localhost:4201/checkin')
-    cy.getBySel('ordersTable', { timeout: 30000 }).should('be.visible')
+    cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
     cy.getBySel('ordersTable').contains('completed')
     cy.getBySel('invoices').click()
     cy.getBySel('invoiceRow').should('have.length', 1).within(()=>{

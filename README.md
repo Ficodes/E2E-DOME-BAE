@@ -18,7 +18,7 @@ To deploy the complete system and run the tests:
 ```
 
 This command:
-1. Clones the specified repositories on the indicated branches
+1. Clones the specified repositories on the indicated branches (It doesn't overwrite existing directories, to change repo/branch, it is required to remove the frontend/proxy/charging repo previously)
 2. Builds the necessary Docker images
 3. Deploys all services (proxy, charging, frontend, IDM, TMForum APIs, etc.)
 4. Runs end-to-end tests with Cypress

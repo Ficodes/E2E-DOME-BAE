@@ -419,6 +419,9 @@ fi
 if ! grep -q "charging.docker" /etc/hosts; then
     echo "127.0.0.1 charging.docker" | sudo tee -a /etc/hosts
 fi
+if ! grep -q "idm.docker" /etc/hosts; then
+    echo "127.0.0.1 idm.docker" | sudo tee -a /etc/hosts
+fi
 
 cd frontend-repo
 if [ ! -d "node_modules" ]; then

@@ -32,6 +32,7 @@ describe('Happy Journey E2E', {
     const offeringName = HAPPY_JOURNEY.offering.name()
 
     cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
+    cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
     cy.intercept('POST', '**/account/billingAccount').as('saveBilling')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
 
@@ -152,6 +153,7 @@ describe('Happy Journey E2E', {
     cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder', { timeout: 30000 })
+    cy.wait('@getOrders')
     cy.visit('http://localhost:4201/checkin')
     cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
     cy.getBySel('ordersTable').contains('completed')

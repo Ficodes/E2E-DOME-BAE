@@ -410,6 +410,16 @@ wait_server http://localhost:8004/service charging || { echo -e "\033[31mChargin
 echo -e "\033[35mcharging server is ready\033[0m"
 
 echo -e "\033[35mstarting frontend...\033[0m"
+
+# Configure /etc/hosts
+echo -e "\033[35mconfiguring /etc/hosts\033[0m"
+if ! grep -q "proxy.docker" /etc/hosts; then
+    echo "127.0.0.1 proxy.docker" | sudo tee -a /etc/hosts
+fi
+if ! grep -q "charging.docker" /etc/hosts; then
+    echo "127.0.0.1 charging.docker" | sudo tee -a /etc/hosts
+fi
+
 cd frontend-repo
 if [ ! -d "node_modules" ]; then
     echo -e "\033[35minstalling frontend dependencies...\033[0m"

@@ -29,6 +29,8 @@ describe('Happy Journey E2E', {
     const productSpecName = HAPPY_JOURNEY.productSpec.name()
     const offeringName = HAPPY_JOURNEY.offering.name()
 
+    cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
+
     // ============================================
     // Step 1: Create Catalog
     // ============================================
@@ -128,7 +130,6 @@ describe('Happy Journey E2E', {
     // Step 9: create billing address
     // ============================================
 
-    cy.intercept('POST', 'http://proxy.docker:8004/ordering/productOrder').as('createOrder')
 
     createCheckoutBilling({
       title: "billing 1",

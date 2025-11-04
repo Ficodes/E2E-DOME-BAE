@@ -12,7 +12,7 @@ function createCatalog({ name, description }) {
   cy.getBySel('newCatalog').click()
 
   // Fill catalog form - Step 1: General info
-  cy.getBySel('catalogName').type(name)
+  cy.getBySel('catalogName').should('be.visible').type(name)
   cy.getBySel('catalogDsc').type(description)
   cy.getBySel('catalogNext').click()
 
@@ -64,7 +64,7 @@ function createProductSpec({ name, version = '0.1', brand, productNumber }) {
   cy.getBySel('createProdSpec').click()
 
   // Fill product spec form - Step 1: General info
-  cy.getBySel('inputName').type(name)
+  cy.getBySel('inputName').should('be.visible').type(name)
   cy.getBySel('inputVersion').should('have.value', version)
   cy.getBySel('inputBrand').type(brand)
   cy.getBySel('inputIdNumber').type(productNumber)
@@ -148,7 +148,7 @@ function createOffering({
   cy.getBySel('newOffering').click()
 
   // Step 1: Basic Information
-  cy.getBySel('offerName').type(name)
+  cy.getBySel('offerName').should('be.visible').type(name)
   cy.getBySel('offerVersion').should('have.value', version)
   cy.getBySel('textArea').type(description)
   cy.getBySel('offerNext').click()
@@ -252,8 +252,8 @@ function updateOffering({ name, status }) {
  * @param {string} params.phoneNumber - Phone number
  */
 function createCheckoutBilling({title, country, city, state, zip, street, email, phoneNumber}){
-  cy.getBySel('billingTitle').type(title)
-  cy.getBySel('billingCountry').select(country)
+  cy.getBySel('billingTitle').should('be.visible').type(title)
+  cy.getBySel('billingCountry').should('be.visible').select(country)
   cy.getBySel('billingCity').type(city)
   cy.getBySel('billingState').type(state)
   cy.getBySel('billingZip').type(zip)

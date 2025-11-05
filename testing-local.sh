@@ -1,17 +1,30 @@
 #!/bin/bash
 set -e # Stop script if any error occurs
 
-PROXY_BR=$1
-PROXY_REPO=$2
-CHARGING_BR=$3
-CHARGING_REPO=$4
-FRONTEND_BR=$5
-FRONTEND_REPO=$6
-TM_VERSION=$7
+# Parse flags
+HEADED_MODE=false
+ARGS=()
+for arg in "$@"; do
+    if [[ "$arg" == "--headed" ]]; then
+        HEADED_MODE=true
+    else
+        ARGS+=("$arg")
+    fi
+done
+
+PROXY_BR=${ARGS[0]}
+PROXY_REPO=${ARGS[1]}
+CHARGING_BR=${ARGS[2]}
+CHARGING_REPO=${ARGS[3]}
+FRONTEND_BR=${ARGS[4]}
+FRONTEND_REPO=${ARGS[5]}
+TM_VERSION=${ARGS[6]}
 
 
 if [[ -z $PROXY_BR || -z $CHARGING_BR || -z $FRONTEND_BR || -z $TM_VERSION || -z $PROXY_REPO || -z $CHARGING_REPO || -z $FRONTEND_REPO ]]; then
-    echo -e "use structure: command PROXY_BRANCH PROXY_REPO CHARGING_BRANCH CHARGING_REPO FRONTEND_BRANCH FRONTEND_REPO TMFORUM_VERSION\033[0m"
+    echo -e "use structure: command [--headed] PROXY_BRANCH PROXY_REPO CHARGING_BRANCH CHARGING_REPO FRONTEND_BRANCH FRONTEND_REPO TMFORUM_VERSION\033[0m"
+    echo -e "\033[33mOptional flags:\033[0m"
+    echo -e "  --headed    Run Cypress tests with GUI (default: headless)\033[0m"
     exit 1
 fi
 
@@ -464,8 +477,15 @@ echo -e "\033[35mEnvironment variables saved. Run: source .env_keys\033[0m"
 # 5. run system test
 echo -e "\033[35mrunning system test\033[0m"
 npm install
-npx cypress run --e2e --headless defaultCommandTimeout=10000 || { echo -e "system tests failed."; exit 1; }
-echo -e "\033[35msystem tests passed\033[0m"
+
+if [ "$HEADED_MODE" = true ]; then
+    echo -e "\033[35mrunning Cypress with GUI (headed mode)\033[0m"
+    npx cypress open --e2e
+else
+    echo -e "\033[35mrunning Cypress in headless mode\033[0m"
+    npx cypress run --e2e --headless defaultCommandTimeout=10000 || { echo -e "system tests failed."; exit 1; }
+    echo -e "\033[35msystem tests passed\033[0m"
+fi
 # 6. docker down
 
 # cd charging-docker

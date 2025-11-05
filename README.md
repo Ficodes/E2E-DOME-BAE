@@ -9,19 +9,29 @@ Automated testing system for the DOME ecosystem.
 To deploy the complete system and run the tests:
 
 ```bash
-./testing-local.sh <proxy_branch> <proxy_repo> <charging_branch> <charging_repo> <frontend_branch> <frontend_repo> <tm_version>
+./testing-local.sh [--headed] <proxy_branch> <proxy_repo> <charging_branch> <charging_repo> <frontend_branch> <frontend_repo> <tm_version>
 ```
 
-**Example:**
+**Optional flags:**
+- `--headed` - Run Cypress tests with GUI (default: headless mode)
+
+**Examples:**
+
+Headless mode (default):
 ```bash
 ./testing-local.sh master sluFicodes/business-ecosystem-logic-proxy master sluFicodes/business-ecosystem-charging-backend slu/test sluFicodes/BAE-Frontend 1.3.18
+```
+
+With GUI (headed mode):
+```bash
+./testing-local.sh --headed master sluFicodes/business-ecosystem-logic-proxy master sluFicodes/business-ecosystem-charging-backend slu/test sluFicodes/BAE-Frontend 1.3.18
 ```
 
 This command:
 1. Clones the specified repositories on the indicated branches (It doesn't overwrite existing directories, to change repo/branch, it is required to remove the frontend/proxy/charging repo previously)
 2. Builds the necessary Docker images
 3. Deploys all services (proxy, charging, frontend, IDM, TMForum APIs, etc.)
-4. Runs end-to-end tests with Cypress
+4. Runs end-to-end tests with Cypress (headless by default, or with GUI if `--headed` flag is used)
 
 ### Clean and restart
 
@@ -31,11 +41,11 @@ To empty the database and start over:
 ./cleanup.sh
 ```
 
-### Execute test with UI
+### Execute tests manually with UI
 
-To execute the cypress tests with a graphic interface:
+To execute the cypress tests with a graphic interface after the system is already deployed:
 ```bash
-npx cypress open --e2e 
+npx cypress open --e2e
 ```
 
 ## Requirements

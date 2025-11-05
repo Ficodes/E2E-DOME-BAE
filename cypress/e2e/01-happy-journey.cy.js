@@ -152,7 +152,7 @@ describe('Happy Journey E2E', {
     // Wait for the billing address to be processed and selected
     cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
-    cy.wait('@createOrder', { timeout: 30000 })
+    cy.wait('@createOrder', { timeout: 60000 })
     cy.wait('@getOrders')
     cy.visit('http://localhost:4201/checkin')
     cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')

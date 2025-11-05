@@ -27,9 +27,9 @@ describe('Happy Journey E2E', {
   })
 
   it('should complete the full happy journey: catalog → product spec → offering (all launched)', () => {
-    const catalogName = HAPPY_JOURNEY.catalog.name()
-    const productSpecName = HAPPY_JOURNEY.productSpec.name()
-    const offeringName = HAPPY_JOURNEY.offering.name()
+    const catalogName = HAPPY_JOURNEY.catalog.name
+    const productSpecName = HAPPY_JOURNEY.productSpec.name
+    const offeringName = HAPPY_JOURNEY.offering.name
 
     cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')

@@ -207,6 +207,9 @@ function createOffering({
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
 
+  // Load all offerings
+  clickLoadMoreUntilGone()
+
   // Verify offering was created in table
   cy.getBySel('offers').should('be.visible')
   cy.getBySel('offers').contains(name).should('be.visible')
@@ -219,6 +222,9 @@ function createOffering({
  * @param {string} params.status - Status to set
  */
 function updateOffering({ name, status }) {
+  // Load all offerings
+  clickLoadMoreUntilGone()
+
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
     cy.get('button[type="button"]').first().click() // Click edit button
   })
@@ -237,6 +243,28 @@ function updateOffering({ name, status }) {
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
+}
+
+/**
+ * Click "Load More" button repeatedly until all items are loaded
+ * @param {number} maxClicks - Maximum number of times to click (default: 10)
+ */
+function clickLoadMoreUntilGone(maxClicks = 10) {
+  cy.wait(3000)
+
+  const clickIfExists = (remainingClicks) => {
+    if (remainingClicks === 0) return
+
+    cy.get('body').then(() => {
+      if (cy.$$("button[data-cy=loadMore]").length > 0) {
+        cy.getBySel('loadMore').click()
+        cy.wait(2000)
+        clickIfExists(remainingClicks - 1)
+      }
+    })
+  }
+
+  clickIfExists(maxClicks)
 }
 
 /**
@@ -272,5 +300,6 @@ module.exports = {
   updateProductSpecStatus,
   createOffering,
   updateOffering,
+  clickLoadMoreUntilGone,
   createCheckoutBilling
 }

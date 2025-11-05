@@ -31,6 +31,13 @@ To empty the database and start over:
 ./cleanup.sh
 ```
 
+### Execute test with UI
+
+To execute the cypress tests with a graphic interface:
+```bash
+npx cypress open --e2e 
+```
+
 ## Requirements
 
 - Docker and Docker Compose

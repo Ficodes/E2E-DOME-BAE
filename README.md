@@ -1,6 +1,6 @@
 # DOME Testing
 
-Automated testing system for the DOME ecosystem.
+Automated E2E testing system for the DOME ecosystem.
 
 ## Usage
 

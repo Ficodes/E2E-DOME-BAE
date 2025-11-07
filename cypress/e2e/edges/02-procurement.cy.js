@@ -122,7 +122,7 @@ describe('Manual Offering E2E', {
     // ============================================
     // Step 6: Verify order is in unchecked state (waiting for manual approval)
     // ============================================
-    cy.visit('http://localhost:4201/checkin')
+    cy.visit('http://localhost:4200/product-orders')
     cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
 
     // For manual procurement, get the most recent order (first row in tbody)
@@ -174,7 +174,7 @@ describe('Manual Offering E2E', {
     // Step 8: Verify order is now completed as BUYER
     // ============================================
     cy.changeSessionTo('BUYER ORG')
-    cy.visit('http://localhost:4201/checkin')
+    cy.visit('http://localhost:4200/product-orders')
     cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
 
     // Verify the most recent order (first row) is now completed

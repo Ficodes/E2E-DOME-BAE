@@ -15,7 +15,7 @@ jobs:
 
       - name: System testing (build + execution)
         env:
-          GIT_TOKEN: ${{ secrets.PAT_TEST }}
+          GIT_TOKEN: "" #${{ secrets.PAT_TEST }}
         run: |
           chmod +x testing-local.sh
           echo "starting system testing"

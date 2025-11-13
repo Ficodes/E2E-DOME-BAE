@@ -1,10 +1,9 @@
-const { HAPPY_JOURNEY } = require('../../support/happy-journey-constants')
-const {
+import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
+import {
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
-  createCheckoutBilling
-} = require('../../support/form-helpers')
+} from '../../support/form-helpers'
 
 describe('Manual Offering E2E', {
   viewportHeight: 1080,
@@ -313,13 +312,13 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.wait('@getOrders')
 
     // ============================================
-    // Step 6: Verify order is in unchecked state (payment done, waiting for manual procurement)
+    // Step 6: Verify order is in inProgress state (payment done, waiting for manual procurement)
     // ============================================
-    cy.visit('http://localhost:4200/product-orders')
+    cy.visit('http://localhost:4201/checkin')
     cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
 
     // For manual procurement, get the most recent order (first row in tbody)
-    // and verify it's in 'Unchecked' state (manual procurement waiting for approval)
+    // and verify it's in 'inProgress' state (manual procurement waiting for approval)
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
       cy.contains('inProgress').should('be.visible')
     })

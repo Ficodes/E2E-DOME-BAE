@@ -1,5 +1,3 @@
-const { ADMIN_USER, ROLES } = require('../support/constants')
-
 describe('DOME System E2E Tests', {
   viewportHeight: 1080,
   viewportWidth: 1920,

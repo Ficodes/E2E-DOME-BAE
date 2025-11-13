@@ -1,4 +1,4 @@
-const { ADMIN_USER } = require('./constants')
+import { ADMIN_USER } from './constants'
 
 // Real login through IDM
 Cypress.Commands.add('loginAsAdmin', () => {
@@ -58,7 +58,7 @@ Cypress.Commands.add('closeFeedbackModalIfVisible', () => {
 })
 
 // Change session to a specific organization
-Cypress.Commands.add('changeSessionTo', (organizationName) => {
+Cypress.Commands.add('changeSessionTo', (organizationName: string) => {
   // Open user dropdown
   cy.getBySel('loggedAcc').click()
 

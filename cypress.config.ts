@@ -1,12 +1,12 @@
-const { defineConfig } = require('cypress')
+import { defineConfig } from 'cypress'
 
-module.exports = defineConfig({
+export default defineConfig({
   e2e: {
     viewportWidth: 1920,
     viewportHeight: 1080,
     baseUrl: 'http://localhost:4200',
-    supportFile: 'cypress/support/e2e.js',
-    specPattern: 'cypress/e2e/**/*.cy.js',
+    supportFile: 'cypress/support/e2e.ts',
+    specPattern: 'cypress/e2e/**/*.cy.ts',
     video: false,
     screenshotOnRunFailure: true,
     defaultCommandTimeout: 10000,

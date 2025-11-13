@@ -1,12 +1,116 @@
 // Helper functions for filling forms in the application
 
+export interface CatalogParams {
+  name: string
+  description: string
+}
+
+export interface UpdateCatalogStatusParams {
+  name: string
+  status: string
+}
+
+export interface ProductSpecParams {
+  name: string
+  version?: string
+  brand: string
+  productNumber: string
+  serviceSpecName?: string | null
+  resourceSpecName?: string | null
+}
+
+export interface UpdateProductSpecStatusParams {
+  name: string
+  status: string
+}
+
+export interface PricePlan {
+  name: string
+  description?: string
+}
+
+export interface PriceComponent {
+  name: string
+  description: string
+  price: number
+  type: string
+  recurringPeriod?: string
+  usageInput?: [string, string]
+}
+
+export interface OfferingParams {
+  name: string
+  version?: string
+  description: string
+  productSpecName: string
+  catalogName: string
+  detailedDescription: string
+  mode: string
+  pricePlan?: PricePlan
+  priceComponent?: PriceComponent
+  procurement: string
+}
+
+export interface UpdateOfferingParams {
+  name: string
+  status: string
+}
+
+export interface BillingParams {
+  title: string
+  country: string
+  city: string
+  state: string
+  zip: string
+  street: string
+  email: string
+  phoneNumber: string
+}
+
+export interface CharacteristicValue {
+  value: number
+  unit: string
+}
+
+export interface RangeValue {
+  from: number
+  to: number
+  unit: string
+}
+
+export interface Characteristic {
+  name: string
+  description: string
+  type: 'string' | 'number' | 'range'
+  values: string[] | CharacteristicValue[] | RangeValue
+}
+
+export interface ServiceSpecParams {
+  name: string
+  description: string
+  characteristics?: Characteristic[]
+}
+
+export interface ResourceSpecParams {
+  name: string
+  description: string
+  characteristics?: Characteristic[]
+}
+
+export interface UpdateServiceSpecStatusParams {
+  name: string
+  status: string
+}
+
+export interface UpdateResourceSpecStatusParams {
+  name: string
+  status: string
+}
+
 /**
  * Create a new catalog
- * @param {Object} params - Catalog parameters
- * @param {string} params.name - Catalog name
- * @param {string} params.description - Catalog description
  */
-function createCatalog({ name, description }) {
+export function createCatalog({ name, description }: CatalogParams): void {
   cy.visit('/my-offerings')
   cy.getBySel('catalogSection').click()
   cy.getBySel('newCatalog').click()
@@ -32,11 +136,8 @@ function createCatalog({ name, description }) {
 
 /**
  * Update catalog status
- * @param {Object} params - Update parameters
- * @param {string} params.name - Catalog name
- * @param {string} params.status - Status to set
  */
-function updateCatalogStatus({ name, status }) {
+export function updateCatalogStatus({ name, status }: UpdateCatalogStatusParams): void {
   cy.getBySel('catalogTable').contains(name).parents('[data-cy="catalogRow"]').find('[data-cy="catalogEdit"]').click()
 
   if (status === 'launched') {
@@ -52,13 +153,8 @@ function updateCatalogStatus({ name, status }) {
 
 /**
  * Create a new product specification
- * @param {Object} params - Product spec parameters
- * @param {string} params.name - Product spec name
- * @param {string} params.version - Version (default: '0.1')
- * @param {string} params.brand - Brand name
- * @param {string} params.productNumber - Product number
  */
-function createProductSpec({ name, version = '0.1', brand, productNumber, serviceSpecName=null, resourceSpecName=null }) {
+export function createProductSpec({ name, version = '0.1', brand, productNumber, serviceSpecName = null, resourceSpecName = null }: ProductSpecParams): void {
   cy.visit('/my-offerings')
   cy.getBySel('prdSpecSection').click()
   cy.getBySel('createProdSpec').click()
@@ -97,11 +193,8 @@ function createProductSpec({ name, version = '0.1', brand, productNumber, servic
 
 /**
  * Update product spec status
- * @param {Object} params - Update parameters
- * @param {string} params.name - Product spec name
- * @param {string} params.status - Status to set
  */
-function updateProductSpecStatus({ name, status }) {
+export function updateProductSpecStatus({ name, status }: UpdateProductSpecStatusParams): void {
   cy.getBySel('prodSpecTable').contains(name).parents('[data-cy="prodSpecRow"]').find('[data-cy="productSpecEdit"]').click()
 
   if (status === 'launched') {
@@ -125,19 +218,8 @@ function updateProductSpecStatus({ name, status }) {
 
 /**
  * Create a new offering
- * @param {Object} params - Offering parameters
- * @param {string} params.name - Offering name
- * @param {string} params.version - Version (default: '0.1')
- * @param {string} params.description - Short description
- * @param {string} params.productSpecName - Product spec to link
- * @param {string} params.catalogName - Catalog to link
- * @param {string} params.detailedDescription - Detailed description
- * @param {string} params.mode - payment mode [free, tailored or paid]
- * @param {Object} params.pricePlan - {name, description}
- * @param {Object} params.priceComponent - {name, description, price, type[one time, recurring, recurring-prepaid, usage], recurringPeriod?, usageInput?}
- * @param {Object} params.procurement - manual, payment-automatic, automatic
  */
-function createOffering({
+export function createOffering({
   name,
   version = '0.1',
   description,
@@ -148,7 +230,7 @@ function createOffering({
   pricePlan,
   priceComponent,
   procurement
-}) {
+}: OfferingParams): void {
   cy.visit('/my-offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
@@ -181,7 +263,7 @@ function createOffering({
   if(pricePlan){
       cy.getBySel('newPricePlan').click()
       cy.getBySel('pricePlanName').type(pricePlan.name)
-      cy.getBySel('textArea').type(pricePlan.description)
+      cy.getBySel('textArea').type(pricePlan.description || '')
       cy.getBySel('savePricePlan').should('have.attr', 'disabled')
       if(priceComponent){
           cy.getBySel('newPriceComponent').click()
@@ -223,11 +305,8 @@ function createOffering({
 
 /**
  * Update offering status
- * @param {Object} params - Update parameters
- * @param {string} params.name - Offering name
- * @param {string} params.status - Status to set
  */
-function updateOffering({ name, status }) {
+export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
   clickLoadMoreUntilGone()
 
@@ -253,12 +332,11 @@ function updateOffering({ name, status }) {
 
 /**
  * Click "Load More" button repeatedly until all items are loaded
- * @param {number} maxClicks - Maximum number of times to click (default: 10)
  */
-function clickLoadMoreUntilGone(maxClicks = 10) {
+export function clickLoadMoreUntilGone(maxClicks = 10): void {
   cy.wait(3000)
 
-  const clickIfExists = (remainingClicks) => {
+  const clickIfExists = (remainingClicks: number): void => {
     if (remainingClicks === 0) return
 
     cy.get('body').then(() => {
@@ -275,17 +353,8 @@ function clickLoadMoreUntilGone(maxClicks = 10) {
 
 /**
  * Create checkout billing information
- * @param {Object} params - Billing parameters
- * @param {string} params.title - Title
- * @param {string} params.country - Country
- * @param {string} params.city - City
- * @param {string} params.state - State
- * @param {string} params.zip - Zip code
- * @param {string} params.street - Street address
- * @param {string} params.email - Email address
- * @param {string} params.phoneNumber - Phone number
  */
-function createCheckoutBilling({title, country, city, state, zip, street, email, phoneNumber}){
+export function createCheckoutBilling({title, country, city, state, zip, street, email, phoneNumber}: BillingParams): void {
   cy.getBySel('billingTitle').should('be.visible').type(title)
   cy.getBySel('billingCountry').should('be.visible').select(country)
   cy.getBySel('billingCity').type(city)
@@ -301,19 +370,8 @@ function createCheckoutBilling({title, country, city, state, zip, street, email,
 
 /**
  * Create a new service specification
- * @param {Object} params - Service spec parameters
- * @param {string} params.name - Service spec name
- * @param {string} params.description - Service spec description
- * @param {Array} params.characteristics - Array of characteristic objects (optional)
- * @param {string} params.characteristics[].name - Characteristic name
- * @param {string} params.characteristics[].description - Characteristic description
- * @param {string} params.characteristics[].type - Type: 'string', 'number', or 'range'
- * @param {Array|Object} params.characteristics[].values - Values based on type:
- *   - For 'string': Array of strings ['value1', 'value2']
- *   - For 'number': Array of objects [{value: 10, unit: 'GB'}]
- *   - For 'range': Object {from: 1, to: 100, unit: 'GB'}
  */
-function createServiceSpec({ name, description, characteristics = [] }) {
+export function createServiceSpec({ name, description, characteristics = [] }: ServiceSpecParams): void {
   cy.visit('/my-offerings')
   cy.getBySel('servSpecSection').click()
   cy.getBySel('createServSpec').click()
@@ -335,20 +393,21 @@ function createServiceSpec({ name, description, characteristics = [] }) {
 
       // Add values based on type
       if (char.type === 'string') {
-        char.values.forEach((value) => {
+        (char.values as string[]).forEach((value) => {
           cy.getBySel('servSpecCharValueString').clear().type(value)
           cy.getBySel('servSpecAddCharValue').click()
         })
       } else if (char.type === 'number') {
-        char.values.forEach((valueObj) => {
+        (char.values as CharacteristicValue[]).forEach((valueObj) => {
           cy.getBySel('servSpecCharValueNumber').clear().type(String(valueObj.value))
           cy.getBySel('servSpecCharValueUnit').clear().type(valueObj.unit)
           cy.getBySel('servSpecAddCharValue').click()
         })
       } else if (char.type === 'range') {
-        cy.getBySel('servSpecCharValueFrom').clear().type(String(char.values.from))
-        cy.getBySel('servSpecCharValueTo').clear().type(String(char.values.to))
-        cy.getBySel('servSpecCharValueUnit').clear().type(char.values.unit)
+        const rangeValues = char.values as RangeValue
+        cy.getBySel('servSpecCharValueFrom').clear().type(String(rangeValues.from))
+        cy.getBySel('servSpecCharValueTo').clear().type(String(rangeValues.to))
+        cy.getBySel('servSpecCharValueUnit').clear().type(rangeValues.unit)
         cy.getBySel('servSpecAddCharValue').click()
       }
 
@@ -374,19 +433,8 @@ function createServiceSpec({ name, description, characteristics = [] }) {
 
 /**
  * Create a new resource specification
- * @param {Object} params - Resource spec parameters
- * @param {string} params.name - Resource spec name
- * @param {string} params.description - Resource spec description
- * @param {Array} params.characteristics - Array of characteristic objects (optional)
- * @param {string} params.characteristics[].name - Characteristic name
- * @param {string} params.characteristics[].description - Characteristic description
- * @param {string} params.characteristics[].type - Type: 'string', 'number', or 'range'
- * @param {Array|Object} params.characteristics[].values - Values based on type:
- *   - For 'string': Array of strings ['value1', 'value2']
- *   - For 'number': Array of objects [{value: 10, unit: 'GB'}]
- *   - For 'range': Object {from: 1, to: 100, unit: 'GB'}
  */
-function createResourceSpec({ name, description, characteristics = [] }) {
+export function createResourceSpec({ name, description, characteristics = [] }: ResourceSpecParams): void {
   cy.visit('/my-offerings')
   cy.getBySel('resSpecSection').click()
   cy.getBySel('createResSpec').click()
@@ -408,20 +456,21 @@ function createResourceSpec({ name, description, characteristics = [] }) {
 
       // Add values based on type
       if (char.type === 'string') {
-        char.values.forEach((value) => {
+        (char.values as string[]).forEach((value) => {
           cy.getBySel('resSpecCharValueString').clear().type(value)
           cy.getBySel('resSpecAddCharValue').click()
         })
       } else if (char.type === 'number') {
-        char.values.forEach((valueObj) => {
+        (char.values as CharacteristicValue[]).forEach((valueObj) => {
           cy.getBySel('resSpecCharValueNumber').clear().type(String(valueObj.value))
           cy.getBySel('resSpecCharValueUnit').clear().type(valueObj.unit)
           cy.getBySel('resSpecAddCharValue').click()
         })
       } else if (char.type === 'range') {
-        cy.getBySel('resSpecCharValueFrom').clear().type(String(char.values.from))
-        cy.getBySel('resSpecCharValueTo').clear().type(String(char.values.to))
-        cy.getBySel('resSpecCharValueUnit').clear().type(char.values.unit)
+        const rangeValues = char.values as RangeValue
+        cy.getBySel('resSpecCharValueFrom').clear().type(String(rangeValues.from))
+        cy.getBySel('resSpecCharValueTo').clear().type(String(rangeValues.to))
+        cy.getBySel('resSpecCharValueUnit').clear().type(rangeValues.unit)
         cy.getBySel('resSpecAddCharValue').click()
       }
 
@@ -447,11 +496,8 @@ function createResourceSpec({ name, description, characteristics = [] }) {
 
 /**
  * Update resource spec status
- * @param {Object} params - Update parameters
- * @param {string} params.name - Resource spec name
- * @param {string} params.status - Status to set
  */
-function updateResourceSpecStatus({ name, status }) {
+export function updateResourceSpecStatus({ name, status }: UpdateResourceSpecStatusParams): void {
   cy.getBySel('resSpecTable').contains(name).parents('[data-cy="resSpecRow"]').find('[data-cy="resourceSpecEdit"]').click()
 
   if (status === 'launched') {
@@ -470,11 +516,8 @@ function updateResourceSpecStatus({ name, status }) {
 
 /**
  * Update service spec status
- * @param {Object} params - Update parameters
- * @param {string} params.name - Service spec name
- * @param {string} params.status - Status to set
  */
-function updateServiceSpecStatus({ name, status }) {
+export function updateServiceSpecStatus({ name, status }: UpdateServiceSpecStatusParams): void {
   cy.getBySel('servSpecTable').contains(name).parents('[data-cy="servSpecRow"]').find('[data-cy="serviceSpecEdit"]').click()
 
   if (status === 'launched') {
@@ -489,19 +532,4 @@ function updateServiceSpecStatus({ name, status }) {
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
-}
-
-module.exports = {
-  createCatalog,
-  updateCatalogStatus,
-  createProductSpec,
-  updateProductSpecStatus,
-  createOffering,
-  updateOffering,
-  clickLoadMoreUntilGone,
-  createCheckoutBilling,
-  createServiceSpec,
-  updateServiceSpecStatus,
-  createResourceSpec,
-  updateResourceSpecStatus
 }

@@ -1,6 +1,6 @@
-const { HAPPY_JOURNEY } = require('../../support/happy-journey-constants');
+import { HAPPY_JOURNEY } from '../../support/happy-journey-constants';
 
-const {
+import {
   createServiceSpec,
   createResourceSpec,
   createOffering,
@@ -10,7 +10,7 @@ const {
   updateProductSpecStatus,
   updateResourceSpecStatus,
   updateServiceSpecStatus
-} = require('../../support/form-helpers')
+} from '../../support/form-helpers'
 
 describe('Service and Resource Specification E2E Test', {
   viewportHeight: 1080,
@@ -38,13 +38,13 @@ describe('Service and Resource Specification E2E Test', {
         {
           name: 'API Protocol',
           description: 'Supported API protocols',
-          type: 'string',
+          type: 'string' as const,
           values: ['REST', 'GraphQL', 'gRPC']
         },
         {
           name: 'Max Requests',
           description: 'Maximum requests per minute',
-          type: 'number',
+          type: 'number' as const,
           values: [
             { value: 1000, unit: 'req/min' },
             { value: 5000, unit: 'req/min' },
@@ -61,13 +61,13 @@ describe('Service and Resource Specification E2E Test', {
         {
           name: 'Storage Type',
           description: 'Type of storage',
-          type: 'string',
+          type: 'string' as const,
           values: ['SSD', 'HDD', 'NVMe']
         },
         {
           name: 'Storage Capacity',
           description: 'Storage capacity range',
-          type: 'range',
+          type: 'range' as const,
           values: { from: 100, to: 5000, unit: 'GB' }
         }
       ]
@@ -94,7 +94,7 @@ describe('Service and Resource Specification E2E Test', {
     // ============================================
     createServiceSpec(serviceSpec)
     updateServiceSpecStatus({name: serviceSpec.name, status: 'launched'})
-    
+
     // ============================================
     // Step 2: Create Resource Specification
     // ============================================

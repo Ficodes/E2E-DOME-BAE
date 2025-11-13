@@ -1,5 +1,5 @@
-const { HAPPY_JOURNEY } = require('../support/happy-journey-constants')
-const {
+import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
+import {
   createCatalog,
   updateCatalogStatus,
   createProductSpec,
@@ -11,7 +11,7 @@ const {
   createServiceSpec,
   updateResourceSpecStatus,
   updateServiceSpecStatus
-} = require('../support/form-helpers')
+} from '../support/form-helpers'
 
 describe('Happy Journey E2E', {
   viewportHeight: 1080,

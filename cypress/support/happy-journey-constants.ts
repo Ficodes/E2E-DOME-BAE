@@ -1,7 +1,8 @@
 // Happy Journey Test Data
 // Using fixed names so they can be reused across different test files
+import type { Characteristic } from './form-helpers'
 
-const HAPPY_JOURNEY = {
+export const HAPPY_JOURNEY = {
   catalog: {
     name: 'E2E Catalog Shared',
     description: 'E2E Test Catalog for Happy Journey'
@@ -33,7 +34,7 @@ const HAPPY_JOURNEY = {
             { value: 10000, unit: 'req/min' }
           ]
         }
-      ]
+      ] as Characteristic[]
     },
     resourceSpec: {
       name: `E2E Resource Spec`,
@@ -42,16 +43,16 @@ const HAPPY_JOURNEY = {
         {
           name: 'Storage Type',
           description: 'Type of storage',
-          type: 'string',
+          type: 'string' as const,
           values: ['SSD', 'H∫DD', 'NVMe']
         },
         {
           name: 'Storage Capacity',
           description: 'Storage capacity range',
-          type: 'range',
+          type: 'range' as const,
           values: { from: 100, to: 5000, unit: 'GB' }
         }
-      ]
+      ] as Characteristic[]
     },
   offering: {
     name: 'E2E Offering Automatic',
@@ -67,8 +68,4 @@ const HAPPY_JOURNEY = {
     price: 5.2,
     type: "one time"
   }
-}
-
-module.exports = {
-  HAPPY_JOURNEY
 }

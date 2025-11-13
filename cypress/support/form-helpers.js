@@ -58,7 +58,7 @@ function updateCatalogStatus({ name, status }) {
  * @param {string} params.brand - Brand name
  * @param {string} params.productNumber - Product number
  */
-function createProductSpec({ name, version = '0.1', brand, productNumber }) {
+function createProductSpec({ name, version = '0.1', brand, productNumber, serviceSpecName=null, resourceSpecName=null }) {
   cy.visit('/my-offerings')
   cy.getBySel('prdSpecSection').click()
   cy.getBySel('createProdSpec').click()
@@ -70,13 +70,19 @@ function createProductSpec({ name, version = '0.1', brand, productNumber }) {
   cy.getBySel('inputIdNumber').type(productNumber)
 
   // Navigate through all required steps
-  cy.getBySel('btnNext').click() // Go to Bundle step
   cy.getBySel('btnNext').click() // Go to Compliance step
   cy.getBySel('btnNext').click() // Go to Characteristics step
   cy.getBySel('btnNext').click() // Go to Resource step
+  if (resourceSpecName){
+    cy.getBySel('tableResourceSpecs').contains('tr', resourceSpecName).find('[id="select-checkbox"]').click()
+  }
   cy.getBySel('btnNext').click() // Go to Service step
+  if (serviceSpecName){
+    cy.getBySel('tableServiceSpecs').contains('tr', serviceSpecName).find('[id="select-checkbox"]').click()
+  }
   cy.getBySel('btnNext').click() // Go to Attachments step
-  cy.getBySel('btnFinish').click() // Go to Relationships step
+  cy.getBySel('btnNext').click() // Go to Relationships step
+  cy.getBySel('btnFinish').click() // Finish creation, view spec summary
 
   // Create product spec
   cy.getBySel('btnCreateProduct').should('be.enabled').click()
@@ -293,6 +299,198 @@ function createCheckoutBilling({title, country, city, state, zip, street, email,
   cy.getBySel('addBilling').click()
 }
 
+/**
+ * Create a new service specification
+ * @param {Object} params - Service spec parameters
+ * @param {string} params.name - Service spec name
+ * @param {string} params.description - Service spec description
+ * @param {Array} params.characteristics - Array of characteristic objects (optional)
+ * @param {string} params.characteristics[].name - Characteristic name
+ * @param {string} params.characteristics[].description - Characteristic description
+ * @param {string} params.characteristics[].type - Type: 'string', 'number', or 'range'
+ * @param {Array|Object} params.characteristics[].values - Values based on type:
+ *   - For 'string': Array of strings ['value1', 'value2']
+ *   - For 'number': Array of objects [{value: 10, unit: 'GB'}]
+ *   - For 'range': Object {from: 1, to: 100, unit: 'GB'}
+ */
+function createServiceSpec({ name, description, characteristics = [] }) {
+  cy.visit('/my-offerings')
+  cy.getBySel('servSpecSection').click()
+  cy.getBySel('createServSpec').click()
+
+  // Step 1: General info
+  cy.getBySel('servSpecName').should('be.visible').type(name)
+  cy.getBySel('servSpecDescription').should('be.visible').type(description)
+  cy.getBySel('servSpecNextGeneral').click()
+
+  // Step 2: Characteristics
+  if (characteristics.length > 0) {
+    characteristics.forEach((char) => {
+      cy.getBySel('servSpecNewChar').click()
+
+      // Fill characteristic basic info
+      cy.getBySel('servSpecCharName').should('be.visible').type(char.name)
+      cy.getBySel('servSpecCharType').select(char.type)
+      cy.getBySel('servSpecCharDescription').type(char.description)
+
+      // Add values based on type
+      if (char.type === 'string') {
+        char.values.forEach((value) => {
+          cy.getBySel('servSpecCharValueString').clear().type(value)
+          cy.getBySel('servSpecAddCharValue').click()
+        })
+      } else if (char.type === 'number') {
+        char.values.forEach((valueObj) => {
+          cy.getBySel('servSpecCharValueNumber').clear().type(String(valueObj.value))
+          cy.getBySel('servSpecCharValueUnit').clear().type(valueObj.unit)
+          cy.getBySel('servSpecAddCharValue').click()
+        })
+      } else if (char.type === 'range') {
+        cy.getBySel('servSpecCharValueFrom').clear().type(String(char.values.from))
+        cy.getBySel('servSpecCharValueTo').clear().type(String(char.values.to))
+        cy.getBySel('servSpecCharValueUnit').clear().type(char.values.unit)
+        cy.getBySel('servSpecAddCharValue').click()
+      }
+
+      // Save characteristic
+      cy.getBySel('servSpecSaveChar').click()
+      cy.wait(1000)
+    })
+  }
+
+  // Go to next step
+  cy.getBySel('servSpecNextChars').click()
+
+  // Step 3: Finish
+  cy.getBySel('servSpecFinish').should('be.enabled').click()
+
+  // Close feedback modal if it appears
+  cy.closeFeedbackModalIfVisible()
+
+  // Verify service spec appears in list
+  cy.wait(2000)
+  cy.contains(name).should('be.visible')
+}
+
+/**
+ * Create a new resource specification
+ * @param {Object} params - Resource spec parameters
+ * @param {string} params.name - Resource spec name
+ * @param {string} params.description - Resource spec description
+ * @param {Array} params.characteristics - Array of characteristic objects (optional)
+ * @param {string} params.characteristics[].name - Characteristic name
+ * @param {string} params.characteristics[].description - Characteristic description
+ * @param {string} params.characteristics[].type - Type: 'string', 'number', or 'range'
+ * @param {Array|Object} params.characteristics[].values - Values based on type:
+ *   - For 'string': Array of strings ['value1', 'value2']
+ *   - For 'number': Array of objects [{value: 10, unit: 'GB'}]
+ *   - For 'range': Object {from: 1, to: 100, unit: 'GB'}
+ */
+function createResourceSpec({ name, description, characteristics = [] }) {
+  cy.visit('/my-offerings')
+  cy.getBySel('resSpecSection').click()
+  cy.getBySel('createResSpec').click()
+
+  // Step 1: General info
+  cy.getBySel('resSpecName').should('be.visible').type(name)
+  cy.getBySel('resSpecDescription').should('be.visible').type(description)
+  cy.getBySel('resSpecNextGeneral').click()
+
+  // Step 2: Characteristics
+  if (characteristics.length > 0) {
+    characteristics.forEach((char) => {
+      cy.getBySel('resSpecNewChar').click()
+
+      // Fill characteristic basic info
+      cy.getBySel('resSpecCharName').should('be.visible').type(char.name)
+      cy.getBySel('resSpecCharType').select(char.type)
+      cy.getBySel('resSpecCharDescription').type(char.description)
+
+      // Add values based on type
+      if (char.type === 'string') {
+        char.values.forEach((value) => {
+          cy.getBySel('resSpecCharValueString').clear().type(value)
+          cy.getBySel('resSpecAddCharValue').click()
+        })
+      } else if (char.type === 'number') {
+        char.values.forEach((valueObj) => {
+          cy.getBySel('resSpecCharValueNumber').clear().type(String(valueObj.value))
+          cy.getBySel('resSpecCharValueUnit').clear().type(valueObj.unit)
+          cy.getBySel('resSpecAddCharValue').click()
+        })
+      } else if (char.type === 'range') {
+        cy.getBySel('resSpecCharValueFrom').clear().type(String(char.values.from))
+        cy.getBySel('resSpecCharValueTo').clear().type(String(char.values.to))
+        cy.getBySel('resSpecCharValueUnit').clear().type(char.values.unit)
+        cy.getBySel('resSpecAddCharValue').click()
+      }
+
+      // Save characteristic
+      cy.getBySel('resSpecSaveChar').click()
+      cy.wait(1000)
+    })
+  }
+
+  // Go to next step
+  cy.getBySel('resSpecNextChars').click()
+
+  // Step 3: Finish
+  cy.getBySel('resSpecFinish').should('be.enabled').click()
+
+  // Close feedback modal if it appears
+  cy.closeFeedbackModalIfVisible()
+
+  // Verify resource spec appears in list
+  cy.wait(2000)
+  cy.contains(name).should('be.visible')
+}
+
+/**
+ * Update resource spec status
+ * @param {Object} params - Update parameters
+ * @param {string} params.name - Resource spec name
+ * @param {string} params.status - Status to set
+ */
+function updateResourceSpecStatus({ name, status }) {
+  cy.getBySel('resSpecTable').contains(name).parents('[data-cy="resSpecRow"]').find('[data-cy="resourceSpecEdit"]').click()
+
+  if (status === 'launched') {
+    cy.getBySel('resourceSpecStatusLaunched').click()
+  }
+
+  // Navigate through steps to reach update button
+  cy.getBySel('resSpecUpdateNextGeneral').click() // Go to Characteristics step
+  cy.getBySel('resSpecUpdateNextChars').click() // Go to Summary step
+
+  cy.getBySel('resourceSpecUpdate').click()
+
+  // Close feedback modal if it appears
+  cy.closeFeedbackModalIfVisible()
+}
+
+/**
+ * Update service spec status
+ * @param {Object} params - Update parameters
+ * @param {string} params.name - Service spec name
+ * @param {string} params.status - Status to set
+ */
+function updateServiceSpecStatus({ name, status }) {
+  cy.getBySel('servSpecTable').contains(name).parents('[data-cy="servSpecRow"]').find('[data-cy="serviceSpecEdit"]').click()
+
+  if (status === 'launched') {
+    cy.getBySel('serviceSpecStatusLaunched').click()
+  }
+
+  // Navigate through steps to reach update button
+  cy.getBySel('servSpecUpdateNextGeneral').click() // Go to Characteristics step
+  cy.getBySel('servSpecUpdateNextChars').click() // Go to Summary step
+
+  cy.getBySel('serviceSpecUpdate').click()
+
+  // Close feedback modal if it appears
+  cy.closeFeedbackModalIfVisible()
+}
+
 module.exports = {
   createCatalog,
   updateCatalogStatus,
@@ -301,5 +499,9 @@ module.exports = {
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
-  createCheckoutBilling
+  createCheckoutBilling,
+  createServiceSpec,
+  updateServiceSpecStatus,
+  createResourceSpec,
+  updateResourceSpecStatus
 }

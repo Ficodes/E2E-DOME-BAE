@@ -184,7 +184,7 @@ describe('Manual Offering E2E', {
 
     // Verify invoice is settled
     cy.getBySel('invoices').click()
-    cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).first().within(() => {
+    cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
       cy.contains('settled').should('be.visible')
       cy.get('button').should('have.length.greaterThan', 0).first().click()
     })

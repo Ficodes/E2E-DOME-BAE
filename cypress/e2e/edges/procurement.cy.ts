@@ -11,6 +11,11 @@ describe('Manual Offering E2E', {
 }, () => {
 
   beforeEach(() => {
+    cy.request({url: 'http://host.docker.internal:4201/clear', method: 'POST'}).then(
+      (response) => {
+        expect(response.status).to.eq(200)
+      }
+    )
     cy.loginAsAdmin()
     cy.on('uncaught:exception', (err) => {
       // Log all errors to help debug
@@ -101,7 +106,7 @@ describe('Manual Offering E2E', {
     // Select the drawer that contains the manual offering name
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${manualOfferingName} to cart`).within(() => {
       cy.contains('Manual Price Plan').click()
-      cy.contains('I accept the terms and conditions').click()
+      cy.getBySel('acceptTermsCheckbox').click()
       cy.getBySel('addToCart').click()
     })
 
@@ -294,7 +299,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Select the drawer that contains the offering name
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains('Auto Pay Manual Proc Plan').click()
-      cy.contains('I accept the terms and conditions').click()
+      cy.getBySel('acceptTermsCheckbox').click()
       cy.getBySel('addToCart').click()
     })
 

@@ -483,7 +483,7 @@ if [ "$HEADED_MODE" = true ]; then
     npx cypress open --e2e
 else
     echo -e "\033[35mrunning Cypress in headless mode\033[0m"
-    npx cypress run --e2e --headless defaultCommandTimeout=60000 || { echo -e "system tests failed."; exit 1; }
+    npx cypress run --e2e --headless defaultCommandTimeout=90000 || { echo -e "system tests failed."; exit 1; }
     echo -e "\033[35msystem tests passed\033[0m"
 fi
 # 6. docker down

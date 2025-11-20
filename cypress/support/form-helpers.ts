@@ -231,6 +231,7 @@ export function createOffering({
   priceComponent,
   procurement
 }: OfferingParams): void {
+  cy.intercept('GET', '**/usage-management/v4/usage*').as('usageGET')
   cy.visit('/my-offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
@@ -333,21 +334,25 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
 /**
  * Click "Load More" button repeatedly until all items are loaded
  */
-export function clickLoadMoreUntilGone(maxClicks = 10): void {
+export function clickLoadMoreUntilGone(maxClicks = 10, offering: boolean = false): void {
+  if(offering){
+    cy.intercept('**/catalog/productOffering?*').as('offeringList')
+  }
   cy.wait(3000)
-
   const clickIfExists = (remainingClicks: number): void => {
     if (remainingClicks === 0) return
-
+    cy.wait(1000)
     cy.get('body').then(() => {
       if (cy.$$("button[data-cy=loadMore]").length > 0) {
         cy.getBySel('loadMore').click()
+        if (offering){
+          cy.wait('@offeringList') // wait until the next request is processed
+        }
         cy.wait(2000)
         clickIfExists(remainingClicks - 1)
       }
     })
   }
-
   clickIfExists(maxClicks)
 }
 

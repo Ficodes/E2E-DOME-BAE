@@ -19,6 +19,11 @@ describe('Happy Journey E2E', {
 }, () => {
 
   beforeEach(() => {
+    cy.request({url: 'http://host.docker.internal:4201/clear', method: 'POST'}).then(
+      (response) => {
+        expect(response.status).to.eq(200)
+      }
+    )
     cy.loginAsAdmin()
     cy.on('uncaught:exception', (err) => {
       // Log all errors to help debug
@@ -136,7 +141,7 @@ describe('Happy Journey E2E', {
     cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     cy.getBySel('baeCard').within(() => { cy.getBySel('addToCart').first().click() })
     cy.getBySel('pricePlanDrawer').contains(HAPPY_JOURNEY.pricePlan.name).click()
-    cy.getBySel('pricePlanDrawer').contains('I accept the terms and conditions').click() // make sure terms and conditions are legible
+    cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible
     cy.getBySel('pricePlanDrawer').within(() => {
       cy.getBySel('addToCart').click()
     })

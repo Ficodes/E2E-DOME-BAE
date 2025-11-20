@@ -27,7 +27,7 @@ interface GlobalStateSetupParams {
 export function setupGlobalStateBefore(params: GlobalStateSetupParams) {
   const { catalogName, productSpecName, offeringAutoName, offeringSemiName, offeringManualName } = params
 
-  cy.request({url: 'http://host.docker.internal:4201/clear', method: 'POST'}).then(
+  cy.request({url: 'http://localhost:4201/clear', method: 'POST'}).then(
     (response) => {
       expect(response.status).to.eq(200)
     }
@@ -105,7 +105,7 @@ export function setupGlobalStateBefore(params: GlobalStateSetupParams) {
 export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { autoName: string, semiName: string, manualName: string }, nTest: number = 1) {
   const { catalogName, offeringAutoName, offeringSemiName, offeringManualName, autoName, semiName, manualName} = params
 
-  cy.request({url: 'http://host.docker.internal:4201/clear', method: 'POST'}).then(
+  cy.request({url: 'http://localhost:4201/clear', method: 'POST'}).then(
     (response) => {
       expect(response.status).to.eq(200)
     }

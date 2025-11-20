@@ -11,7 +11,7 @@ describe('Manual Offering E2E', {
 }, () => {
 
   beforeEach(() => {
-    cy.request({url: 'http://host.docker.internal:4201/clear', method: 'POST'}).then(
+    cy.request({url: 'http://localhostl:4201/clear', method: 'POST'}).then(
       (response) => {
         expect(response.status).to.eq(200)
       }

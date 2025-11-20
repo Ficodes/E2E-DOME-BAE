@@ -19,7 +19,7 @@ describe('Happy Journey E2E', {
 }, () => {
 
   beforeEach(() => {
-    cy.request({url: 'http://host.docker.internal:4201/clear', method: 'POST'}).then(
+    cy.request({url: 'http://localhost:4201/clear', method: 'POST'}).then(
       (response) => {
         expect(response.status).to.eq(200)
       }

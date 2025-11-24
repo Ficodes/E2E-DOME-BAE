@@ -95,7 +95,9 @@ describe('Manual Offering E2E', {
     // Step 4: Add manual offer to cart
     // ============================================
     cy.visit('/dashboard')
+    cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.wait('@cartItem', {timeout: 60000})
 
     clickLoadMoreUntilGone()
     // Find and click on the manual offering card
@@ -288,7 +290,9 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Step 4: Add offer to cart and checkout
     // ============================================
     cy.visit('/dashboard')
+    cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.wait('@cartItem', {timeout: 60000})
 
     clickLoadMoreUntilGone()
     // Find and click on the offering card

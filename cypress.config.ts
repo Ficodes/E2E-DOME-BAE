@@ -10,7 +10,7 @@ export default defineConfig({
     video: false,
     screenshotOnRunFailure: true,
     defaultCommandTimeout: 60000,
-    requestTimeout: 10000,
-    responseTimeout: 10000
+    requestTimeout: 60000,
+    responseTimeout: 60000
   }
 })

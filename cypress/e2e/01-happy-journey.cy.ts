@@ -137,8 +137,10 @@ describe('Happy Journey E2E', {
     // Step 8: Add offer to cart
     // ============================================
     cy.visit('/dashboard')
+    cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     // cy.contains(offeringName).find('[data-cy="addToCart"]').first().click()
     cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.wait('@cartItem', {timeout: 60000})
     cy.getBySel('baeCard').within(() => { cy.getBySel('addToCart').first().click() })
     cy.getBySel('pricePlanDrawer').contains(HAPPY_JOURNEY.pricePlan.name).click()
     cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible

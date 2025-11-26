@@ -4,7 +4,7 @@ Automated E2E testing system for the DOME ecosystem.
 
 ## Usage
 
-### You can integrate the test in you CI/CD
+### You can integrate the tests in your CI/CD
 From your Ficodes/BAE-Frontend you can send a PR to the original repo with the following data
 ```txt
 SYSTEM_TESTING: ACTIVATE [needed to activate the workflow]

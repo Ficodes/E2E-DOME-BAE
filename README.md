@@ -5,7 +5,7 @@ Automated E2E testing system for the DOME ecosystem.
 ## Usage
 
 ### You can integrate the tests in your CI/CD
-From your Ficodes/BAE-Frontend you can send a PR to the original repo with the following data
+From your forked BAE-Frontend you can send a PR to the original repo (Ficodes/BAE-Frontend) with the following data
 ```txt
 SYSTEM_TESTING: ACTIVATE [needed to activate the workflow]
 PROXY: https://github.com/FIWARE-TMForum/business-ecosystem-logic-proxy/tree/develop [This line is optional; default it will take master branch]

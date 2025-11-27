@@ -2,6 +2,12 @@
 
 Automated E2E testing system for the DOME ecosystem.
 
+## Architecture
+
+![Test Structure Diagram](diagrams/test_structure.png)
+
+The diagram above shows how all E2E tests are interacting with each others.
+
 ## Usage
 
 ### Run system tests
@@ -19,12 +25,12 @@ To deploy the complete system and run the tests:
 
 Headless mode (default):
 ```bash
-./testing-local.sh master sluFicodes/business-ecosystem-logic-proxy master sluFicodes/business-ecosystem-charging-backend slu/test sluFicodes/BAE-Frontend 1.3.18
+./testing-local.sh master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
 ```
 
 With GUI (headed mode):
 ```bash
-./testing-local.sh --headed master sluFicodes/business-ecosystem-logic-proxy master sluFicodes/business-ecosystem-charging-backend slu/test sluFicodes/BAE-Frontend 1.3.18
+./testing-local.sh --headed master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
 ```
 
 This command:

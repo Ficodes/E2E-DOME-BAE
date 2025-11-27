@@ -28,6 +28,25 @@ if [[ -z $PROXY_BR || -z $CHARGING_BR || -z $FRONTEND_BR || -z $TM_VERSION || -z
     exit 1
 fi
 
+# Verify Docker is installed and running
+echo -e "\033[35mVerifying Docker installation...\033[0m"
+if ! command -v docker &> /dev/null; then
+    echo -e "\033[31mError: Docker not found. Please install Docker first.\033[0m"
+    echo -e "\033[33mFor installation instructions, visit: https://docs.docker.com/get-docker/\033[0m"
+    exit 1
+fi
+
+if ! docker info &> /dev/null; then
+    echo -e "\033[31mError: Docker daemon is not running. Please start Docker.\033[0m"
+    echo -e "\033[33mTroubleshooting tips:\033[0m"
+    echo -e "  - On Linux/WSL: Run 'sudo systemctl start docker' or 'sudo service docker start'\033[0m"
+    echo -e "  - On macOS/Windows: Start Docker Desktop application\033[0m"
+    echo -e "  - If using WSL and getting permission errors, try: 'sudo dpkg --configure -a'\033[0m"
+    exit 1
+fi
+
+echo -e "\033[35mDocker is installed and running!\033[0m"
+
 # Clone repo and build docker image
 # $1 = repo URL, $2 = branch, $3 = target folder, $4 = docker image name
 clone_repo_branch () {

@@ -189,6 +189,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   // Navigate to product orders as provider
   cy.visit('/product-orders')
   cy.getBySel('asProviderTab').click()
+  cy.wait(2000)
   cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
 
   // Find the most recent order (first row) and acknowledge it

@@ -1,12 +1,33 @@
-# DOME Testing
+# E2E-DOME-BAE
 
-Automated E2E testing system for the DOME ecosystem.
+## Testing Strategy: Configuration-Driven Shared State
 
-## Architecture
+This project uses an optimized End-to-End (E2E) testing strategy with Playwright, designed to minimize execution time and avoid redundant data creation.
 
-![Test Structure Diagram](diagrams/test_structure.png)
+Because the marketplace flow has heavy sequential dependencies (Catalog $\rightarrow$ Specs $\rightarrow$ Offering), creating fresh foundational data for every single test is highly inefficient.
 
-The diagram above shows how all E2E tests are interacting with each others.
+Instead of re-creating data or passing data dynamically between tests, we use a **configuration-driven approach** where a predefined file acts as the single source of truth for test data identifiers.
+
+Our strategy is visualized below:
+
+![E2E Testing Strategy Diagram](./assets/testing-strategy.png)
+
+### Workflow Explanation
+
+**The Source of Truth: Predefined Configuration File**
+Before any tests run, a static configuration file exists containing fixed names, and other attributes for the required Catalog, Specs, and Offering. This ensures every test knows exactly "who" corresponds to "what".
+
+**1. Phase 1: The "Happy Journey" (Seeding the System)**
+* The main, positive-flow test executes first.
+* It reads the **Predefined Configuration File** to know exactly what names and attributes to use.
+* It executes the creation actions against the live DOME system, effectively populating the environment with the expected "gold standard" objects.
+
+**2. Phase 2: Specific & Edge Tests (Reuse)**
+* Subsequent tests execute only after Phase 1 has successfully seeded the environment.
+* These tests also read the **Predefined Configuration File** to find the fixed identifiers of the objects they need to interact with.
+* They **skip creation steps** and directly interact with the live system, reusing the existing Catalogs, Specs, or Offerings to perform specific verifications or test edge-case scenarios.
+
+This ensures deep test coverage without wasting time constantly rebuilding the foundational data structures.
 
 ## Usage
 

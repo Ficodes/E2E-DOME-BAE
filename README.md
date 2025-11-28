@@ -31,7 +31,7 @@ Before any tests run, a static configuration file exists containing fixed names,
 **1. Phase 1: The "Happy Journey" (Seeding the System)**
 * The main, positive-flow test executes first.
 * It reads the **Predefined Configuration File** to know exactly what names and attributes to use.
-* It executes the creation actions against the live DOME system, effectively populating the environment with the expected "gold standard" objects.
+* It executes and tests the creation actions against the live DOME system, effectively populating the environment with the expected "gold standard" objects.
 
 **2. Phase 2: Specific & Edge Tests (Reuse)**
 * Subsequent tests execute only after Phase 1 has successfully seeded the environment.
@@ -81,9 +81,14 @@ To empty the database and start over:
 
 ### Execute tests manually with UI
 
-To execute the cypress tests with a graphic interface after the system is already deployed:
+If the system is already deployed, you can execute this command:
 ```bash
 npx cypress open --e2e
+```
+
+If nothing is deployed yet, use the `--headed` flag when running the testing script:
+```bash
+./testing-local.sh --headed master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
 ```
 
 ### You can integrate the tests in your CI/CD

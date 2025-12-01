@@ -1,5 +1,7 @@
 # E2E-DOME-BAE
 
+**Important:** If you are using macOS, you may experience significantly longer test execution times. This is due to a performance bottleneck in the TMForum API container, which is not optimized for native ARM architecture.
+
 ## Table of Contents
 
 - [Testing Strategy: Configuration-Driven Shared State](#testing-strategy-configuration-driven-shared-state)

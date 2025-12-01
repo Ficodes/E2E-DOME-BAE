@@ -3,10 +3,13 @@ set -e # Stop script if any error occurs
 
 # Parse flags
 HEADED_MODE=false
+RUN_TEST=true
 ARGS=()
 for arg in "$@"; do
     if [[ "$arg" == "--headed" ]]; then
         HEADED_MODE=true
+    elif [[ "$arg" == "--noTest" ]]; then
+        RUN_TEST=false
     else
         ARGS+=("$arg")
     fi
@@ -22,9 +25,10 @@ TM_VERSION=${ARGS[6]}
 
 
 if [[ -z $PROXY_BR || -z $CHARGING_BR || -z $FRONTEND_BR || -z $TM_VERSION || -z $PROXY_REPO || -z $CHARGING_REPO || -z $FRONTEND_REPO ]]; then
-    echo -e "use structure: command [--headed] PROXY_BRANCH PROXY_REPO CHARGING_BRANCH CHARGING_REPO FRONTEND_BRANCH FRONTEND_REPO TMFORUM_VERSION\033[0m"
+    echo -e "use structure: command [--headed] [--noTest] PROXY_BRANCH PROXY_REPO CHARGING_BRANCH CHARGING_REPO FRONTEND_BRANCH FRONTEND_REPO TMFORUM_VERSION\033[0m"
     echo -e "\033[33mOptional flags:\033[0m"
     echo -e "  --headed    Run Cypress tests with GUI (default: headless)\033[0m"
+    echo -e "  --noTest    Skip running tests (only build and deploy)\033[0m"
     exit 1
 fi
 
@@ -494,16 +498,20 @@ EOF
 echo -e "\033[35mEnvironment variables saved. Run: source .env_keys\033[0m"
 
 # 5. run system test
-echo -e "\033[35mrunning system test\033[0m"
-npm install
+if [ "$RUN_TEST" = true ]; then
+    echo -e "\033[35mrunning system test\033[0m"
+    npm install
 
-if [ "$HEADED_MODE" = true ]; then
-    echo -e "\033[35mrunning Cypress with GUI (headed mode)\033[0m"
-    npx cypress open --e2e
+    if [ "$HEADED_MODE" = true ]; then
+        echo -e "\033[35mrunning Cypress with GUI (headed mode)\033[0m"
+        npx cypress open --e2e
+    else
+        echo -e "\033[35mrunning Cypress in headless mode\033[0m"
+        npx cypress run --e2e --headless defaultCommandTimeout=90000 || { echo -e "system tests failed."; exit 1; }
+        echo -e "\033[35msystem tests passed\033[0m"
+    fi
 else
-    echo -e "\033[35mrunning Cypress in headless mode\033[0m"
-    npx cypress run --e2e --headless defaultCommandTimeout=90000 || { echo -e "system tests failed."; exit 1; }
-    echo -e "\033[35msystem tests passed\033[0m"
+    echo -e "\033[33mSkipping tests (--noTest flag provided)\033[0m"
 fi
 # 6. docker down
 

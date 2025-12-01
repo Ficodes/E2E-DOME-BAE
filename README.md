@@ -49,11 +49,12 @@ This ensures deep test coverage without wasting time constantly rebuilding the f
 To deploy the complete system and run the tests:
 
 ```bash
-./testing-local.sh [--headed] <proxy_branch> <proxy_repo> <charging_branch> <charging_repo> <frontend_branch> <frontend_repo> <tm_version>
+./testing-local.sh [--headed] [--noTest] <proxy_branch> <proxy_repo> <charging_branch> <charging_repo> <frontend_branch> <frontend_repo> <tm_version>
 ```
 
 **Optional flags:**
 - `--headed` - Run Cypress tests with GUI (default: headless mode)
+- `--noTest` - Skip running tests (only build and deploy the system)
 
 **Examples:**
 
@@ -67,11 +68,16 @@ With GUI (headed mode):
 ./testing-local.sh --headed master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
 ```
 
+Only build and deploy (skip tests):
+```bash
+./testing-local.sh --noTest master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
+```
+
 This command:
 1. Clones the specified repositories on the indicated branches (It doesn't overwrite existing directories, to change repo/branch, it is required to remove the frontend/proxy/charging repo previously)
 2. Builds the necessary Docker images
 3. Deploys all services (proxy, charging, frontend, IDM, TMForum APIs, etc.)
-4. Runs end-to-end tests with Cypress (headless by default, or with GUI if `--headed` flag is used)
+4. Runs end-to-end tests with Cypress (headless by default, with GUI if `--headed` flag is used, or skip tests entirely with `--noTest`)
 
 ### Clean and restart
 

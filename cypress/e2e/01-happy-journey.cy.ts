@@ -176,7 +176,8 @@ describe('Happy Journey E2E', {
     cy.wait('@getOrders')
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
     cy.visit('http://localhost:4201/checkin')
-    cy.wait('@checkin', { timeout: 60000 })
+    cy.wait('@checkin')
+    cy.wait('@getBilling')
 
     // ============================================
     // Step 10: Verify Customer Bill was created

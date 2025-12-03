@@ -87,6 +87,14 @@ To empty the database and start over:
 ./cleanup.sh
 ```
 
+### Reload after brought up to date (proxy and charging)
+
+After brought the new changes (for example with git fetch --all and git pull ) you can start over with the new modifications using this command:
+
+```bash
+./reload.sh
+```
+
 ### Execute tests manually with UI
 
 If the system is already deployed, you can execute this command:

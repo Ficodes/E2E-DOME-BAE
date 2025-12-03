@@ -67,6 +67,9 @@ services:
           - BAE_LP_ENDPOINT_BILLING_PORT=8644
           - BAE_LP_ENDPOINT_USAGE_HOST=host.docker.internal
           - BAE_LP_ENDPOINT_USAGE_PORT=8080
+          # TMForum APIs - Quote
+          - BAE_LP_ENDPOINT_QUOTE_HOST=host.docker.internal
+          - BAE_LP_ENDPOINT_QUOTE_PORT=8649
 
           # OAuth2 Configuration
           - BAE_LP_OAUTH2_SERVER=http://idm.docker:3000

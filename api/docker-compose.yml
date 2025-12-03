@@ -239,6 +239,30 @@ services:
       GENERAL_NGSILDORQUERYKEY: ","
       GENERAL_ENCLOSEQUERY: false
 
+  quote:
+    image: quay.io/fiware/tmforum-quote:${TM_VERSION}
+    ports:
+      - 8649:8081
+    networks:
+      - main
+    environment:
+      ENDPOINTS_ALL_PORT: 9090
+      MICRONAUT_SERVER_PORT: 8081
+      MICRONAUT_METRICS_ENABLED: true
+      ENDPOINTS_HEALTH_ENABLED: true
+      LOGGER_LEVELS_ROOT: INFO
+      MICRONAUT_CACHES_ENTITIES_MAXIMUM_SIZE: 1000
+      MICRONAUT_CACHES_ENTITIES_EXPIRE_AFTER_WRITE: 2s
+      MICRONAUT_CACHES_ENTITIES_EXPIRE_AFTER_ACCESS: 2s
+      MICRONAUT_HTTP_SERVICES_READ_TIMEOUT: 30s
+      MICRONAUT_HTTP_SERVICES_NGSI_PATH: ngsi-ld/v1
+      MICRONAUT_HTTP_SERVICES_NGSI_URL: http://scorpio:9090
+      GENERAL_BASEPATH: /
+      GENERAL_CONTEXT_URL: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld
+      GENERAL_NGSILDORQUERYVALUE: ","
+      GENERAL_NGSILDORQUERYKEY: ","
+      GENERAL_ENCLOSEQUERY: false
+
   customer-bill:
     image: quay.io/fiware/tmforum-customer-bill-management:${TM_VERSION}
     ports:

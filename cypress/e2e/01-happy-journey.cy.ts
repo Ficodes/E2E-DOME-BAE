@@ -10,7 +10,8 @@ import {
   createResourceSpec,
   createServiceSpec,
   updateResourceSpecStatus,
-  updateServiceSpecStatus
+  updateServiceSpecStatus,
+  createUsageSpec
 } from '../support/form-helpers'
 
 describe('Happy Journey E2E', {
@@ -44,6 +45,8 @@ describe('Happy Journey E2E', {
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
     cy.intercept('POST', '**/account/billingAccount').as('saveBilling')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
+
+    createUsageSpec(HAPPY_JOURNEY.metric)
 
     // ============================================
     // Step 1: Create Catalog
@@ -140,7 +143,7 @@ describe('Happy Journey E2E', {
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     // cy.contains(offeringName).find('[data-cy="addToCart"]').first().click()
     cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    cy.wait('@cartItem', {timeout: 60000})
+    cy.wait('@cartItem')
     cy.getBySel('baeCard').within(() => { cy.getBySel('addToCart').first().click() })
     cy.getBySel('pricePlanDrawer').contains(HAPPY_JOURNEY.pricePlan.name).click()
     cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible
@@ -172,7 +175,7 @@ describe('Happy Journey E2E', {
     // Wait for the billing address to be processed and selected
     cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
-    cy.wait('@createOrder', { timeout: 60000 })
+    cy.wait('@createOrder')
     cy.wait('@getOrders')
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
     cy.visit('http://localhost:4201/checkin')
@@ -183,7 +186,7 @@ describe('Happy Journey E2E', {
     // Step 10: Verify Customer Bill was created
     // ============================================
 
-    cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+    cy.getBySel('ordersTable').should('be.visible')
     cy.getBySel('ordersTable').contains('completed')
     cy.getBySel('invoices').click()
     cy.getBySel('invoiceRow').should('have.length', 1).within(()=>{

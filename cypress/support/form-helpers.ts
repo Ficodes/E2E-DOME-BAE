@@ -17,6 +17,7 @@ export interface ProductSpecParams {
   productNumber: string
   serviceSpecName?: string | null
   resourceSpecName?: string | null
+  characteristics?: Characteristic[]
 }
 
 export interface UpdateProductSpecStatusParams {
@@ -107,6 +108,17 @@ export interface UpdateResourceSpecStatusParams {
   status: string
 }
 
+export interface Metric {
+  name: string
+  description: string
+}
+
+export interface UsageSpecParams {
+  name: string
+  description: string
+  metrics?: Metric[]
+}
+
 /**
  * Create a new catalog
  */
@@ -154,7 +166,7 @@ export function updateCatalogStatus({ name, status }: UpdateCatalogStatusParams)
 /**
  * Create a new product specification
  */
-export function createProductSpec({ name, version = '0.1', brand, productNumber, serviceSpecName = null, resourceSpecName = null }: ProductSpecParams): void {
+export function createProductSpec({ name, version = '0.1', brand, productNumber, serviceSpecName = null, resourceSpecName = null, characteristics = [] }: ProductSpecParams): void {
   cy.visit('/my-offerings')
   cy.getBySel('prdSpecSection').click()
   cy.getBySel('createProdSpec').click()
@@ -168,6 +180,43 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
   // Navigate through all required steps
   cy.getBySel('btnNext').click() // Go to Compliance step
   cy.getBySel('btnNext').click() // Go to Characteristics step
+
+  // Step 3: Characteristics
+  if (characteristics.length > 0) {
+    characteristics.forEach((char) => {
+      cy.getBySel('btnNewCharacteristic').click()
+
+      // Fill characteristic basic info
+      cy.getBySel('charName').should('be.visible').type(char.name)
+      cy.getBySel('charType').select(char.type)
+      cy.getBySel('charDescription').type(char.description)
+
+      // Add values based on type
+      if (char.type === 'string') {
+        (char.values as string[]).forEach((value) => {
+          cy.getBySel('charStringValue').clear().type(value)
+          cy.getBySel('btnAddStringValue').click()
+        })
+      } else if (char.type === 'number') {
+        (char.values as CharacteristicValue[]).forEach((valueObj) => {
+          cy.getBySel('charNumberValue').clear().type(String(valueObj.value))
+          cy.getBySel('charNumberUnit').clear().type(valueObj.unit)
+          cy.getBySel('btnAddNumberValue').click()
+        })
+      } else if (char.type === 'range') {
+        const rangeValues = char.values as RangeValue
+        cy.getBySel('charRangeFrom').clear().type(String(rangeValues.from))
+        cy.getBySel('charRangeTo').clear().type(String(rangeValues.to))
+        cy.getBySel('charRangeUnit').clear().type(rangeValues.unit)
+        cy.getBySel('btnAddRangeValue').click()
+      }
+
+      // Save characteristic
+      cy.getBySel('btnSaveCharacteristic').click()
+      cy.wait(1000)
+    })
+  }
+
   cy.getBySel('btnNext').click() // Go to Resource step
   if (resourceSpecName){
     cy.getBySel('tableResourceSpecs').contains('tr', resourceSpecName).find('[id="select-checkbox"]').click()
@@ -231,7 +280,7 @@ export function createOffering({
   priceComponent,
   procurement
 }: OfferingParams): void {
-  cy.intercept('GET', '**/usage-management/v4/usage*').as('usageGET')
+  cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
   cy.visit('/my-offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
@@ -342,7 +391,7 @@ export function clickLoadMoreUntilGone(maxClicks = 10, offering: boolean = false
   const clickIfExists = (remainingClicks: number, retries = 5): void => {
     if (remainingClicks === 0) return
 
-    cy.wait(500)
+    cy.wait(2000)
     cy.get('body').then($body => {
       const $btn = $body.find('[data-cy="loadMore"]:visible')
       if ($btn.length > 0) {
@@ -350,7 +399,6 @@ export function clickLoadMoreUntilGone(maxClicks = 10, offering: boolean = false
         if (offering) {
           cy.wait('@offeringList')
         }
-        cy.wait(2000)
         clickIfExists(remainingClicks - 1)
       } else if (retries > 0) {
         // Retry: button might still be loading
@@ -543,4 +591,46 @@ export function updateServiceSpecStatus({ name, status }: UpdateServiceSpecStatu
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
+}
+
+/**
+ * Create a new usage specification
+ */
+export function createUsageSpec({ name, description, metrics = [] }: UsageSpecParams): void {
+  cy.visit('/usage-spec')
+  cy.getBySel('createUsageSpec').click()
+
+  // Step 1: General info
+  cy.getBySel('usageSpecName').should('be.visible').type(name)
+  cy.getBySel('usageSpecDescription').should('be.visible').type(description)
+  cy.getBySel('usageSpecNext').click()
+
+  // Step 2: Metrics
+  if (metrics.length > 0) {
+    metrics.forEach((metric) => {
+      cy.getBySel('btnNewMetric').click()
+
+      // Fill metric info
+      cy.getBySel('metricName').should('be.visible').type(metric.name)
+      cy.getBySel('metricDescription').type(metric.description)
+
+      // Save metric
+      cy.getBySel('btnSaveMetric').click()
+      cy.wait(1000)
+    })
+  }
+
+  // Go to next step (Summary)
+  cy.getBySel('usageSpecNext').click()
+
+  // Step 3: Create usage spec
+  cy.getBySel('btnCreateUsageSpec').should('be.enabled').click()
+
+  // Close feedback modal if it appears
+  cy.closeFeedbackModalIfVisible()
+
+  // Verify usage spec appears in table
+  cy.wait(2000)
+  cy.getBySel('usageSpecTable').should('be.visible')
+  cy.getBySel('usageSpecTable').contains(name).should('be.visible')
 }

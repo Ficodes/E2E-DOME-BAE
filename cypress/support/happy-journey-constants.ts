@@ -67,5 +67,12 @@ export const HAPPY_JOURNEY = {
     name: "pc1",
     price: 5.2,
     type: "one time"
+  },
+  metric: {
+    name: 'Time Usage',
+    description: 'Usage time in minutes',
+    metrics: [
+      { name: 'mins', description: 'minutes' },
+    ]
   }
 }

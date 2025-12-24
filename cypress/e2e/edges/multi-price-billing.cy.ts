@@ -14,8 +14,8 @@ import {
  *
  * Test Cases:
  * 1. Offering with recurring + recurring-prepaid
- * 2. Offering with only usage (TODO)
- * 3. Offering with one-time + usage (TODO)
+ * 2. Offerin with one-time + recurring prepaid
+ * 3. Offering with only usage
  */
 describe('Multi-Price Component Billing Edge Cases', {
   viewportHeight: 1080,

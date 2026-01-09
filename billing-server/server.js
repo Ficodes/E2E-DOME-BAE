@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const PORT = 4201;
+const jwtResponse = require('./jwtResponse')
 
 app.use(express.json());
 
@@ -42,16 +43,22 @@ app.get('/checkin', (req, res) => {
     return
   }
   console.log('received checkin ', successURL)
-  res.redirect(successURL + '&token=' + bearerToken)
+  res.redirect(successURL+'&jwt=' + jwtResponse.processedOrFailedJWT + '&token=' + bearerToken)
 })
 
 app.get('/bad-checkin', (req, res) => {
   const cancelURL = cancelURLStack.shift()
   console.log('received cancel ', cancelURL)
-  res.redirect(cancelURL + '&token=' + bearerToken)
+  res.redirect(cancelURL+ '&jwt=' + jwtResponse.processedOrFailedJWT + '&token=' + bearerToken)
+})
+
+app.get('/pending-checkin', (req, res) => {
+  const successURL = successURLStack.shift()
+  console.log('received cancel ', cancelURL)
+  res.redirect(successURL+ '&jwt=' + jwtResponse.pendingJWT + '&token=' + bearerToken)
 })
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Billing server running on http://0.0.0.0:${PORT}`);
-  console.log('billing server mock v1.5')
+  console.log('billing server mock v2.0')
 });

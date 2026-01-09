@@ -61,6 +61,7 @@ services:
         - BAE_CB_PAYMENT_METHOD=dpas
         - BAE_CB_DPAS_CLIENT_API_URL=http://host.docker.internal:4201/api/payment-start
         - BAE_SERVICE_HOST=http://localhost:4200/
+        - DPAS_KEY=test-billing-secret-key-2024
 
 networks:
     main:

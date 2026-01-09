@@ -387,7 +387,7 @@ export function clickLoadMoreUntilGone(maxClicks = 10, offering: boolean = false
   if(offering){
     cy.intercept('**/catalog/productOffering?*').as('offeringList')
   }
-  cy.wait(3000)
+  cy.wait(5000)
   const clickIfExists = (remainingClicks: number, retries = 5): void => {
     if (remainingClicks === 0) return
 

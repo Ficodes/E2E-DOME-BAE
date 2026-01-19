@@ -46,19 +46,21 @@ describe('Check order global states',  {
     })
     
     // At the moment I have done this test, orders are ordered by the most recent first.
-    it('should give the correct global state: test 4 - Google Sheet', () => {
+    it('should give the correct global state: test 2 - Google Sheet', () => {
       cy.visit('/')
       cy.changeSessionTo('BUYER ORG')
       // complete auto offering
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
       cy.visit('http://localhost:4201/checkin')
 
-      cy.wait('@checkin', { timeout: 60000 })
+      cy.wait('@checkin')
 
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
+      cy.wait('@getOrders')
       cy.getBySel('asProviderTab').click()
-      cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+      cy.wait('@getOrders')
+      cy.getBySel('ordersTable').should('be.visible')
       // check global state
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -75,6 +77,7 @@ describe('Check order global states',  {
       })
       cy.getBySel('confirmActionBtn').click()
       cy.wait(2000)
+      cy.wait('@getOrders')
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -89,12 +92,13 @@ describe('Check order global states',  {
     })
 
     // orders are ordered by the most recent first.
-    it('should give the correct global state: test 4 - Google Sheet', () => {
+    it('should give the correct global state: test 2 - Google Sheet', () => {
       cy.getBySel('orderItems').contains('tr', semiName).within(() =>{
         cy.getBySel('completeOrder').click()
       })
       cy.getBySel('confirmActionBtn').click()
       cy.wait(2000)
+      cy.wait('@getOrders')
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -112,12 +116,14 @@ describe('Check order global states',  {
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
       cy.visit('http://localhost:4201/checkin')
 
-      cy.wait('@checkin', { timeout: 60000 })
+      cy.wait('@checkin')
 
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
+      cy.wait('@getOrders')
       cy.getBySel('asProviderTab').click()
-      cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+      cy.wait('@getOrders')
+      cy.getBySel('ordersTable').should('be.visible')
       // check global state
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)

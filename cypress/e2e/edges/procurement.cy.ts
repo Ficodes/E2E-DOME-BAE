@@ -97,7 +97,7 @@ describe('Manual Offering E2E', {
     cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    cy.wait('@cartItem', {timeout: 60000})
+    cy.wait('@cartItem')
 
     clickLoadMoreUntilGone()
     // Find and click on the manual offering card
@@ -122,14 +122,14 @@ describe('Manual Offering E2E', {
     cy.wait('@getBilling')
     cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
-    cy.wait('@createOrder', { timeout: 60000 })
+    cy.wait('@createOrder')
     cy.wait('@getOrders')
 
     // ============================================
     // Step 6: Verify order is in unchecked state (waiting for manual approval)
     // ============================================
     cy.visit('http://localhost:4200/product-orders')
-    cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+    cy.getBySel('ordersTable').should('be.visible')
 
     // For manual procurement, get the most recent order (first row in tbody)
     // and verify it's in 'Unchecked' state (manual orders waiting for approval)
@@ -145,7 +145,7 @@ describe('Manual Offering E2E', {
     // Navigate to product orders as provider
     cy.visit('/product-orders')
     cy.getBySel('asProviderTab').click()
-    cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+    cy.getBySel('ordersTable').should('be.visible')
 
     // Find the most recent order (first row) and acknowledge it
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -181,7 +181,7 @@ describe('Manual Offering E2E', {
     // ============================================
     cy.changeSessionTo('BUYER ORG')
     cy.visit('http://localhost:4200/product-orders')
-    cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+    cy.getBySel('ordersTable').should('be.visible')
 
     // Verify the most recent order (first row) is now completed
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -292,7 +292,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    cy.wait('@cartItem', {timeout: 60000})
+    cy.wait('@cartItem')
 
     clickLoadMoreUntilGone()
     // Find and click on the offering card
@@ -317,7 +317,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.wait('@getBilling')
     cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
-    cy.wait('@createOrder', { timeout: 60000 })
+    cy.wait('@createOrder')
     cy.wait('@getOrders')
 
     // ============================================
@@ -325,8 +325,8 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
     cy.visit('http://localhost:4201/checkin')
-    cy.wait('@checkin', { timeout: 60000 })
-    cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+    cy.wait('@checkin')
+    cy.getBySel('ordersTable').should('be.visible')
 
     // For manual procurement, get the most recent order (first row in tbody)
     // and verify it's in 'inProgress' state (manual procurement waiting for approval)
@@ -342,7 +342,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Navigate to product orders as provider
     cy.visit('/product-orders')
     cy.getBySel('asProviderTab').click()
-    cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+    cy.getBySel('ordersTable').should('be.visible')
 
     // Find the most recent order (first row) and complete it
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -358,7 +358,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     cy.changeSessionTo('BUYER ORG')
     cy.visit('http://localhost:4200/product-orders')
-    cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+    cy.getBySel('ordersTable').should('be.visible')
 
     // Verify the most recent order (first row) is now completed
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {

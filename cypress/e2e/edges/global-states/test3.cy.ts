@@ -53,12 +53,14 @@ describe('Check order global states',  {
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
       cy.visit('http://localhost:4201/checkin')
 
-      cy.wait('@checkin', { timeout: 60000 })
+      cy.wait('@checkin')
 
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
+      cy.wait('@getOrders')
       cy.getBySel('asProviderTab').click()
-      cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+      cy.wait('@getOrders')
+      cy.getBySel('ordersTable').should('be.visible')
       // check global state
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -75,6 +77,7 @@ describe('Check order global states',  {
       })
       cy.getBySel('confirmActionBtn').click()
       cy.wait(2000)
+      cy.wait('@getOrders')
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/partial/i)
@@ -112,12 +115,15 @@ describe('Check order global states',  {
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
       cy.visit('http://localhost:4201/checkin')
 
-      cy.wait('@checkin', { timeout: 60000 })
+      cy.wait('@checkin')
 
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
+      cy.wait('@getOrders')
       cy.getBySel('asProviderTab').click()
-      cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+      cy.wait('@getOrders')
+
+      cy.getBySel('ordersTable').should('be.visible')
       // check global state
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/partial/i)

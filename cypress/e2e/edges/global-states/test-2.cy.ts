@@ -65,7 +65,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.changeSessionTo('BUYER ORG')
       cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
       cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').should('be.visible').click()
-      cy.wait('@cartItem', {timeout: 60000})
+      cy.wait('@cartItem')
       clickLoadMoreUntilGone(10, true)
 
       // AUTO
@@ -115,20 +115,20 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.wait('@getBilling')
       cy.wait(2000)
       cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
-      cy.wait('@createOrder', { timeout: 60000 })
+      cy.wait('@createOrder')
       cy.wait('@getOrders')
 
       // Fail the auto and semi offering
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
       cy.visit('http://localhost:4201/bad-checkin')
-      cy.wait('@checkin', { timeout: 60000 })
+      cy.wait('@checkin')
       cy.wait(2000)
       cy.visit('/')
       cy.changeSessionTo('SELLER ORG')
       // Navigate to product orders as provider
       cy.visit('/product-orders')
       cy.getBySel('asProviderTab').click()
-      cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+      cy.getBySel('ordersTable').should('be.visible')
 
       // Find the most recent order and set auto and semi to failed
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {

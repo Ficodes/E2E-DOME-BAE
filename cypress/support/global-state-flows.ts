@@ -188,7 +188,9 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.changeSessionTo('SELLER ORG')
   // Navigate to product orders as provider
   cy.visit('/product-orders')
+  cy.wait('@getOrders')
   cy.getBySel('asProviderTab').click()
+  cy.wait('@getOrders')
   cy.wait(2000)
   cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
 
@@ -225,6 +227,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
         cy.getBySel('startOrderTreatment').click()
       })
       cy.getBySel('confirmActionBtn').click()
+      cy.wait('@getOrders')
       cy.wait(2000)
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -239,6 +242,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
         cy.getBySel(orderAction).click()
       })
       cy.getBySel('confirmActionBtn').click()
+      cy.wait('@getOrders')
       cy.wait(2000)
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -251,6 +255,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
         cy.getBySel('rejectOrder').click()
       })
       cy.getBySel('confirmActionBtn').click()
+      cy.wait('@getOrders')
       cy.wait(2000)
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)

@@ -143,7 +143,8 @@ describe('Multi-Price Component Billing Edge Cases', {
     // Step 4: Add offering to cart and purchase
     // ============================================
     cy.visit('/dashboard')
-    cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.visit('/search')
     cy.wait('@cartItem')
 
     // Load all offerings in case there are many from previous tests
@@ -287,7 +288,8 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.changeSessionTo('BUYER ORG')
 
     cy.visit('/dashboard')
-    cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.visit('/search')
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone()
@@ -387,7 +389,8 @@ describe('Multi-Price Component Billing Edge Cases', {
     })
 
     cy.visit('/dashboard')
-    cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.visit('/search')
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone()

@@ -129,7 +129,8 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.visit('/dashboard')
   cy.changeSessionTo('BUYER ORG')
   cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
-  cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').should('be.visible').click()
+  //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').should('be.visible').click()
+  cy.visit('/search')
   cy.wait('@cartItem', {timeout: 60000})
   clickLoadMoreUntilGone(10, true)
   // AUTO

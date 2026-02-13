@@ -22,6 +22,8 @@ Cypress.Commands.add('loginAsAdmin', () => {
         cy.get('body').then($body => {
           if ($body.text().includes('Authorize')) {
             cy.contains('button', 'Authorize').click()
+          } else if ($body.text().includes('Autorizar')) {
+            cy.contains('button', 'Autorizar').click()
           }
         })
       }

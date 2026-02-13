@@ -85,7 +85,7 @@ services:
           - BAE_LP_SIOP_ENABLED=false
 
           # Theme
-          - BAE_LP_THEME=DOME
+          - BAE_LP_THEME=BAE
 
           # Portal Configuration
           - BAE_LP_EXTERNAL_PORTAL=http://localhost:4200

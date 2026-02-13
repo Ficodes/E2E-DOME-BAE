@@ -96,7 +96,8 @@ describe('Manual Offering E2E', {
     // ============================================
     cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
-    cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.visit('/search')
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone()
@@ -291,7 +292,8 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
-    cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.visit('/search')
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone()

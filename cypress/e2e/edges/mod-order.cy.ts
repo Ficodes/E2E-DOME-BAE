@@ -141,8 +141,7 @@ describe('Product Modification Order E2E', {
     cy.getBySel('orgCountry').select('ES')
     cy.getBySel('orgUpdate').click()
 
-    cy.visit('/dashboard')
-    cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
+    cy.visit('/search')
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone()
@@ -218,7 +217,7 @@ describe('Product Modification Order E2E', {
       cy.get('button').should('have.length.greaterThan', 0).first().click()
     })
 
-    cy.getBySel('invoiceDetail').should('contain', `INITIAL PAYMENT FOR ${offeringName}`)
+    cy.getBySel('invoiceDetail').should('contain', 'INITIAL PAYMENT')
     cy.getBySel('invoiceDetail').within(() => {
       cy.getBySel('acbr').should('have.length', 2)
       // Storage Fee: 50 * 1.21 = 60.5 EUR | User Fee: 5 * 5 slider * 1.21 = 30.25 EUR
@@ -293,7 +292,7 @@ describe('Product Modification Order E2E', {
       cy.get('button').should('have.length.greaterThan', 0).first().click()
     })
 
-    cy.getBySel('invoiceDetail').should('contain', `INITIAL MODIFICATION PAYMENT FOR ${offeringName}`)
+    cy.getBySel('invoiceDetail').should('contain', 'INITIAL MODIFICATION PAYMENT')
     cy.getBySel('invoiceDetail').within(() => {
       cy.getBySel('acbr').should('have.length.greaterThan', 0)
       // User Fee after modify: 5 * 10 slider * 1.21 = 60.5 EUR

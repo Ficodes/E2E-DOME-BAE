@@ -37,6 +37,7 @@ export interface PriceComponent {
   type: string
   recurringPeriod?: string
   usageInput?: [string, string]
+  charLink?: { characteristicName: string; value?: string }
 }
 
 export interface OfferingParams {
@@ -49,6 +50,7 @@ export interface OfferingParams {
   mode: string
   pricePlan?: PricePlan
   priceComponent?: PriceComponent
+  priceComponents?: PriceComponent[]
   procurement: string
 }
 
@@ -186,9 +188,9 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
     characteristics.forEach((char) => {
       cy.getBySel('btnNewCharacteristic').click()
 
-      // Fill characteristic basic info
+      // Fill characteristic basic info (select type first to avoid form reset clearing name)
+      cy.getBySel('charType').should('be.visible').select(char.type)
       cy.getBySel('charName').should('be.visible').type(char.name)
-      cy.getBySel('charType').select(char.type)
       cy.getBySel('charDescription').type(char.description)
 
       // Add values based on type
@@ -278,6 +280,7 @@ export function createOffering({
   mode,
   pricePlan,
   priceComponent,
+  priceComponents,
   procurement
 }: OfferingParams): void {
   cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
@@ -292,6 +295,7 @@ export function createOffering({
   cy.getBySel('offerNext').click()
 
   // Step 2: Select the Product Specification
+  clickLoadMoreUntilGone()
   cy.getBySel('prodSpecs').contains( productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -315,22 +319,29 @@ export function createOffering({
       cy.getBySel('pricePlanName').type(pricePlan.name)
       cy.getBySel('textArea').type(pricePlan.description || '')
       cy.getBySel('savePricePlan').should('have.attr', 'disabled')
-      if(priceComponent){
+      const components = priceComponents || (priceComponent ? [priceComponent] : [])
+      components.forEach((pc) => {
           cy.getBySel('newPriceComponent').click()
-          cy.getBySel('priceComponentName').type(priceComponent.name)
-          cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type(priceComponent.description)
-          cy.getBySel('price').type(String(priceComponent.price))
-          cy.getBySel('priceType').select(priceComponent.type)
-          if (priceComponent.recurringPeriod){
-              cy.getBySel('recurringType').select(priceComponent.recurringPeriod)
+          cy.getBySel('priceComponentName').type(pc.name)
+          cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type(pc.description)
+          cy.getBySel('price').type(String(pc.price))
+          if (pc.charLink) {
+              cy.getBySel('selectPriceSpecChar').select(pc.charLink.characteristicName)
+              if (pc.charLink.value) {
+                  cy.getBySel('selectPriceSpecCharValue').select(pc.charLink.value)
+              }
           }
-          else if (priceComponent.usageInput){
+          cy.getBySel('priceType').select(pc.type)
+          if (pc.recurringPeriod){
+              cy.getBySel('recurringType').select(pc.recurringPeriod)
+          }
+          else if (pc.usageInput){
               cy.wait('@usageGET')
-              cy.getBySel('usageInput').select(priceComponent.usageInput[0])
-              cy.getBySel('usageMetric').select(priceComponent.usageInput[1])
+              cy.getBySel('usageInput').select(pc.usageInput[0])
+              cy.getBySel('usageMetric').select(pc.usageInput[1])
           }
           cy.getBySel('savePriceComponent').click()
-      }
+      })
       cy.getBySel('savePricePlan').click()
   }
   cy.getBySel('offerNext').click()

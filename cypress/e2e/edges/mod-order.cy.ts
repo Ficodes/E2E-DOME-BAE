@@ -272,7 +272,8 @@ describe('Product Modification Order E2E', {
       // Click confirm modify button
       cy.get('button').contains(/confirm|Confirm/i).click()
     })
-
+    cy.wait('@createOrder')
+    
     // ============================================
     // Verify modification: checkin + order + invoice
     // ============================================

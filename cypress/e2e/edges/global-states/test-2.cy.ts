@@ -130,7 +130,10 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.changeSessionTo('SELLER ORG')
       // Navigate to product orders as provider
       cy.visit('/product-orders')
+      cy.wait('@getOrders')
+      cy.wait(500)
       cy.getBySel('asProviderTab').click()
+      cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
 
       // Find the most recent order and set auto and semi to failed

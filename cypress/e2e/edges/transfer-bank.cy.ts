@@ -34,7 +34,7 @@ describe('Manual Bill Settle Edge Case', {
   it('should settle customer bill via API and verify order completed and product in inventory', () => {
     const catalogName = HAPPY_JOURNEY.catalog.name
     const productSpecName = HAPPY_JOURNEY.productSpec.name
-    const offeringName = `Manual Bill Settle ${Date.now()}`
+    const offeringName = `Bank Transfer ${Date.now()}`
     const pricePlanName = 'Manual Settle Plan'
 
     cy.intercept('POST', '**/ordering/productOrder').as('createOrder')

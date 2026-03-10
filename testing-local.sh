@@ -197,6 +197,7 @@ cd ..
 wait_server http://localhost:8636/resourceCatalog resourceCatalog
 wait_server http://localhost:8637/serviceCatalog serviceCatalog
 wait_server http://localhost:8632/productSpecification productCatalog
+wait_server http://localhost:8645/customerBill customerBill
 
 cd idm-docker
 docker compose up -d > /dev/null 2>&1

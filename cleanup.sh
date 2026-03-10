@@ -43,6 +43,14 @@ cd scorpiodb
 docker compose up -d
 cd ..
 
+# Wait for Charging customerBill API to be ready
+echo -e "\033[35mWaiting for Charging customerBill API (port 8645)...\033[0m"
+until curl -s -o /dev/null -w "%{http_code}" http://localhost:8645/customerBill | grep -qE "^(200|404)$"; do
+  echo "  CustomerBill API not ready yet, retrying in 5s..."
+  sleep 5
+done
+echo -e "\033[35mCharging customerBill API is ready.\033[0m"
+
 # Start Charging
 echo -e "\033[35mStarting Charging...\033[0m"
 cd charging-docker

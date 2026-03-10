@@ -12,6 +12,15 @@ jobs:
     steps:
       - name: Checkout Testing Repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Switch to cypress branch if specified
+        if: github.event.client_payload.cypress_branch != ''  && github.event.client_payload.cypress_branch != null
+        run: |
+          CYPRESS_BRANCH="${{ github.event.client_payload.cypress_branch }}"
+          echo "Switching to cypress branch: $CYPRESS_BRANCH"
+          git checkout $CYPRESS_BRANCH
 
       - name: Create commit status - pending
         if: github.event.client_payload.pull_request_url

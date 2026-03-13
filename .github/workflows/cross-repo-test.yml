@@ -85,6 +85,14 @@ jobs:
           path: cypress/screenshots
           retention-days: 7
 
+      - name: Upload Cypress Videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          retention-days: 1
+
       - name: Create commit status - success
         if: success() && github.event.client_payload.pull_request_url
         run: |

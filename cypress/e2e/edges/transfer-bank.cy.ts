@@ -240,6 +240,7 @@ describe('Manual Bill Settle Edge Case', {
     // Step 12: Verify product appears in inventory and capture product ID
     // ============================================
     cy.visit('/product-inventory')
+    clickLoadMoreUntilGone()
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
     cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
 

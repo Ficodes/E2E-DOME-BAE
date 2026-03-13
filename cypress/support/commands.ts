@@ -2,39 +2,41 @@ import { ADMIN_USER } from './constants'
 
 // Real login through IDM
 Cypress.Commands.add('loginAsAdmin', () => {
-  cy.visit('/')
+  cy.session('admin', () => {
+    cy.visit('/')
 
-  // Click login button
-  cy.getBySel('login').click()
+    cy.getBySel('login').click()
 
-  // Handle login in IDM (Keyrock) - it redirects to idm.docker:3000
-  cy.origin('http://idm.docker:3000', { args: { email: ADMIN_USER.email, password: ADMIN_USER.password } }, ({ email, password }) => {
-    // Wait for login form
-    cy.get('input[name="email"]', { timeout: 10000 }).should('be.visible')
-    cy.get('input[name="email"]').type(email)
-    cy.get('input[name="password"]').type(password)
-    cy.get('button[type="submit"]').click()
+    cy.origin('http://idm.docker:3000', { args: { email: ADMIN_USER.email, password: ADMIN_USER.password } }, ({ email, password }) => {
+      cy.get('input[name="email"]', { timeout: 10000 }).should('be.visible')
+      cy.get('input[name="email"]').type(email)
+      cy.get('input[name="password"]').type(password)
+      cy.get('button[type="submit"]').click()
 
-    // Check if Authorize button appears and click it if it does
-    cy.wait(500)
-    cy.location('origin').then((origin) => {
-      if (origin === 'http://idm.docker:3000') {
-        cy.get('body').then($body => {
-          if ($body.text().includes('Authorize')) {
-            cy.contains('button', 'Authorize').click()
-          } else if ($body.text().includes('Autorizar')) {
-            cy.contains('button', 'Autorizar').click()
-          }
-        })
-      }
+      cy.wait(500)
+      cy.location('origin').then((origin) => {
+        if (origin === 'http://idm.docker:3000') {
+          cy.get('body').then($body => {
+            if ($body.text().includes('Authorize')) {
+              cy.contains('button', 'Authorize').click()
+            } else if ($body.text().includes('Autorizar')) {
+              cy.contains('button', 'Autorizar').click()
+            }
+          })
+        }
+      })
     })
+
+    cy.url().should('include', 'localhost:4200', { timeout: 10000 })
+    cy.getBySel('loggedAcc').should('exist')
+  }, {
+    validate: () => {
+      cy.visit('/dashboard')
+      cy.getBySel('loggedAcc').should('exist')
+    }
   })
 
-  // Wait for redirect back to frontend
-  cy.url().should('include', 'localhost:4200', { timeout: 10000 })
-
-  // Verify logged in
-  cy.getBySel('loggedAcc').should('exist')
+  cy.visit('/dashboard')
 })
 
 // Close feedback modal if it appears

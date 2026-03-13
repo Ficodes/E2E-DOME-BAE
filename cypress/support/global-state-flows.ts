@@ -93,9 +93,6 @@ export function setupGlobalStateBefore(params: GlobalStateSetupParams) {
       })
 
   updateOffering({ name: offeringSemiName, status: 'launched' })
-  cy.clearAllCookies()
-  cy.clearLocalStorage()
-  cy.clearAllSessionStorage()
 }
 
 /**

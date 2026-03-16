@@ -138,7 +138,7 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     cy.visit('/search')
     cy.wait('@cartItem')
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, true)
 
     cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
       cy.getBySel('addToCart').first().click()

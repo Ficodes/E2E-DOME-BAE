@@ -144,7 +144,7 @@ describe('Product Modification Order E2E', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, true)
 
     cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
       cy.getBySel('addToCart').first().click()

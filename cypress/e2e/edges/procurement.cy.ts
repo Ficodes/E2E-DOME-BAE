@@ -100,7 +100,7 @@ describe('Manual Offering E2E', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, true)
     // Find and click on the manual offering card
     cy.contains('[data-cy="baeCard"]', manualOfferingName).within(() => {
       cy.getBySel('addToCart').first().click()
@@ -296,7 +296,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, true)
     // Find and click on the offering card
     cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
       cy.getBySel('addToCart').first().click()

@@ -148,7 +148,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait('@cartItem')
 
     // Load all offerings in case there are many from previous tests
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, true)
 
     cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
       cy.getBySel('addToCart').first().click()
@@ -292,7 +292,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, true)
 
     cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
       cy.getBySel('addToCart').first().click()
@@ -393,7 +393,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, true)
 
     cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
       cy.getBySel('addToCart').first().click()

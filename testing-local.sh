@@ -508,7 +508,16 @@ if [ "$RUN_TEST" = true ]; then
         npx cypress open --e2e
     else
         echo -e "\033[35mrunning Cypress in headless mode\033[0m"
-        npx cypress run --e2e --headless defaultCommandTimeout=90000 || { echo -e "system tests failed."; exit 1; }
+        npx cypress run --e2e --headless defaultCommandTimeout=90000 || {
+            echo -e "\033[31m\n=== PROXY DOCKER LOGS ===\033[0m"
+            docker logs --timestamps proxy-docker-proxy-1 2>&1 || true
+
+            echo -e "\033[31m\n=== CHARGING DOCKER LOGS ===\033[0m"
+            docker logs --timestamps charging-docker-charging-1 2>&1 || true
+
+            echo -e "\033[31msystem tests failed.\033[0m"
+            exit 1
+        }
         echo -e "\033[35msystem tests passed\033[0m"
     fi
 else

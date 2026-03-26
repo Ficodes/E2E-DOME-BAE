@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e # Stop script if any error occurs
 
+# Clean up docker logs from previous runs
+rm -rf docker-logs
+mkdir -p docker-logs
+
 # Parse flags
 HEADED_MODE=false
 RUN_TEST=true
@@ -509,12 +513,9 @@ if [ "$RUN_TEST" = true ]; then
     else
         echo -e "\033[35mrunning Cypress in headless mode\033[0m"
         npx cypress run --e2e --headless defaultCommandTimeout=90000 || {
-            echo -e "\033[31m\n=== PROXY DOCKER LOGS ===\033[0m"
-            docker logs --timestamps proxy-docker-proxy-1 2>&1 || true
-
-            echo -e "\033[31m\n=== CHARGING DOCKER LOGS ===\033[0m"
-            docker logs --timestamps charging-docker-charging-1 2>&1 || true
-
+            echo -e "\033[31mSaving docker logs to docker-logs/...\033[0m"
+            docker logs --timestamps proxy-docker-proxy-1 > docker-logs/proxy.log 2>&1 || true
+            docker logs --timestamps charging-docker-charging-1 > docker-logs/charging.log 2>&1 || true
             echo -e "\033[31msystem tests failed.\033[0m"
             exit 1
         }

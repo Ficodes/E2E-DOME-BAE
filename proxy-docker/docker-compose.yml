@@ -92,6 +92,10 @@ services:
           - BAE_LP_BILLING_ENGINE_URL=http://host.docker.internal:8006/charging/api/orderManagement/orders/preview/
           - BAE_LP_PURCHASE_ENABLED=true
           - BAE_LP_PAYMENT_GATEWAY=http://host.docker.internal:4201
+          # Schema
+          - BAE_LP_PARTY_LOCATION=https://raw.githubusercontent.com/DOME-Marketplace/tmf-api/refs/heads/main/DOME/ShareableEntity.schema.json
+          - BAE_LP_PRICE_COMP_SCHEMA=https://raw.githubusercontent.com/DOME-Marketplace/tmf-api/refs/heads/main/DOME/PriceComponent.schema.json
+          - BAE_LP_OFFERING_SCHEMA=https://raw.githubusercontent.com/DOME-Marketplace/tmf-api/refs/heads/main/DOME/ExternallyBilled.schema.json
 
 networks:
     main:

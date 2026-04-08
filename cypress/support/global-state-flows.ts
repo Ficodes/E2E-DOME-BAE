@@ -173,8 +173,6 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.getBySel('cartPurchase').click()
 
   cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
-  cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
-  cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
 
   cy.wait(2000)
   cy.wait('@getBilling')
@@ -186,8 +184,10 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.changeSessionTo('SELLER ORG')
   // Navigate to product orders as provider
   cy.visit('/product-orders')
+
   cy.wait('@getOrders')
   cy.getBySel('asProviderTab').click()
+  cy.wait('@getOrders')
   cy.wait('@getOrders')
   cy.wait(2000)
   cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')

@@ -128,6 +128,8 @@ echo -e "\033[35mdetecting OS and installing pre-requisites\033[0m"
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo -e "\033[35mLinux detected, using apt-get\033[0m"
+    echo -e "\033[31mplatform: AMD64\033[0m"
+    export PLATFORM="linux/amd64"
     apt-get update && apt-get install -y \
         python3 \
         python3-pip \
@@ -135,6 +137,13 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         zip
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     echo -e "\033[35mmacOS detected, using Homebrew\033[0m"
+    if [[ "$(uname -m)" == "arm64" ]]; then
+        export PLATFORM="linux/arm64"
+        echo -e "\033[31mplatform: ARM64\033[0m"
+    else
+        echo -e "\033[31mplatform: AMD64\033[0m"
+        export PLATFORM="linux/amd64"
+    fi
     # Check if Homebrew is installed
     if ! command -v brew &> /dev/null; then
         echo -e "\033[31mHomebrew not found. Please install it first:\033[0m"

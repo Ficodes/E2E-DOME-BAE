@@ -1,6 +1,7 @@
 services:
   party-catalog:
     image: quay.io/fiware/tmforum-party-catalog:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8633:8081
     networks:
@@ -25,6 +26,7 @@ services:
 
   service-inventory:
     image: quay.io/fiware/tmforum-service-inventory:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8643:8081
     networks:
@@ -49,6 +51,7 @@ services:
 
   account:
     image: quay.io/fiware/tmforum-account:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8644:8081
     networks:
@@ -73,6 +76,7 @@ services:
 
   product-catalog:
     image: quay.io/fiware/tmforum-product-catalog:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8632:8081
     networks:
@@ -97,6 +101,7 @@ services:
 
   service-catalog:
     image: quay.io/fiware/tmforum-service-catalog:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8637:8081
     networks:
@@ -121,6 +126,7 @@ services:
 
   resource-catalog:
     image: quay.io/fiware/tmforum-resource-catalog:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8636:8081
     networks:
@@ -145,6 +151,7 @@ services:
 
   product-ordering:
     image: quay.io/fiware/tmforum-product-ordering-management:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8639:8081
     networks:
@@ -169,6 +176,7 @@ services:
 
   product-inventory:
     image: quay.io/fiware/tmforum-product-inventory:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8642:8081
     networks:
@@ -193,6 +201,7 @@ services:
 
   resource-inventory:
     image: quay.io/fiware/tmforum-resource-inventory:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8641:8081
     networks:
@@ -217,6 +226,7 @@ services:
 
   usage:
     image: quay.io/fiware/tmforum-usage-management:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8080:8081
     networks:
@@ -241,6 +251,7 @@ services:
 
   quote:
     image: quay.io/fiware/tmforum-quote:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8649:8081
     networks:
@@ -265,6 +276,7 @@ services:
 
   customer-bill:
     image: quay.io/fiware/tmforum-customer-bill-management:${TM_VERSION}
+    platform: ${PLATFORM:-linux/amd64}
     ports:
       - 8645:8080
     networks:

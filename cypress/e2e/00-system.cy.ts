@@ -27,15 +27,15 @@ describe('DOME System E2E Tests', {
   })
 
   it('should verify TMForum APIs are running', () => {
-    cy.request('http://localhost:8636/resourceCatalog').then((response) => {
+    cy.request('http://localhost:8633/tmf-api/resourceCatalog/v4/resourceCatalog').then((response) => {
       expect(response.status).to.eq(200)
     })
 
-    cy.request('http://localhost:8637/serviceCatalog').then((response) => {
+    cy.request('http://localhost:8633/tmf-api/serviceCatalogManagement/v4/serviceCatalog').then((response) => {
       expect(response.status).to.eq(200)
     })
 
-    cy.request('http://localhost:8632/productSpecification').then((response) => {
+    cy.request('http://localhost:8633/tmf-api/productCatalogManagement/v4/productSpecification').then((response) => {
       expect(response.status).to.eq(200)
     })
   })

@@ -34,24 +34,24 @@ services:
         - BAE_SERVICE_HOST=http://proxy.docker:8004/
         - BAE_CB_LOCAL_SITE=http://charging.docker:8006/
 
-        # TMForum APIs - Product Catalog
-        - BAE_CB_CATALOG=http://host.docker.internal:8632
-        - BAE_CB_RESOURCE_CATALOG=http://host.docker.internal:8636
-        - BAE_CB_SERVICE_CATALOG=http://host.docker.internal:8637
+        # TMForum APIs - all-in-one (port 8633)
+        - BAE_CB_CATALOG=http://host.docker.internal:8633/tmf-api/productCatalogManagement/v4
+        - BAE_CB_RESOURCE_CATALOG=http://host.docker.internal:8633/tmf-api/resourceCatalog/v4
+        - BAE_CB_SERVICE_CATALOG=http://host.docker.internal:8633/tmf-api/serviceCatalogManagement/v4
 
         # TMForum APIs - Inventory
-        - BAE_CB_INVENTORY=http://host.docker.internal:8642
-        - BAE_CB_RESOURCE_INVENTORY=http://host.docker.internal:8641
-        - BAE_CB_SERVICE_INVENTORY=http://host.docker.internal:8643
+        - BAE_CB_INVENTORY=http://host.docker.internal:8633/tmf-api/productInventory/v4
+        - BAE_CB_RESOURCE_INVENTORY=http://host.docker.internal:8633/tmf-api/resourceInventoryManagement/v4
+        - BAE_CB_SERVICE_INVENTORY=http://host.docker.internal:8633/tmf-api/serviceInventory/v4
 
         # TMForum APIs - Party & Ordering
-        - BAE_CB_PARTY=http://host.docker.internal:8633
-        - BAE_CB_ORDERING=http://host.docker.internal:8639
+        - BAE_CB_PARTY=http://host.docker.internal:8633/tmf-api/party/v4
+        - BAE_CB_ORDERING=http://host.docker.internal:8633/tmf-api/productOrderingManagement/v4
 
         # TMForum APIs - Billing & Usage
-        - BAE_CB_CUSTOMER_BILL=http://host.docker.internal:8645
-        - BAE_CB_BILLING=http://host.docker.internal:8644 # ACCOUNT
-        - BAE_CB_USAGE=http://host.docker.internal:8080
+        - BAE_CB_CUSTOMER_BILL=http://host.docker.internal:8633/tmf-api/customerBillManagement/v4
+        - BAE_CB_BILLING=http://host.docker.internal:8633/tmf-api/accountManagement/v4
+        - BAE_CB_USAGE=http://host.docker.internal:8633/tmf-api/usageManagement/v4
         # Roles
         - BAE_LP_OAUTH2_ADMIN_ROLE=admin
         - BAE_LP_OAUTH2_SELLER_ROLE=seller

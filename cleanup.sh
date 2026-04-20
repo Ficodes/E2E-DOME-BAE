@@ -45,7 +45,7 @@ cd ..
 
 # Wait for Charging customerBill API to be ready
 echo -e "\033[35mWaiting for Charging customerBill API (port 8645)...\033[0m"
-until curl -s -o /dev/null -w "%{http_code}" http://localhost:8645/customerBill | grep -qE "^(200|404)$"; do
+until curl -s -o /dev/null -w "%{http_code}" http://localhost:8633/tmf-api/customerBillManagement/v4/customerBill | grep -qE "^(200|404)$"; do
   echo "  CustomerBill API not ready yet, retrying in 5s..."
   sleep 5
 done

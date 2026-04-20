@@ -207,10 +207,10 @@ docker compose up -d > /dev/null 2>&1
 echo -e "\033[35mtmforum api deployed\033[0m"
 cd ..
 
-wait_server http://localhost:8636/resourceCatalog resourceCatalog
-wait_server http://localhost:8637/serviceCatalog serviceCatalog
-wait_server http://localhost:8632/productSpecification productCatalog
-wait_server http://localhost:8645/customerBill customerBill
+wait_server http://localhost:8633/tmf-api/productCatalogManagement/v4/productSpecification productCatalog
+wait_server http://localhost:8633/tmf-api/resourceCatalog/v4/resourceCatalog resourceCatalog
+wait_server http://localhost:8633/tmf-api/serviceCatalogManagement/v4/serviceCatalog serviceCatalog
+wait_server http://localhost:8633/tmf-api/customerBillManagement/v4/customerBill customerBill
 
 cd idm-docker
 docker compose up -d > /dev/null 2>&1

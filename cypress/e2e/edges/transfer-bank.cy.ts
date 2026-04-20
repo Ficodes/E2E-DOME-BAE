@@ -178,7 +178,7 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     cy.request({
       method: 'GET',
-      url: 'http://localhost:8645/customerBill?state=sent',
+      url: 'http://localhost:8633/tmf-api/customerBillManagement/v4/customerBill?state=sent',
     }).then((response) => {
       expect(response.status).to.eq(200)
       const bills = response.body
@@ -190,7 +190,7 @@ describe('Manual Bill Settle Edge Case', {
 
       cy.request({
         method: 'PATCH',
-        url: `http://localhost:8645/customerBill/${billId}`,
+        url: `http://localhost:8633/tmf-api/customerBillManagement/v4/customerBill/${billId}`,
         body: { state: 'settled' },
       }).then((patchResponse) => {
         expect(patchResponse.status).to.eq(200)

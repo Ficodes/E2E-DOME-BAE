@@ -38,38 +38,50 @@ services:
           # Charging Backend Connection
           - BAE_LP_CHARGING_SERVER=http://charging.docker:8006
 
-          # TMForum APIs - Product Catalog (cada API en su puerto, sin path)
+          # TMForum APIs - all-in-one (port 8633)
           - BAE_LP_ENDPOINT_CATALOG_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_CATALOG_PORT=8632
+          - BAE_LP_ENDPOINT_CATALOG_PORT=8633
+          - BAE_LP_ENDPOINT_CATALOG_PATH=/tmf-api/productCatalogManagement/v4
           - BAE_LP_ENDPOINT_RESOURCE_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_RESOURCE_PORT=8636
+          - BAE_LP_ENDPOINT_RESOURCE_PORT=8633
+          - BAE_LP_ENDPOINT_RESOURCE_PATH=/tmf-api/resourceCatalog/v4
           - BAE_LP_ENDPOINT_SERVICE_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_SERVICE_PORT=8637
+          - BAE_LP_ENDPOINT_SERVICE_PORT=8633
+          - BAE_LP_ENDPOINT_SERVICE_PATH=/tmf-api/serviceCatalogManagement/v4
 
           # TMForum APIs - Inventory
           - BAE_LP_ENDPOINT_INVENTORY_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_INVENTORY_PORT=8642
+          - BAE_LP_ENDPOINT_INVENTORY_PORT=8633
+          - BAE_LP_ENDPOINT_INVENTORY_PATH=/tmf-api/productInventory/v4
           - BAE_LP_ENDPOINT_RESOURCE_INVENTORY_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_RESOURCE_INVENTORY_PORT=8641
+          - BAE_LP_ENDPOINT_RESOURCE_INVENTORY_PORT=8633
+          - BAE_LP_ENDPOINT_RESOURCE_INVENTORY_PATH=/tmf-api/resourceInventoryManagement/v4
           - BAE_LP_ENDPOINT_SERVICE_INVENTORY_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_SERVICE_INVENTORY_PORT=8643
+          - BAE_LP_ENDPOINT_SERVICE_INVENTORY_PORT=8633
+          - BAE_LP_ENDPOINT_SERVICE_INVENTORY_PATH=/tmf-api/serviceInventory/v4
 
           # TMForum APIs - Party & Ordering
           - BAE_LP_ENDPOINT_PARTY_HOST=host.docker.internal
           - BAE_LP_ENDPOINT_PARTY_PORT=8633
+          - BAE_LP_ENDPOINT_PARTY_PATH=/tmf-api/party/v4
           - BAE_LP_ENDPOINT_ORDERING_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_ORDERING_PORT=8639
+          - BAE_LP_ENDPOINT_ORDERING_PORT=8633
+          - BAE_LP_ENDPOINT_ORDERING_PATH=/tmf-api/productOrderingManagement/v4
 
           # TMForum APIs - Billing & Usage
           - BAE_LP_ENDPOINT_CUSTOMER_BILL_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_CUSTOMER_BILL_PORT=8645
+          - BAE_LP_ENDPOINT_CUSTOMER_BILL_PORT=8633
+          - BAE_LP_ENDPOINT_CUSTOMER_BILL_PATH=/tmf-api/customerBillManagement/v4
           - BAE_LP_ENDPOINT_BILLING_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_BILLING_PORT=8644
+          - BAE_LP_ENDPOINT_BILLING_PORT=8633
+          - BAE_LP_ENDPOINT_BILLING_PATH=/tmf-api/accountManagement/v4
           - BAE_LP_ENDPOINT_USAGE_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_USAGE_PORT=8080
+          - BAE_LP_ENDPOINT_USAGE_PORT=8633
+          - BAE_LP_ENDPOINT_USAGE_PATH=/tmf-api/usageManagement/v4
           # TMForum APIs - Quote
           - BAE_LP_ENDPOINT_QUOTE_HOST=host.docker.internal
-          - BAE_LP_ENDPOINT_QUOTE_PORT=8649
+          - BAE_LP_ENDPOINT_QUOTE_PORT=8633
+          - BAE_LP_ENDPOINT_QUOTE_PATH=/tmf-api/quote/v4
 
           # OAuth2 Configuration
           - BAE_LP_OAUTH2_SERVER=http://idm.docker:3000

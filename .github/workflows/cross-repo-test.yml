@@ -8,6 +8,8 @@ on:
 jobs:
   run-system-tests:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.event.client_payload.from == 'charging' && secrets.FIWARE_ADMIN || secrets.ADMIN }}
 
     steps:
       - name: Checkout Testing Repository
@@ -30,13 +32,13 @@ jobs:
           PR_NUMBER=$(echo "$PR_URL" | sed -E 's|.*/pull/([0-9]+).*|\1|')
 
           echo "Fetching PR SHA for repo: $REPO, PR: $PR_NUMBER"
-          SHA=$(curl -s -H "Authorization: token ${{ secrets.ADMIN }}" \
+          SHA=$(curl -s -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$REPO/pulls/$PR_NUMBER | jq -r '.head.sha')
 
           echo "Creating pending status for SHA: $SHA"
           curl -X POST \
-            -H "Authorization: token ${{ secrets.ADMIN }}" \
+            -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$REPO/statuses/$SHA \
             -d "{
@@ -109,13 +111,13 @@ jobs:
           PR_NUMBER=$(echo "$PR_URL" | sed -E 's|.*/pull/([0-9]+).*|\1|')
 
           echo "Fetching PR SHA for repo: $REPO, PR: $PR_NUMBER"
-          SHA=$(curl -s -H "Authorization: token ${{ secrets.ADMIN }}" \
+          SHA=$(curl -s -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$REPO/pulls/$PR_NUMBER | jq -r '.head.sha')
 
           echo "Creating success status for SHA: $SHA"
           curl -X POST \
-            -H "Authorization: token ${{ secrets.ADMIN }}" \
+            -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$REPO/statuses/$SHA \
             -d "{
@@ -133,13 +135,13 @@ jobs:
           PR_NUMBER=$(echo "$PR_URL" | sed -E 's|.*/pull/([0-9]+).*|\1|')
 
           echo "Fetching PR SHA for repo: $REPO, PR: $PR_NUMBER"
-          SHA=$(curl -s -H "Authorization: token ${{ secrets.ADMIN }}" \
+          SHA=$(curl -s -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$REPO/pulls/$PR_NUMBER | jq -r '.head.sha')
 
           echo "Creating failure status for SHA: $SHA"
           curl -X POST \
-            -H "Authorization: token ${{ secrets.ADMIN }}" \
+            -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/repos/$REPO/statuses/$SHA \
             -d "{

@@ -264,6 +264,14 @@ OIDC_KEY=$(python3 auth_cred.py --attr application --key jwt_secret --sjson "$ap
 export CLIENT_ID
 export CLIENT_SECRET
 export OIDC_KEY
+
+# needed on WSL where shell env vars don't propagate to Dockerr daemon
+cat > proxy-docker/.env <<EOF
+CLIENT_ID=$CLIENT_ID
+CLIENT_SECRET=$CLIENT_SECRET
+OIDC_KEY=$OIDC_KEY
+EOF
+
 echo -e "\033[35mapp client id and secret saved!\033[0m"
 echo -e "\033[35mclient_id: $CLIENT_ID\033[0m"
 echo -e "\033[35mclient_secret: $CLIENT_SECRET\033[0m"

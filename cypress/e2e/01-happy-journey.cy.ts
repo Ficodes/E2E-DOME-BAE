@@ -144,11 +144,7 @@ describe('Happy Journey E2E', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    cy.contains('[data-cy="baeCard"]', offeringName).click()
-    cy.url().should('include', '/search/')
-    cy.contains('h1', offeringName).should('be.visible')
-
-    cy.getBySel('openAddToCartDrawer').filter(':visible').should('not.be.disabled').click()
+    cy.openAddToCartDrawerFromSearch(offeringName)
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).should('be.visible').within(() => {
       cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
       cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible

@@ -146,9 +146,7 @@ describe('Product Modification Order E2E', {
 
     clickLoadMoreUntilGone(10, true)
 
-    cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
-      cy.getBySel('addToCart').first().click()
-    })
+    cy.openAddToCartDrawerFromSearch(offeringName)
 
     // Select price plan and set characteristics in drawer
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {

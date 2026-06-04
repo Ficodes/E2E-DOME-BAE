@@ -65,16 +65,16 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.changeSessionTo('BUYER ORG')
       cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
 
-      //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').should('be.visible').click()
-      cy.visit('/search')
-      cy.wait('@cartItem')
+      const openOfferingDrawer = (offeringName: string) => {
+        cy.visit('/search')
+        cy.wait('@cartItem')
+        clickLoadMoreUntilGone(10, true)
+        cy.openAddToCartDrawerFromSearch(offeringName)
+      }
 
-      clickLoadMoreUntilGone(10, true)
 
       // AUTO
-      cy.contains('[data-cy="baeCard"]', offeringAutoName).within(() => {
-        cy.getBySel('addToCart').first().click()
-      })
+      openOfferingDrawer(offeringAutoName)
       cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringAutoName} to cart`).within(() => {
         cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
         cy.getBySel('acceptTermsCheckbox').click()
@@ -84,9 +84,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.wait('@postCart')
 
       //SEMI
-      cy.contains('[data-cy="baeCard"]', offeringSemiName).within(() => {
-        cy.getBySel('addToCart').first().click()
-      })
+      openOfferingDrawer(offeringSemiName)
       cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringSemiName} to cart`).within(() => {
         cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
         cy.getBySel('acceptTermsCheckbox').click()
@@ -96,9 +94,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.wait('@postCart')
 
       //MANUAL
-      cy.contains('[data-cy="baeCard"]', offeringManualName).within(() => {
-        cy.getBySel('addToCart').first().click()
-      })
+      openOfferingDrawer(offeringManualName)
       cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringManualName} to cart`).within(() => {
         cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
         cy.getBySel('acceptTermsCheckbox').click()

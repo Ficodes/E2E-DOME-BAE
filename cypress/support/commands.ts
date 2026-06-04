@@ -75,3 +75,11 @@ Cypress.Commands.add('changeSessionTo', (organizationName: string) => {
   // Wait for session change to complete
   cy.wait(1000)
 })
+
+// Open the add-to-cart drawer from the new search card flow.
+Cypress.Commands.add('openAddToCartDrawerFromSearch', (offeringName: string) => {
+  cy.contains('[data-cy="baeCard"]', offeringName).should('be.visible').click()
+  cy.url().should('include', '/search/')
+  cy.contains('h1', offeringName).should('be.visible')
+  cy.getBySel('openAddToCartDrawer').filter(':visible').should('not.be.disabled').click()
+})

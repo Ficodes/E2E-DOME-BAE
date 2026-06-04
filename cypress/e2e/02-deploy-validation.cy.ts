@@ -24,15 +24,20 @@ describe('Deploy Validation (Public Access)', {
 
     cy.visit('/dashboard')
 
-    cy.getBySel('categoryItem') // at least 1 item
+    cy.getBySel('categoryItem').should('have.length.greaterThan', 0)
 
     cy.intercept('GET', '**catalog/category?*').as('categoryList')
     cy.getBySel('browse').click()
     cy.getBySel('browseServices').click()
     cy.wait('@categoryList')
 
-    cy.getBySel('baeCard')
-    cy.getBySel('categoryItemService')
+    cy.url().should('include', '/search')
+    cy.contains('h1', 'All Categories').should('be.visible')
+    cy.getBySel('baeCard').should('have.length.greaterThan', 0)
+
+    cy.getBySel('searchCategoryDropdown').click()
+    cy.getBySel('searchAllCategories').should('be.visible')
+    cy.getBySel('searchCategoryItem').should('have.length.greaterThan', 0)
 
   })
 

@@ -31,10 +31,12 @@ app.post('/api/payment-start', (req, res) => {
   const body = req.body
   const authHeader = req.headers.authorization
   bearerToken = authHeader ? authHeader.replace('Bearer ', '') : ''
-  console.log('received payment ref', body)
+  console.log('received payment ref', JSON.stringify(body))
   const paymentItems = body.baseAttributes.paymentItems
+  const recurring = paymentItems.some(item => item.recurring)
+  console.log(`recurring: ${recurring}`)
   const state = pendingNext? PENDING: PROCESSED
-  successURLStack.push({url: body.processSuccessUrl, jwt: jwtResponse.generatePaymentJWT(paymentItems, state)})
+  successURLStack.push({url: body.processSuccessUrl, jwt: jwtResponse.generatePaymentJWT(paymentItems, state, { productOrderId: body.baseAttributes.externalId, ...(recurring ? {} : { preAuthId: null }) })})
   cancelURLStack.push(body.processErrorUrl)
   pendingNext = false
   res.json({redirectUrl: 'http://localhost:4201/checkin'})
@@ -65,5 +67,5 @@ app.get('/set-pending', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Billing server running on http://0.0.0.0:${PORT}`);
-  console.log('billing server mock v2.0')
+  console.log('billing server mock v5.0')
 });

@@ -61,6 +61,32 @@ Cypress.Commands.add('closeFeedbackModalIfVisible', () => {
   })
 })
 
+const BILLING_SERVER_URL = 'http://localhost:4201'
+
+// Reset the mock billing-server's payment gateway state (Stripe by default)
+Cypress.Commands.add('clearBilling', () => {
+  cy.request({ url: `${BILLING_SERVER_URL}/stripe/clear`, method: 'POST' }).then((response) => {
+    expect(response.status).to.eq(200)
+  })
+})
+
+// Complete the pending checkout, redirecting back to the order's success url
+Cypress.Commands.add('completePayment', () => {
+  cy.visit(`${BILLING_SERVER_URL}/stripe/checkin`)
+})
+
+// Cancel the pending checkout, redirecting back to the order's cancel url
+Cypress.Commands.add('cancelPayment', () => {
+  cy.visit(`${BILLING_SERVER_URL}/stripe/bad-checkin`)
+})
+
+// Mark the next checkout as left pending instead of completed
+Cypress.Commands.add('setPaymentPending', () => {
+  cy.request({ url: `${BILLING_SERVER_URL}/stripe/set-pending`, method: 'GET' }).then((response) => {
+    expect(response.status).to.eq(200)
+  })
+})
+
 // Change session to a specific organization
 Cypress.Commands.add('changeSessionTo', (organizationName: string) => {
   // Open user dropdown

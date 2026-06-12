@@ -40,11 +40,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
      * Then manual can be iterated through different states
      */
     beforeEach(() => {
-      cy.request({url: 'http://localhost:4201/clear', method: 'POST'}).then(
-        (response) => {
-          expect(response.status).to.eq(200)
-        }
-      )
+      cy.clearBilling()
       cy.intercept('POST', '**/billing/order/').as('postOrder')
       cy.intercept('POST', '**/shoppingCart/item/').as('postCart')
       cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
@@ -123,7 +119,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
 
       // Fail the auto and semi offering
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-      cy.visit('http://localhost:4201/bad-checkin')
+      cy.cancelPayment()
       cy.wait('@checkin')
       cy.wait(2000)
       cy.visit('/')

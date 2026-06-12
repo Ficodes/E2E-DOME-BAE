@@ -17,11 +17,7 @@ describe('Manual Bill Settle Edge Case', {
 }, () => {
 
   beforeEach(() => {
-    cy.request({ url: 'http://localhost:4201/clear', method: 'POST' }).then(
-      (response) => {
-        expect(response.status).to.eq(200)
-      }
-    )
+    cy.clearBilling()
     cy.loginAsAdmin()
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
@@ -129,9 +125,7 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 6: Set billing-server to PENDING mode (simulates late/pending transfer)
     // ============================================
-    cy.request({ url: 'http://localhost:4201/set-pending', method: 'GET' }).then((response) => {
-      expect(response.status).to.eq(200)
-    })
+    cy.setPaymentPending()
 
     // ============================================
     // Step 7: Add offering to cart and purchase
@@ -170,7 +164,7 @@ describe('Manual Bill Settle Edge Case', {
     // Step 8: Checkin - charging receives PENDING JWT, customerBill stays in 'sent'
     // ============================================
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkin')
 
     // ============================================

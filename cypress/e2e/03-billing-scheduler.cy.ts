@@ -14,17 +14,39 @@ import {
  *   - 1-week recurring  (5 EUR/week)
  *   - usage             (1 EUR/min, billed monthly)
  *
+ * After each billing scheduler run, also triggers the payment scheduler
+ * cron job and verifies that the resulting CustomerBill ends up 'settled'
+ * once the recurring charge against the stored Stripe payment method succeeds.
+ *
  * Requires BAE_CB_BILLING_HTTP_ENABLED=true in the charging container.
  */
+const CHARGING_URL = 'http://localhost:8006'
+const TMF_URL = 'http://localhost:8633'
+const BILLING_SERVER_URL = 'http://localhost:4201'
+
+const runPaymentScheduler = () => {
+  cy.request({ url: `${CHARGING_URL}/charging/api/test/paymentScheduler`, method: 'POST' }).then((res) => {
+    expect(res.status).to.eq(200)
+  })
+}
+
+const expectCustomerBillState = (billId: string, expectedState: string) => {
+  cy.request({
+    url: `${TMF_URL}/tmf-api/customerBillManagement/v4/customerBill/${billId}`,
+    method: 'GET',
+  }).then((res) => {
+    expect(res.status).to.eq(200)
+    expect(res.body.state, `CustomerBill ${billId} state`).to.eq(expectedState)
+  })
+}
+
 describe('Billing Scheduler Period Coverage', {
   viewportHeight: 1080,
   viewportWidth: 1920,
 }, () => {
 
   beforeEach(() => {
-    cy.request({ url: 'http://localhost:4201/clear', method: 'POST' }).then((response) => {
-      expect(response.status).to.eq(200)
-    })
+    cy.clearBilling()
     cy.loginAsAdmin()
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
@@ -172,7 +194,7 @@ describe('Billing Scheduler Period Coverage', {
     // Step 4: Complete payment (activation)
     // ============================================
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkin')
 
     cy.getBySel('ordersTable').should('be.visible')
@@ -341,6 +363,13 @@ describe('Billing Scheduler Period Coverage', {
               parseFloat(String(usageAcbr.taxIncludedAmount.value)),
               'Usage M1 tax-included = 12.10 EUR'
             ).to.be.closeTo(12.1, 0.01)
+
+            // ============================================
+            // Payment scheduler: charge succeeds on the first attempt
+            // ============================================
+            const cbId = acbrs[0].bill.id
+            runPaymentScheduler()
+            expectCustomerBillState(cbId, 'settled')
           })
 
           // ============================================
@@ -369,6 +398,20 @@ describe('Billing Scheduler Period Coverage', {
             expect(acbrs, 'Week 2 CB should have 1 ACBR').to.have.length(1)
             expect(new Date(acbrs[0].periodCoverage.startDateTime).getTime()).to.equal(week2Start.getTime())
             expect(new Date(acbrs[0].periodCoverage.endDateTime).getTime()).to.equal(week2End.getTime())
+
+            // ============================================
+            // Payment scheduler: recurring charge comes back pending on the
+            // first attempt, so the CB must be left untouched ('new'), then
+            // settles on the next scheduler run once the charge resolves.
+            // ============================================
+            const cbId = acbrs[0].bill.id
+
+            cy.request(`${BILLING_SERVER_URL}/stripe/set-recurring-status/processing`)
+            runPaymentScheduler()
+            expectCustomerBillState(cbId, 'new')
+
+            runPaymentScheduler()
+            expectCustomerBillState(cbId, 'settled')
           })
 
           // — Week 3 —
@@ -386,6 +429,10 @@ describe('Billing Scheduler Period Coverage', {
             expect(acbrs, 'Week 3 CB should have 1 ACBR').to.have.length(1)
             expect(new Date(acbrs[0].periodCoverage.startDateTime).getTime()).to.equal(week3Start.getTime())
             expect(new Date(acbrs[0].periodCoverage.endDateTime).getTime()).to.equal(week3End.getTime())
+
+            const cbId = acbrs[0].bill.id
+            runPaymentScheduler()
+            expectCustomerBillState(cbId, 'settled')
           })
 
           // — Week 4 —
@@ -403,6 +450,20 @@ describe('Billing Scheduler Period Coverage', {
             expect(acbrs, 'Week 4 CB should have 1 ACBR').to.have.length(1)
             expect(new Date(acbrs[0].periodCoverage.startDateTime).getTime()).to.equal(week4Start.getTime())
             expect(new Date(acbrs[0].periodCoverage.endDateTime).getTime()).to.equal(week4End.getTime())
+
+            // ============================================
+            // Payment scheduler: recurring charge fails on the first attempt,
+            // so the CB must be left untouched ('new'), then settles on the
+            // next scheduler run once the charge succeeds.
+            // ============================================
+            const cbId = acbrs[0].bill.id
+
+            cy.request(`${BILLING_SERVER_URL}/stripe/set-recurring-status/requires_payment_method`)
+            runPaymentScheduler()
+            expectCustomerBillState(cbId, 'new')
+
+            runPaymentScheduler()
+            expectCustomerBillState(cbId, 'settled')
           })
 
           // ============================================
@@ -493,6 +554,13 @@ describe('Billing Scheduler Period Coverage', {
               parseFloat(String(usageM2Acbr.taxIncludedAmount.value)),
               'Usage M2 tax-included = 18.15 EUR'
             ).to.be.closeTo(18.15, 0.01)
+
+            // ============================================
+            // Payment scheduler: charge succeeds on the first attempt
+            // ============================================
+            const cbId = monthly2Acbr.bill.id
+            runPaymentScheduler()
+            expectCustomerBillState(cbId, 'settled')
           })
         })
       })

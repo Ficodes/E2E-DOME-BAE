@@ -31,6 +31,30 @@ declare global {
        * @example cy.changeSessionTo('SELLER ORG')
        */
       changeSessionTo(organizationName: string): Chainable<void>
+
+      /**
+       * Reset the mock billing-server's payment gateway state (Stripe by default)
+       * @example cy.clearBilling()
+       */
+      clearBilling(): Chainable<void>
+
+      /**
+       * Complete the pending checkout, redirecting back to the order's success url
+       * @example cy.completePayment()
+       */
+      completePayment(): Chainable<void>
+
+      /**
+       * Cancel the pending checkout, redirecting back to the order's cancel url
+       * @example cy.cancelPayment()
+       */
+      cancelPayment(): Chainable<void>
+
+      /**
+       * Mark the next checkout as left pending instead of completed
+       * @example cy.setPaymentPending()
+       */
+      setPaymentPending(): Chainable<void>
     }
   }
 }

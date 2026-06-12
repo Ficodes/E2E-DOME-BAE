@@ -11,11 +11,7 @@ describe('Manual Offering E2E', {
 }, () => {
 
   beforeEach(() => {
-    cy.request({url: 'http://localhost:4201/clear', method: 'POST'}).then(
-      (response) => {
-        expect(response.status).to.eq(200)
-      }
-    )
+    cy.clearBilling()
     cy.loginAsAdmin()
     cy.on('uncaught:exception', (err) => {
       // Log all errors to help debug
@@ -326,7 +322,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Step 6: Verify order is in inProgress state (payment done, waiting for manual procurement)
     // ============================================
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkin')
     cy.getBySel('ordersTable').should('be.visible')
 

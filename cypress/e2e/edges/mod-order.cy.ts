@@ -22,11 +22,7 @@ describe('Product Modification Order E2E', {
 }, () => {
 
   beforeEach(() => {
-    cy.request({ url: 'http://localhost:4201/clear', method: 'POST' }).then(
-      (response) => {
-        expect(response.status).to.eq(200)
-      }
-    )
+    cy.clearBilling()
     cy.loginAsAdmin()
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
@@ -201,7 +197,7 @@ describe('Product Modification Order E2E', {
 
     // Confirm payment
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkin')
 
     // ============================================
@@ -278,7 +274,7 @@ describe('Product Modification Order E2E', {
     // Verify modification: checkin + order + invoice
     // ============================================
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkinModify')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkinModify')
 
     cy.visit('/product-orders')

@@ -126,14 +126,16 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.visit('/dashboard')
   cy.changeSessionTo('BUYER ORG')
   cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
-  //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').should('be.visible').click()
-  cy.visit('/search')
-  cy.wait('@cartItem', {timeout: 60000})
-  clickLoadMoreUntilGone(10, true)
+
+  const openOfferingDrawer = (offeringName: string) => {
+    cy.visit('/search')
+    cy.wait('@cartItem', {timeout: 60000})
+    clickLoadMoreUntilGone(10, true)
+    cy.openAddToCartDrawerFromSearch(offeringName)
+  }
+
   // AUTO
-  cy.contains('[data-cy="baeCard"]', offeringAutoName).within(() => {
-    cy.getBySel('addToCart').first().click()
-  })
+  openOfferingDrawer(offeringAutoName)
   // Select the drawer that contains the auto offering name
   cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringAutoName} to cart`).within(() => {
     cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
@@ -144,9 +146,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.wait('@postCart')
 
   //SEMI
-  cy.contains('[data-cy="baeCard"]', offeringSemiName).within(() => {
-    cy.getBySel('addToCart').first().click()
-  })
+  openOfferingDrawer(offeringSemiName)
   // Select the drawer that contains the semi-proc offering name
   cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringSemiName} to cart`).within(() => {
     cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
@@ -157,9 +157,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.wait('@postCart')
 
   //MANUAL
-  cy.contains('[data-cy="baeCard"]', offeringManualName).within(() => {
-    cy.getBySel('addToCart').first().click()
-  })
+  openOfferingDrawer(offeringManualName)
   // Select the drawer that contains the manual offering name
   cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringManualName} to cart`).within(() => {
     cy.contains(HAPPY_JOURNEY.pricePlan.name).click()

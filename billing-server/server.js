@@ -33,6 +33,28 @@ app.post('/api/payment-start', (req, res) => {
   bearerToken = authHeader ? authHeader.replace('Bearer ', '') : ''
   console.log('received payment ref', body)
   const paymentItems = body.baseAttributes.paymentItems
+
+  const isEmpty = (v) => v === null || v === undefined || v === ''
+
+  const missing = []
+  if (isEmpty(body.customerId)) missing.push('customerId')
+  if (isEmpty(body.baseAttributes.customerOrganizationId)) missing.push('baseAttributes.customerOrganizationId')
+  if (isEmpty(body.baseAttributes.externalId)) missing.push('baseAttributes.externalId')
+
+  paymentItems.forEach((item, i) => {
+    if (isEmpty(item.productProviderExternalId)) missing.push(`paymentItems[${i}].productProviderExternalId`)
+    if (isEmpty(item.paymentItemExternalId)) missing.push(`paymentItems[${i}].paymentItemExternalId`)
+  })
+
+  if (missing.length > 0) {
+    console.error('Invalid payment-start payload, missing/null fields:', missing)
+    res.status(400).json({
+      error: 'Missing or null required fields',
+      fields: missing
+    })
+    return
+  }
+
   const state = pendingNext? PENDING: PROCESSED
   successURLStack.push({url: body.processSuccessUrl, jwt: jwtResponse.generatePaymentJWT(paymentItems, state)})
   cancelURLStack.push(body.processErrorUrl)

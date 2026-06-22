@@ -121,6 +121,47 @@ export interface UsageSpecParams {
   metrics?: Metric[]
 }
 
+export interface DspEndpoint {
+  name: string
+  url: string
+  description: string
+}
+
+export interface DspConfig {
+  endpoint: DspEndpoint
+  upstreamAddress: string
+  targetSpecification: string
+  serviceConfiguration: string
+  credentialsConfig: string
+  policyConfig: string
+}
+
+export interface DspContractDefinition {
+  accessPolicy: string
+  contractPolicy: string
+}
+
+export interface DspProductSpecParams {
+  name: string
+  version?: string
+  brand: string
+  productNumber: string
+  dspConfig: DspConfig
+}
+
+export interface DspOfferingParams {
+  name: string
+  version?: string
+  description: string
+  productSpecName: string
+  catalogName: string
+  detailedDescription: string
+  procurement: string
+  pricePlan?: PricePlan
+  priceComponent?: PriceComponent
+  contractDefinition: DspContractDefinition
+}
+
 /**
  * Create a new catalog
  */
@@ -137,11 +178,9 @@ export function createCatalog({ name, description }: CatalogParams): void {
   // Step 2: Finish catalog creation
   cy.getBySel('catalogFinish').click()
 
-  // Wait for redirect back to catalog list
-  cy.wait(3000)
-
-  // Close feedback modal if it appears
+  // Close feedback modal if it appears, then wait for redirect back to catalog list
   cy.closeFeedbackModalIfVisible()
+  cy.getBySel('catalogTable').should('be.visible')
 
   // Verify catalog appears in table
   cy.getBySel('catalogTable').should('be.visible')
@@ -602,6 +641,163 @@ export function updateServiceSpecStatus({ name, status }: UpdateServiceSpecStatu
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
+}
+
+/**
+ * Create a DSP-compatible product specification
+ * Enables the DSP toggle and fills the dsp_config step
+ * Steps: General → Compliance → Characteristics → DSP Config → Resource → Service → Attachments → Relationships → Summary
+ */
+export function createDspProductSpec({ name, version = '0.1', brand, productNumber, dspConfig }: DspProductSpecParams): void {
+  cy.visit('/my-offerings')
+  cy.getBySel('prdSpecSection').click()
+  cy.getBySel('createProdSpec').click()
+
+  // Step 1: General info + enable DSP compatible
+  cy.getBySel('inputName').should('be.visible').type(name)
+  cy.getBySel('inputVersion').should('have.value', version)
+  cy.getBySel('inputBrand').type(brand)
+  cy.getBySel('inputIdNumber').type(productNumber)
+  cy.get('#dsp-compatible').check({ force: true })
+
+  cy.getBySel('btnNext').click() // Compliance
+  cy.getBySel('btnNext').click() // Characteristics
+  cy.getBySel('btnNext').click() // DSP Config (inserted after characteristics)
+
+  // DSP Config step: endpoint
+  cy.getBySel('dspEndpointName').type(dspConfig.endpoint.name)
+  cy.getBySel('dspEndpointUrl').type(dspConfig.endpoint.url)
+  cy.getBySel('dspEndpointDescription').type(dspConfig.endpoint.description)
+  cy.getBySel('dspAddEndpoint').click()
+
+  // DSP Config step: form fields
+  cy.getBySel('dspUpstreamAddress').type(dspConfig.upstreamAddress)
+  cy.getBySel('dspTargetSpecification').type(dspConfig.targetSpecification, { parseSpecialCharSequences: false })
+  cy.getBySel('dspServiceConfiguration').type(dspConfig.serviceConfiguration, { parseSpecialCharSequences: false })
+  cy.getBySel('dspCredentialsConfig').type(dspConfig.credentialsConfig, { parseSpecialCharSequences: false })
+  cy.getBySel('dspPolicyConfig').type(dspConfig.policyConfig, { parseSpecialCharSequences: false })
+
+  cy.getBySel('btnNext').click() // Resource
+  cy.getBySel('btnNext').click() // Service
+  cy.getBySel('btnNext').click() // Attachments
+  cy.getBySel('btnNext').click() // Relationships
+  cy.getBySel('btnNext').click() // Summary
+
+  cy.getBySel('btnCreateProduct').should('be.enabled').click()
+  cy.closeFeedbackModalIfVisible()
+
+  cy.getBySel('prodSpecTable').should('be.visible')
+  cy.getBySel('prodSpecTable').contains(name).should('be.visible')
+}
+
+/**
+ * Update a DSP product spec status.
+ * In the update component, dsp_config is inserted AFTER 'service' (not after 'characteristics' as in create).
+ * The step appears automatically when prod.externalId is set (no need to toggle dsp-compatible again).
+ */
+export function updateDspProductSpecStatus({ name, status }: UpdateProductSpecStatusParams): void {
+  cy.getBySel('prodSpecTable').contains(name).parents('[data-cy="prodSpecRow"]').find('[data-cy="productSpecEdit"]').click()
+
+  if (status === 'launched') {
+    cy.getBySel('productSpecStatusLaunched').click()
+  }
+
+  cy.getBySel('btnNext').click() // Compliance
+  cy.getBySel('btnNext').click() // Characteristics
+  cy.getBySel('btnNext').click() // Resource
+  cy.getBySel('btnNext').click() // Service
+  cy.getBySel('btnNext').click() // DSP Config (inserted after service in update flow)
+  cy.getBySel('btnNext').click() // Attachments
+  cy.getBySel('btnNext').click() // Relationships
+
+  cy.getBySel('productSpecUpdate').click()
+  cy.closeFeedbackModalIfVisible()
+}
+
+/**
+ * Create a DSP-compatible offering with contract definition
+ * The CONTRACT_DEFINITION step is automatically inserted after LICENSE
+ * when the selected product spec is DSP compatible.
+ * Steps: General → ProdSpec → Catalogue → Category → License → Contract Definition → Price → Procurement → Summary
+ */
+export function createDspOffering({
+  name,
+  version = '0.1',
+  description,
+  productSpecName,
+  catalogName,
+  detailedDescription,
+  procurement,
+  pricePlan,
+  priceComponent,
+  contractDefinition
+}: DspOfferingParams): void {
+  cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
+  cy.visit('/my-offerings')
+  cy.getBySel('offerSection').click()
+  cy.getBySel('newOffering').click()
+
+  // Step 1: General info
+  cy.getBySel('offerName').should('be.visible').type(name)
+  cy.getBySel('offerVersion').should('have.value', version)
+  cy.getBySel('textArea').type(description)
+  cy.getBySel('offerNext').click()
+
+  // Step 2: Product Specification (DSP-compatible)
+  clickLoadMoreUntilGone()
+  cy.getBySel('offerProductSpecName').contains(productSpecName).click()
+  cy.getBySel('offerNext').click()
+
+  // Step 3: Catalogue
+  cy.getBySel('catalogList').contains(catalogName).click()
+  cy.getBySel('offerNext').click()
+
+  // Step 4: Category (skip)
+  cy.getBySel('offerNext').click()
+
+  // Step 5: License / Description
+  cy.getBySel('textArea').type(detailedDescription)
+  cy.getBySel('offerNext').click()
+
+  // Step 6: Contract Definition (auto-inserted because product spec is DSP compatible)
+  cy.get('#dsp-compatible').check({ force: true })
+  cy.getBySel('dspAccessPolicy').should('be.visible').type(contractDefinition.accessPolicy, { parseSpecialCharSequences: false })
+  cy.getBySel('dspContractPolicy').should('be.visible').type(contractDefinition.contractPolicy, { parseSpecialCharSequences: false })
+  cy.getBySel('offerNext').click()
+
+  // Step 7: Price Plans
+  if (pricePlan) {
+    cy.getBySel('pricePlanType').select('paid')
+    cy.getBySel('newPricePlan').click()
+    cy.getBySel('pricePlanName').type(pricePlan.name)
+    cy.getBySel('textArea').type(pricePlan.description || '')
+    cy.getBySel('savePricePlan').should('have.attr', 'disabled')
+    if (priceComponent) {
+      cy.getBySel('newPriceComponent').click()
+      cy.getBySel('priceComponentName').type(priceComponent.name)
+      cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type(priceComponent.description)
+      cy.getBySel('price').type(String(priceComponent.price))
+      cy.getBySel('priceType').select(priceComponent.type)
+      cy.getBySel('savePriceComponent').click()
+    }
+    cy.getBySel('savePricePlan').click()
+  } else {
+    cy.getBySel('pricePlanType').select('free')
+  }
+  cy.getBySel('offerNext').click()
+
+  // Step 8: Procurement
+  cy.getBySel('procurement').select(procurement)
+  cy.getBySel('offerNext').click()
+
+  // Step 9: Summary → Create
+  cy.getBySel('offerFinish').click()
+
+  cy.closeFeedbackModalIfVisible()
+  clickLoadMoreUntilGone()
+
+  cy.getBySel('offers').should('be.visible')
+  cy.getBySel('offers').contains(name).should('be.visible')
 }
 
 /**

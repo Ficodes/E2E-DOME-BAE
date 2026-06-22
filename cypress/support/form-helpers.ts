@@ -258,6 +258,7 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
     })
   }
 
+  cy.getBySel('btnNext').click() // Skip Data space config
   cy.getBySel('btnNext').click() // Go to Resource step
   if (resourceSpecName){
     cy.getBySel('tableResourceSpecs').contains('tr', resourceSpecName).find('[id="select-checkbox"]').click()

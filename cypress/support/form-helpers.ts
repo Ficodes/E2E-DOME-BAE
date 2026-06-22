@@ -332,10 +332,13 @@ export function createOffering({
   cy.getBySel('offerName').should('be.visible').type(name)
   cy.getBySel('offerVersion').should('have.value', version)
   cy.getBySel('textArea').type(description)
+  // Register intercept before click so the step-2 request is captured
+  cy.intercept('GET', '**/catalog/productSpecification?*').as('prodSpecList')
   cy.getBySel('offerNext').click()
 
   // Step 2: Select the Product Specification
-  clickLoadMoreUntilGone()
+  cy.wait('@prodSpecList')
+  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*')
   cy.getBySel('prodSpecs').contains( productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -397,7 +400,7 @@ export function createOffering({
   cy.closeFeedbackModalIfVisible()
 
   // Load all offerings
-  clickLoadMoreUntilGone()
+  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
   // Verify offering was created in table
   cy.getBySel('offers').should('be.visible')
@@ -409,7 +412,7 @@ export function createOffering({
  */
 export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
-  clickLoadMoreUntilGone()
+  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
     cy.get('button[type="button"]').first().click() // Click edit button
@@ -434,30 +437,26 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
 /**
  * Click "Load More" button repeatedly until all items are loaded
  */
-export function clickLoadMoreUntilGone(maxClicks = 10, offering: boolean = false): void {
-  if(offering){
-    cy.intercept('**/catalog/productOffering?*').as('offeringList')
+export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string): void {
+  const alias = 'loadMoreList'
+  if (apiPattern) {
+    cy.intercept('GET', apiPattern).as(alias)
   }
-  cy.wait(5000)
-  const clickIfExists = (remainingClicks: number, retries = 5): void => {
-    if (remainingClicks === 0) return
 
-    cy.wait(2000)
+  const clickIfExists = (remaining: number): void => {
+    if (remaining === 0) return
+
     cy.get('body').then($body => {
-      const $btn = $body.find('[data-cy="loadMore"]:visible')
-      if ($btn.length > 0) {
-        cy.wrap($btn).click()
-        if (offering) {
-          cy.wait('@offeringList')
+      if ($body.find('[data-cy="loadMore"]:visible').length > 0) {
+        cy.getBySel('loadMore').click()
+        if (apiPattern) {
+          cy.wait(`@${alias}`)
         }
-        clickIfExists(remainingClicks - 1)
-      } else if (retries > 0) {
-        // Retry: button might still be loading
-        clickIfExists(remainingClicks, retries - 1)
+        clickIfExists(remaining - 1)
       }
-      // No button after all retries = done
     })
   }
+
   clickIfExists(maxClicks)
 }
 
@@ -742,11 +741,14 @@ export function createDspOffering({
   cy.getBySel('offerName').should('be.visible').type(name)
   cy.getBySel('offerVersion').should('have.value', version)
   cy.getBySel('textArea').type(description)
+  // Register intercept before click so the step-2 request is captured
+  cy.intercept('GET', '**/catalog/productSpecification?*').as('prodSpecList')
   cy.getBySel('offerNext').click()
 
   // Step 2: Product Specification (DSP-compatible)
-  clickLoadMoreUntilGone()
-  cy.getBySel('offerProductSpecName').contains(productSpecName).click()
+  cy.wait('@prodSpecList')
+  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*')
+  cy.getBySel('prodSpecs').contains(productSpecName).click()
   cy.getBySel('offerNext').click()
 
   // Step 3: Catalogue
@@ -795,7 +797,7 @@ export function createDspOffering({
   cy.getBySel('offerFinish').click()
 
   cy.closeFeedbackModalIfVisible()
-  clickLoadMoreUntilGone()
+  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
   cy.getBySel('offers').should('be.visible')
   cy.getBySel('offers').contains(name).should('be.visible')

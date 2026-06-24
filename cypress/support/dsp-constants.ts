@@ -1,10 +1,6 @@
 // DSP Journey Test Data
 
 export const DSP_JOURNEY = {
-  catalog: {
-    name: 'E2E DSP Catalog',
-    description: 'Catalog for DSP E2E tests'
-  },
   productSpec: {
     name: 'E2E DSP Product Spec',
     brand: 'E2E DSP Brand',

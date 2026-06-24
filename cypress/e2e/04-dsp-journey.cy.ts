@@ -1,11 +1,11 @@
 import { DSP_JOURNEY } from '../support/dsp-constants'
 import {
-  createCatalog,
   createDspProductSpec,
   updateDspProductSpecStatus,
   createDspOffering,
-  updateOffering,
+  updateOffering
 } from '../support/form-helpers'
+import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 
 describe('DSP Journey E2E', {
   viewportHeight: 1080,
@@ -26,20 +26,13 @@ describe('DSP Journey E2E', {
   })
 
   it('should create a DSP-compatible product spec and offering with contract definition', () => {
-    const catalogName = DSP_JOURNEY.catalog.name
+    const catalogName = HAPPY_JOURNEY.catalog.name
     const productSpecName = DSP_JOURNEY.productSpec.name
     const offeringName = DSP_JOURNEY.offering.name
 
-    // ============================================
-    // Step 1: Create Catalog
-    // ============================================
-    createCatalog({
-      name: catalogName,
-      description: DSP_JOURNEY.catalog.description
-    })
 
     // ============================================
-    // Step 2: Create DSP-compatible Product Spec
+    // Step 1: Create DSP-compatible Product Spec
     // Enables DSP toggle and fills dsp_config step:
     //   - Endpoint (name, URL, description) → Add
     //   - Upstream Address
@@ -58,7 +51,7 @@ describe('DSP Journey E2E', {
     updateDspProductSpecStatus({ name: productSpecName, status: 'launched' })
 
     // ============================================
-    // Step 4: Create DSP Offering with Contract Definition
+    // Step 2: Create DSP Offering with Contract Definition
     // Selects DSP product spec → contract definition step auto-appears:
     //   - Activate DSP compatible toggle
     //   - Fill Access Policy (JSON)
@@ -82,12 +75,12 @@ describe('DSP Journey E2E', {
     })
 
     // ============================================
-    // Step 5: Launch Offering
+    // Step 3: Launch Offering
     // ============================================
     updateOffering({ name: offeringName, status: 'launched' })
 
     // ============================================
-    // Step 6: Verify all entities exist and are launched
+    // Step 4: Verify all entities exist and are launched
     // ============================================
     cy.visit('/my-offerings')
     cy.getBySel('catalogSection').click()
@@ -100,7 +93,7 @@ describe('DSP Journey E2E', {
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
-    // Step 7: Verify DSP offering appears in search
+    // Step 5: Verify DSP offering appears in search
     // ============================================
     cy.visit('/search')
     cy.getBySel('baeCard').should('be.visible')

@@ -146,9 +146,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     // Load all offerings in case there are many from previous tests
     clickLoadMoreUntilGone(10, true)
 
-    cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
-      cy.getBySel('addToCart').first().click()
-    })
+    cy.openAddToCartDrawerFromSearch(offeringName)
 
     // Select price plan in drawer
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
@@ -290,9 +288,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     clickLoadMoreUntilGone(10, true)
 
-    cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
-      cy.getBySel('addToCart').first().click()
-    })
+    cy.openAddToCartDrawerFromSearch(offeringName)
 
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains('One-Time Prepaid Plan').click()
@@ -391,9 +387,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     clickLoadMoreUntilGone(10, true)
 
-    cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
-      cy.getBySel('addToCart').first().click()
-    })
+    cy.openAddToCartDrawerFromSearch(offeringName)
 
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains('Usage Plan').click()

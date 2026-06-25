@@ -137,17 +137,13 @@ describe('Happy Journey E2E', {
     // ============================================
     cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
-    // cy.contains(offeringName).find('[data-cy="addToCart"]').first().click()
-
-    //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     cy.visit('/search')
     cy.wait('@cartItem')
 
-
-    cy.getBySel('baeCard').within(() => { cy.getBySel('addToCart').first().click() })
-    cy.getBySel('pricePlanDrawer').contains(HAPPY_JOURNEY.pricePlan.name).click()
-    cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible
-    cy.getBySel('pricePlanDrawer').within(() => {
+    cy.openAddToCartDrawerFromSearch(offeringName)
+    cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).should('be.visible').within(() => {
+      cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
+      cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible
       cy.getBySel('addToCart').click()
     })
 

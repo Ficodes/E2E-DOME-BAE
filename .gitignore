@@ -21,4 +21,5 @@ node_modules/
 .DS_Store
 idm-docker/vol-mysql/
 cypress/screenshots
+cypress/videos
 venv

@@ -97,10 +97,8 @@ describe('Manual Offering E2E', {
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone(10, true)
-    // Find and click on the manual offering card
-    cy.contains('[data-cy="baeCard"]', manualOfferingName).within(() => {
-      cy.getBySel('addToCart').first().click()
-    })
+    // Find the manual offering card and open its add-to-cart drawer
+    cy.openAddToCartDrawerFromSearch(manualOfferingName)
 
     // Select the drawer that contains the manual offering name
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${manualOfferingName} to cart`).within(() => {
@@ -293,10 +291,8 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone(10, true)
-    // Find and click on the offering card
-    cy.contains('[data-cy="baeCard"]', offeringName).within(() => {
-      cy.getBySel('addToCart').first().click()
-    })
+    // Find the offering card and open its add-to-cart drawer
+    cy.openAddToCartDrawerFromSearch(offeringName)
 
     // Select the drawer that contains the offering name
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {

@@ -55,6 +55,13 @@ declare global {
        * @example cy.setPaymentPending()
        */
       setPaymentPending(): Chainable<void>
+
+      /**
+       * Open an offering details page from search and click its add-to-cart button.
+       * @param offeringName - Name of the offering card to open
+       * @example cy.openAddToCartDrawerFromSearch('E2E Test Offering')
+       */
+      openAddToCartDrawerFromSearch(offeringName: string): Chainable<void>
     }
   }
 }

@@ -11,6 +11,9 @@ export default defineConfig({
     screenshotOnRunFailure: true,
     defaultCommandTimeout: 120000,
     requestTimeout: 120000,
-    responseTimeout: 120000
+    responseTimeout: 120000,
+    env: {
+      PAYMENT_METHOD: process.env.BAE_CB_PAYMENT_METHOD || 'stripe'
+    }
   }
 })

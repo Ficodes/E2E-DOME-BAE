@@ -23,11 +23,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 }, () => {
 
   beforeEach(() => {
-    cy.request({url: 'http://localhost:4201/clear', method: 'POST'}).then(
-      (response) => {
-        expect(response.status).to.eq(200)
-      }
-    )
+    cy.clearBilling()
     cy.loginAsAdmin()
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
@@ -175,7 +171,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     // Complete payment simulation
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkin')
 
     // ============================================
@@ -311,7 +307,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait('@getOrders')
 
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkin')
 
     cy.getBySel('ordersTable').should('be.visible')
@@ -413,7 +409,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait('@getOrders')
 
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkin')
 
     cy.getBySel('ordersTable').should('be.visible')

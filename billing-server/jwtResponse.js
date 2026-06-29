@@ -10,7 +10,7 @@ const JWT_SECRET = 'test-billing-secret-key-2024';
  */
 function generatePaymentJWT(paymentItems, state = 'PROCESSED', options = {}) {
     const {
-        productOrderId = 'urn:ngsi-ld:product-order:6209b835-90e4-45cc-bba3-0262d9f1e861',
+        productOrderId = 'urn:ngsi-ld:product-order:mock-order-id',
         preAuthId = 'c995a1b2-8f04-480c-820e-21f970925675',
         paymentItemId = 207
     } = options;
@@ -29,7 +29,7 @@ function generatePaymentJWT(paymentItems, state = 'PROCESSED', options = {}) {
 
     const payload = {
         paymentExternalId: productOrderId,
-        paymentPreAuthorizationExternalId: preAuthId,
+        ...(preAuthId && {paymentPreAuthorizationExternalId: preAuthId}),
         payoutList: payoutList
     };
 

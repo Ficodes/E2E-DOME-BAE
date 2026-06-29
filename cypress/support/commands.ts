@@ -61,6 +61,36 @@ Cypress.Commands.add('closeFeedbackModalIfVisible', () => {
   })
 })
 
+const BILLING_SERVER_URL = 'http://localhost:4201'
+
+// Payment gateway endpoints are namespaced under /stripe for the Stripe client;
+// the DPAS client uses the unprefixed endpoints.
+const PAYMENT_PREFIX = Cypress.env('PAYMENT_METHOD') === 'dpas' ? '' : '/stripe'
+
+// Reset the mock billing-server's payment gateway state (Stripe by default)
+Cypress.Commands.add('clearBilling', () => {
+  cy.request({ url: `${BILLING_SERVER_URL}${PAYMENT_PREFIX}/clear`, method: 'POST' }).then((response) => {
+    expect(response.status).to.eq(200)
+  })
+})
+
+// Complete the pending checkout, redirecting back to the order's success url
+Cypress.Commands.add('completePayment', () => {
+  cy.visit(`${BILLING_SERVER_URL}${PAYMENT_PREFIX}/checkin`)
+})
+
+// Cancel the pending checkout, redirecting back to the order's cancel url
+Cypress.Commands.add('cancelPayment', () => {
+  cy.visit(`${BILLING_SERVER_URL}${PAYMENT_PREFIX}/bad-checkin`)
+})
+
+// Mark the next checkout as left pending instead of completed
+Cypress.Commands.add('setPaymentPending', () => {
+  cy.request({ url: `${BILLING_SERVER_URL}${PAYMENT_PREFIX}/set-pending`, method: 'GET' }).then((response) => {
+    expect(response.status).to.eq(200)
+  })
+})
+
 // Change session to a specific organization
 Cypress.Commands.add('changeSessionTo', (organizationName: string) => {
   // Open user dropdown

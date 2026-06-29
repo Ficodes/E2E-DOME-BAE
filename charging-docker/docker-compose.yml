@@ -58,11 +58,14 @@ services:
         - BAE_LP_OAUTH2_CUSTOMER_ROLE=customer
         - BAE_LP_OAUTH2_ORG_ADMIN_ROLE=orgAdmin
         # Payment Configuration
-        - BAE_CB_PAYMENT_METHOD=dpas
+        - BAE_CB_PAYMENT_METHOD=stripe
         - BAE_CB_BILLING_ENGINE=local
         - BAE_CB_DPAS_CLIENT_API_URL=http://host.docker.internal:4201/api/payment-start
         - BAE_SERVICE_HOST=http://localhost:4200/
         - DPAS_KEY=test-billing-secret-key-2024
+        - BAE_CB_BILLING_BY_HTTP_TEST_ENABLED=True
+        - BAE_CB_STRIPE_API_KEY=example
+        - BAE_CB_STRIPE_TEST_API_BASE=http://host.docker.internal:4201
 
 networks:
     main:

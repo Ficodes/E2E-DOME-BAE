@@ -107,8 +107,9 @@ services:
           # Schema
           - BAE_LP_PARTY_LOCATION=https://raw.githubusercontent.com/DOME-Marketplace/tmf-api/refs/heads/main/DOME/ShareableEntity.schema.json
           - BAE_LP_PRICE_COMP_SCHEMA=https://raw.githubusercontent.com/DOME-Marketplace/tmf-api/refs/heads/main/DOME/PriceComponent.schema.json
-          - BAE_LP_OFFERING_SCHEMA=https://raw.githubusercontent.com/DOME-Marketplace/tmf-api/refs/heads/main/DOME/ExternallyBilled.schema.json
-
+          - BAE_LP_OFFERING_SCHEMA=https://raw.githubusercontent.com/SEAMWARE/tmforum-schemas/refs/heads/main/schemas/external-id-billed.json
+          - BAE_LP_DSP_ENABLED=true
+          - BAE_LP_DATASPACE_ENABLED=true
 networks:
     main:
         external: true

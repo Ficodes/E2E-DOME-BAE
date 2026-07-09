@@ -51,7 +51,7 @@ describe('Check order global states',  {
       cy.changeSessionTo('BUYER ORG')
       // complete auto offering
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-      cy.visit('http://localhost:4201/checkin')
+      cy.completePayment()
 
       cy.wait('@checkin')
 
@@ -115,7 +115,7 @@ describe('Check order global states',  {
       cy.visit('/')
       cy.changeSessionTo('BUYER ORG')
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-      cy.visit('http://localhost:4201/checkin')
+      cy.completePayment()
 
       cy.wait('@checkin')
 

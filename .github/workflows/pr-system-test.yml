@@ -1,0 +1,76 @@
+name: PR System Test
+
+# Runs the full system test on every PR targeting master, so we can verify the
+# PR changes execute everything correctly before merging.
+#
+# It deploys the system against the stable upstream dependencies:
+#   - Proxy:    FIWARE-TMForum/business-ecosystem-logic-proxy @ master
+#   - Charging: FIWARE-TMForum/business-ecosystem-charging-backend @ master
+#   - Frontend: Ficodes/BAE-Frontend @ main
+
+on:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      tm_version:
+        description: "TMForum API version (leave empty to use the default)"
+        required: false
+
+env:
+  PROXY_REPO: FIWARE-TMForum/business-ecosystem-logic-proxy
+  PROXY_BRANCH: master
+  CHARGING_REPO: FIWARE-TMForum/business-ecosystem-charging-backend
+  CHARGING_BRANCH: master
+  FRONTEND_REPO: Ficodes/BAE-Frontend
+  FRONTEND_BRANCH: main
+  TM_VERSION: ${{ github.event.inputs.tm_version || '1.15.1' }}
+
+jobs:
+  run-system-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: System testing (build + execution)
+        run: |
+          chmod +x testing-local.sh
+          echo "Proxy:    $PROXY_REPO @ $PROXY_BRANCH"
+          echo "Charging: $CHARGING_REPO @ $CHARGING_BRANCH"
+          echo "Frontend: $FRONTEND_REPO @ $FRONTEND_BRANCH"
+          echo "TM Version: $TM_VERSION"
+
+          ./testing-local.sh \
+            "$PROXY_BRANCH" "$PROXY_REPO" \
+            "$CHARGING_BRANCH" "$CHARGING_REPO" \
+            "$FRONTEND_BRANCH" "$FRONTEND_REPO" \
+            "$TM_VERSION"
+
+      - name: Upload Docker Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-logs
+          path: docker-logs
+          retention-days: 7
+
+      - name: Upload Cypress Screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          retention-days: 7
+
+      - name: Upload Cypress Videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          retention-days: 1

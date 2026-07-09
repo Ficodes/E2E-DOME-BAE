@@ -20,11 +20,7 @@ describe('Happy Journey E2E', {
 }, () => {
 
   beforeEach(() => {
-    cy.request({url: 'http://localhost:4201/clear', method: 'POST'}).then(
-      (response) => {
-        expect(response.status).to.eq(200)
-      }
-    )
+    cy.clearBilling()
     cy.loginAsAdmin()
     cy.on('uncaught:exception', (err) => {
       // Log all errors to help debug
@@ -178,7 +174,7 @@ describe('Happy Journey E2E', {
     cy.wait('@createOrder')
     cy.wait('@getOrders')
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.visit('http://localhost:4201/checkin')
+    cy.completePayment()
     cy.wait('@checkin')
     cy.wait('@getBilling')
 

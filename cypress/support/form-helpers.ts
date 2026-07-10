@@ -272,7 +272,9 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
   cy.getBySel('btnNext').click() // Finish creation, view spec summary
 
   // Create product spec
-  cy.getBySel('btnCreateProduct').should('be.enabled').click()
+  waitForListRequestsToFinish('**/catalog/productSpecification?*', () => {
+    cy.getBySel('btnCreateProduct').should('be.enabled').click()
+  })
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -394,7 +396,9 @@ export function createOffering({
   cy.getBySel('offerNext').click()
 
   // Step 8: Finish
-  cy.getBySel('offerFinish').click()
+  waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    cy.getBySel('offerFinish').click()
+  })
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -432,6 +436,31 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
+}
+
+/**
+ * Run an action and wait until the matching list requests are idle.
+ */
+export function waitForListRequestsToFinish(apiPattern: string, action: () => void, idleMs = 300): void {
+  let pendingRequests = 0
+  let lastActivity = Date.now()
+
+  cy.intercept('GET', apiPattern, (req) => {
+    pendingRequests += 1
+    lastActivity = Date.now()
+
+    req.on('after:response', () => {
+      pendingRequests = Math.max(0, pendingRequests - 1)
+      lastActivity = Date.now()
+    })
+  })
+
+  action()
+
+  cy.wrap(null).should(() => {
+    expect(pendingRequests, `${apiPattern} pending requests`).to.eq(0)
+    expect(Date.now() - lastActivity, `${apiPattern} idle time`).to.be.greaterThan(idleMs)
+  })
 }
 
 /**
@@ -683,7 +712,9 @@ export function createDspProductSpec({ name, version = '0.1', brand, productNumb
   cy.getBySel('btnNext').click() // Relationships
   cy.getBySel('btnNext').click() // Summary
 
-  cy.getBySel('btnCreateProduct').should('be.enabled').click()
+  waitForListRequestsToFinish('**/catalog/productSpecification?*', () => {
+    cy.getBySel('btnCreateProduct').should('be.enabled').click()
+  })
   cy.closeFeedbackModalIfVisible()
 
   cy.getBySel('prodSpecTable').should('be.visible')
@@ -794,7 +825,9 @@ export function createDspOffering({
   cy.getBySel('offerNext').click()
 
   // Step 9: Summary → Create
-  cy.getBySel('offerFinish').click()
+  waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    cy.getBySel('offerFinish').click()
+  })
 
   cy.closeFeedbackModalIfVisible()
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')

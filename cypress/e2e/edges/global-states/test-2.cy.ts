@@ -5,6 +5,7 @@ import {
 } from '../../../support/global-state-flows'
 import {
   clickLoadMoreUntilGone,
+  waitForListRequestsToFinish,
 } from '../../../support/form-helpers'
 
 describe('Check order global states - Reverse test (auto and semi failed, iterate manual)',  {
@@ -62,7 +63,9 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
 
       const openOfferingDrawer = (offeringName: string) => {
-        cy.visit('/search')
+        waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+          cy.visit('/search')
+        })
         cy.wait('@cartItem')
         clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
         cy.openAddToCartDrawerFromSearch(offeringName)

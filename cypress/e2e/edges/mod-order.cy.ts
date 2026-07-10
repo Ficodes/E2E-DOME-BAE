@@ -6,6 +6,7 @@ import {
   updateOffering,
   createCheckoutBilling,
   clickLoadMoreUntilGone,
+  waitForListRequestsToFinish,
 } from '../../support/form-helpers'
 
 /**
@@ -118,7 +119,9 @@ describe('Product Modification Order E2E', {
     updateOffering({ name: offeringName, status: 'launched' })
 
     // Verify offering exists
-    cy.getBySel('offerSection').click()
+    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerSection').click()
+    })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
@@ -137,7 +140,9 @@ describe('Product Modification Order E2E', {
     cy.getBySel('orgCountry').select('ES')
     cy.getBySel('orgUpdate').click()
 
-    cy.visit('/search')
+    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+      cy.visit('/search')
+    })
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
@@ -226,7 +231,9 @@ describe('Product Modification Order E2E', {
     // ============================================
     // Verify product in inventory as active
     // ============================================
-    cy.visit('/product-inventory')
+    waitForListRequestsToFinish('**/inventory/product?*', () => {
+      cy.visit('/product-inventory')
+    })
     clickLoadMoreUntilGone(10, '**/inventory/product?*')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
 
@@ -279,7 +286,9 @@ describe('Product Modification Order E2E', {
     cy.getBySel('ordersTable').should('be.visible')
     cy.getBySel('ordersTable').contains('completed')
 
-    cy.getBySel('invoices').click()
+    waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+      cy.getBySel('invoices').click()
+    })
     clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
 
     cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {

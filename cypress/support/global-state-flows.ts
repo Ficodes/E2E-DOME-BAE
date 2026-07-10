@@ -122,7 +122,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   const openOfferingDrawer = (offeringName: string) => {
     cy.visit('/search')
     cy.wait('@cartItem', {timeout: 60000})
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     cy.openAddToCartDrawerFromSearch(offeringName)
   }
 

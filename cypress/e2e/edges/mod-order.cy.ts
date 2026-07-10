@@ -74,7 +74,7 @@ describe('Product Modification Order E2E', {
       ]
     })
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*')
     updateProductSpecStatus({ name: productSpecName, status: 'launched' })
 
     // ============================================
@@ -119,7 +119,7 @@ describe('Product Modification Order E2E', {
 
     // Verify offering exists
     cy.getBySel('offerSection').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -140,7 +140,7 @@ describe('Product Modification Order E2E', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -227,7 +227,7 @@ describe('Product Modification Order E2E', {
     // Verify product in inventory as active
     // ============================================
     cy.visit('/product-inventory')
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/inventory/product?*')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
 
     // ============================================
@@ -280,7 +280,7 @@ describe('Product Modification Order E2E', {
     cy.getBySel('ordersTable').contains('completed')
 
     cy.getBySel('invoices').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
 
     cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
       cy.contains('settled').should('be.visible')

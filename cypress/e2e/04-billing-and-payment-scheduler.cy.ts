@@ -148,11 +148,11 @@ describe('Billing Scheduler Period Coverage', {
     // ============================================
     // Step 2: Launch the offering
     // ============================================
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     updateOffering({ name: offeringName, status: 'launched' })
 
     cy.getBySel('offerSection').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -162,7 +162,7 @@ describe('Billing Scheduler Period Coverage', {
 
     cy.visit('/search')
     cy.wait('@cartItem')
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -204,7 +204,7 @@ describe('Billing Scheduler Period Coverage', {
     // Step 5: Get product from inventory to capture startDate
     // ============================================
     cy.visit('/product-inventory')
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/inventory/product?*')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
     cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
 
@@ -304,7 +304,7 @@ describe('Billing Scheduler Period Coverage', {
           // ============================================
           cy.visit('/product-orders')
           cy.getBySel('invoices').click()
-          clickLoadMoreUntilGone()
+          clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
 
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
@@ -387,7 +387,7 @@ describe('Billing Scheduler Period Coverage', {
             .then((res) => { expect(res.status).to.eq(200) })
           cy.visit('/product-orders')
           cy.getBySel('invoices').click()
-          clickLoadMoreUntilGone()
+          clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
           })
@@ -418,7 +418,7 @@ describe('Billing Scheduler Period Coverage', {
             .then((res) => { expect(res.status).to.eq(200) })
           cy.visit('/product-orders')
           cy.getBySel('invoices').click()
-          clickLoadMoreUntilGone()
+          clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
           })
@@ -439,7 +439,7 @@ describe('Billing Scheduler Period Coverage', {
             .then((res) => { expect(res.status).to.eq(200) })
           cy.visit('/product-orders')
           cy.getBySel('invoices').click()
-          clickLoadMoreUntilGone()
+          clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
           })
@@ -487,7 +487,7 @@ describe('Billing Scheduler Period Coverage', {
 
           cy.visit('/product-orders')
           cy.getBySel('invoices').click()
-          clickLoadMoreUntilGone()
+          clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
 
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()

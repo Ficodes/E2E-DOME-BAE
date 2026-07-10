@@ -78,7 +78,7 @@ describe('Manual Offering E2E', {
     // ============================================
     cy.getBySel('offerSection').click()
     cy.getBySel('offers').should('be.visible')
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
     cy.getBySel('offers').contains(manualOfferingName).should('be.visible').parent().contains('Launched')
 
@@ -96,7 +96,7 @@ describe('Manual Offering E2E', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     // Find the manual offering card and open its add-to-cart drawer
     cy.openAddToCartDrawerFromSearch(manualOfferingName)
 
@@ -194,7 +194,7 @@ describe('Manual Offering E2E', {
     // Verify product is in inventory with active status
     cy.visit('/product-inventory')
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/inventory/product?*')
 
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', manualOfferingName).contains('active')
   })
@@ -272,7 +272,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     cy.getBySel('offerSection').click()
     cy.getBySel('offers').should('be.visible')
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
@@ -290,7 +290,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     // Find the offering card and open its add-to-cart drawer
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -370,7 +370,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Verify product is in inventory with active status
     cy.visit('/product-inventory')
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/inventory/product?*')
 
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
   })

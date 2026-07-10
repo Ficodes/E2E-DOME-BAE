@@ -97,11 +97,11 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 3: Launch offering
     // ============================================
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     updateOffering({ name: offeringName, status: 'launched' })
 
     cy.getBySel('offerSection').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -115,7 +115,7 @@ describe('Manual Bill Settle Edge Case', {
     cy.visit('/product-orders')
     cy.getBySel('invoices').click()
     cy.wait(1000)
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
     cy.get('body').then($body => {
       const initialCount = $body.find('[data-cy="invoiceRow"]').length
       cy.log(`Initial invoice count: ${initialCount}`)
@@ -132,7 +132,7 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     cy.visit('/search')
     cy.wait('@cartItem')
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -218,7 +218,7 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     cy.visit('/product-orders')
     cy.getBySel('invoices').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
 
     cy.get('@initialInvoiceCount').then((initialCount: any) => {
       cy.getBySel('invoiceRow').should('have.length', initialCount + 1)
@@ -232,7 +232,7 @@ describe('Manual Bill Settle Edge Case', {
     // Step 12: Verify product appears in inventory and capture product ID
     // ============================================
     cy.visit('/product-inventory')
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/inventory/product?*')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
     cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
 
@@ -245,7 +245,7 @@ describe('Manual Bill Settle Edge Case', {
       // ============================================
       cy.visit('/product-orders')
       cy.getBySel('invoices').click()
-      clickLoadMoreUntilGone()
+      clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
 
       cy.getBySel('invoiceRow').last().within(() => {
         cy.getBySel('invoiceDetails').click()

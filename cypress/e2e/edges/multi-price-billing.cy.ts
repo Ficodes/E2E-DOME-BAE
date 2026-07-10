@@ -122,12 +122,12 @@ describe('Multi-Price Component Billing Edge Cases', {
     // ============================================
     // Step 2: Update Offering to Launched
     // ============================================
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     updateOffering({ name: offeringName, status: 'launched' })
 
     // Verify Offering exists in table with Launched status
     cy.getBySel('offerSection').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -144,7 +144,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait('@cartItem')
 
     // Load all offerings in case there are many from previous tests
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -271,11 +271,11 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.getBySel('offerFinish').click()
     cy.closeFeedbackModalIfVisible()
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     updateOffering({ name: offeringName, status: 'launched' })
 
     cy.getBySel('offerSection').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // Switch to BUYER and purchase
@@ -286,7 +286,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -363,7 +363,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     updateOffering({ name: offeringName, status: 'launched' })
 
     cy.getBySel('offerSection').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // Switch to BUYER and purchase
@@ -373,7 +373,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.visit('/product-orders')
     cy.getBySel('invoices').click()
     cy.wait(1000)
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
     cy.get('body').then($body => {
       const initialCount = $body.find('[data-cy="invoiceRow"]').length
       cy.log(`Initial invoice count: ${initialCount}`)
@@ -385,7 +385,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.visit('/search')
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -417,7 +417,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     // Verify that NO new invoice was created (usage-only offerings don't generate immediate invoices)
     cy.getBySel('invoices').click()
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
     cy.get('@initialInvoiceCount').then((initialCount) => {
       cy.get('body').then($body => {
         const currentCount = $body.find('[data-cy="invoiceRow"]').length

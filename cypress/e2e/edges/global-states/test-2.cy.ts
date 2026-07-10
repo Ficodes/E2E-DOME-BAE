@@ -64,7 +64,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       const openOfferingDrawer = (offeringName: string) => {
         cy.visit('/search')
         cy.wait('@cartItem')
-        clickLoadMoreUntilGone(10, true)
+        clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
         cy.openAddToCartDrawerFromSearch(offeringName)
       }
 

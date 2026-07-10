@@ -444,15 +444,23 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
 export function waitForListRequestsToFinish(apiPattern: string, action: () => void, idleMs = 300): void {
   let pendingRequests = 0
   let lastActivity = Date.now()
+  let requestId = 0
 
   cy.intercept('GET', apiPattern, (req) => {
+    const id = requestId++
+    const finishedRequests = new Set<number>()
     pendingRequests += 1
     lastActivity = Date.now()
 
-    req.on('after:response', () => {
+    const finishRequest = () => {
+      if (finishedRequests.has(id)) return
+      finishedRequests.add(id)
       pendingRequests = Math.max(0, pendingRequests - 1)
       lastActivity = Date.now()
-    })
+    }
+
+    req.on('response', finishRequest)
+    req.on('after:response', finishRequest)
   })
 
   action()
@@ -476,13 +484,16 @@ export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string): voi
     if (remaining === 0) return
 
     cy.get('body').then($body => {
-      if ($body.find('[data-cy="loadMore"]:visible').length > 0) {
-        cy.getBySel('loadMore').click()
-        if (apiPattern) {
-          cy.wait(`@${alias}`)
-        }
-        clickIfExists(remaining - 1)
+      const loadMore = $body.find('[data-cy="loadMore"]:visible')[0] as HTMLElement | undefined
+      if (!loadMore) {
+        return
       }
+
+      loadMore.click()
+      if (apiPattern) {
+        cy.wait(`@${alias}`)
+      }
+      clickIfExists(remaining - 1)
     })
   }
 

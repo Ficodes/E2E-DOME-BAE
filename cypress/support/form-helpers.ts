@@ -419,7 +419,7 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
 
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
-    cy.get('button[type="button"]').first().click() // Click edit button
+    cy.getBySel('offerEdit').find('button').first().click()
   })
 
   // Wait for edit page to load

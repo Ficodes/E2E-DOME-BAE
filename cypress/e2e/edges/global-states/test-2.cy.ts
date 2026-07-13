@@ -6,6 +6,7 @@ import {
 import {
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
+  waitForAtLeastOneRenderedItem,
 } from '../../../support/form-helpers'
 
 describe('Check order global states - Reverse test (auto and semi failed, iterate manual)',  {
@@ -68,6 +69,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
         })
         cy.wait('@cartItem')
         clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+        waitForAtLeastOneRenderedItem('[data-cy="baeCard"]')
         cy.openAddToCartDrawerFromSearch(offeringName)
       }
 

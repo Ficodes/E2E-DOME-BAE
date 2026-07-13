@@ -7,6 +7,7 @@ import {
   createCheckoutBilling,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
+  waitForAtLeastOneRenderedItem,
 } from '../../support/form-helpers'
 
 /**
@@ -76,6 +77,7 @@ describe('Product Modification Order E2E', {
     })
 
     clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*')
+    waitForAtLeastOneRenderedItem('[data-cy="prodSpecRow"]')
     updateProductSpecStatus({ name: productSpecName, status: 'launched' })
 
     // ============================================
@@ -123,6 +125,7 @@ describe('Product Modification Order E2E', {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -146,6 +149,7 @@ describe('Product Modification Order E2E', {
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -235,6 +239,7 @@ describe('Product Modification Order E2E', {
       cy.visit('/product-inventory')
     })
     clickLoadMoreUntilGone(10, '**/inventory/product?*')
+    waitForAtLeastOneRenderedItem('[data-cy="productInventory"]')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
 
     // ============================================
@@ -290,6 +295,7 @@ describe('Product Modification Order E2E', {
       cy.getBySel('invoices').click()
     })
     clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
+    waitForAtLeastOneRenderedItem('[data-cy="invoiceRow"]')
 
     cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
       cy.contains('settled').should('be.visible')

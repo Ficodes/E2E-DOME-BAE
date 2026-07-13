@@ -3,6 +3,7 @@ import {
   updateOffering,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
+  waitForAtLeastOneRenderedItem,
 } from '../../support/form-helpers'
 
 /**
@@ -101,12 +102,14 @@ describe('Manual Bill Settle Edge Case', {
     // Step 3: Launch offering
     // ============================================
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -142,6 +145,7 @@ describe('Manual Bill Settle Edge Case', {
     })
     cy.wait('@cartItem')
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -230,6 +234,7 @@ describe('Manual Bill Settle Edge Case', {
       cy.getBySel('invoices').click()
     })
     clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
+    waitForAtLeastOneRenderedItem('[data-cy="invoiceRow"]')
 
     cy.get('@initialInvoiceCount').then((initialCount: any) => {
       cy.getBySel('invoiceRow').should('have.length', initialCount + 1)
@@ -246,6 +251,7 @@ describe('Manual Bill Settle Edge Case', {
       cy.visit('/product-inventory')
     })
     clickLoadMoreUntilGone(10, '**/inventory/product?*')
+    waitForAtLeastOneRenderedItem('[data-cy="productInventory"]')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
     cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
 
@@ -261,6 +267,7 @@ describe('Manual Bill Settle Edge Case', {
         cy.getBySel('invoices').click()
       })
       clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
+      waitForAtLeastOneRenderedItem('[data-cy="invoiceRow"]')
 
       cy.getBySel('invoiceRow').last().within(() => {
         cy.getBySel('invoiceDetails').click()

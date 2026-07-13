@@ -4,6 +4,7 @@ import {
   clickLoadMoreUntilGone,
   createOffering,
   waitForInitialPaginatedList,
+  waitForAtLeastOneRenderedItem,
 } from '../../support/form-helpers'
 
 /**
@@ -126,6 +127,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     // Step 2: Update Offering to Launched
     // ============================================
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
 
     // Verify Offering exists in table with Launched status
@@ -133,6 +135,7 @@ describe('Multi-Price Component Billing Edge Cases', {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -152,6 +155,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     // Load all offerings in case there are many from previous tests
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -281,12 +285,14 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.closeFeedbackModalIfVisible()
 
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // Switch to BUYER and purchase
@@ -300,6 +306,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -379,6 +386,7 @@ describe('Multi-Price Component Billing Edge Cases', {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // Switch to BUYER and purchase
@@ -405,6 +413,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait('@cartItem')
 
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+    waitForAtLeastOneRenderedItem('[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 

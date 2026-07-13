@@ -341,6 +341,7 @@ export function createOffering({
   // Step 2: Select the Product Specification
   cy.wait('@prodSpecList')
   clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*')
+  waitForAtLeastOneRenderedItem('[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains( productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -405,6 +406,7 @@ export function createOffering({
 
   // Load all offerings
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+  waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
 
   // Verify offering was created in table
   cy.getBySel('offers').should('be.visible')
@@ -417,6 +419,7 @@ export function createOffering({
 export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+  waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
 
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
     cy.get('button[type="button"]').first().click() // Click edit button
@@ -459,6 +462,15 @@ export function waitForInitialPaginatedList(apiPattern: string, action: () => vo
   }
 
   waitUntilPrefetch()
+}
+
+/**
+ * Wait until a list has rendered at least one visible item.
+ */
+export function waitForAtLeastOneRenderedItem(selector: string, timeout = 120000): void {
+  cy.get(selector, { timeout }).should($items => {
+    expect($items.filter(':visible').length).to.be.greaterThan(0)
+  })
 }
 
 /**
@@ -780,6 +792,7 @@ export function createDspOffering({
   // Step 2: Product Specification (DSP-compatible)
   cy.wait('@prodSpecList')
   clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*')
+  waitForAtLeastOneRenderedItem('[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains(productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -832,6 +845,7 @@ export function createDspOffering({
 
   cy.closeFeedbackModalIfVisible()
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
+  waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
 
   cy.getBySel('offers').should('be.visible')
   cy.getBySel('offers').contains(name).should('be.visible')

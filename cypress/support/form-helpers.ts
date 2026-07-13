@@ -340,8 +340,7 @@ export function createOffering({
 
   // Step 2: Select the Product Specification
   cy.wait('@prodSpecList')
-  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*')
-  waitForAtLeastOneRenderedItem('[data-cy="prodSpecs"] tr')
+  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*', '[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains( productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -405,8 +404,7 @@ export function createOffering({
   cy.closeFeedbackModalIfVisible()
 
   // Load all offerings
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
-  waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
+  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
 
   // Verify offering was created in table
   cy.getBySel('offers').should('be.visible')
@@ -418,8 +416,7 @@ export function createOffering({
  */
 export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
-  waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
+  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
 
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
     cy.get('button[type="button"]').first().click() // Click edit button
@@ -465,40 +462,67 @@ export function waitForInitialPaginatedList(apiPattern: string, action: () => vo
 }
 
 /**
- * Wait until a list has rendered at least one visible item.
- */
-export function waitForAtLeastOneRenderedItem(selector: string, timeout = 120000): void {
-  cy.get(selector, { timeout }).should($items => {
-    expect($items.filter(':visible').length).to.be.greaterThan(0)
-  })
-}
-
-/**
  * Click "Load More" button repeatedly until all items are loaded
  */
-export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string): void {
+export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string, itemSelector?: string): void {
+  if (!itemSelector) {
+    throw new Error('clickLoadMoreUntilGone requires an item selector')
+  }
+
   const alias = 'loadMoreList'
+  const loadMoreSelector = '[data-cy="loadMore"]'
+
   if (apiPattern) {
     cy.intercept('GET', apiPattern).as(alias)
   }
 
+  const getPagerState = ($body: JQuery<HTMLElement>) => {
+    const itemCount = $body.find(itemSelector).filter(':visible').length
+    const hasLoadMore = $body.find(loadMoreSelector).filter(':visible').length > 0
+
+    return { itemCount, hasLoadMore }
+  }
+
+  const waitForPageTransition = (previousCount: number): void => {
+    cy.get('body').should($body => {
+      const { itemCount, hasLoadMore } = getPagerState($body)
+
+      expect(
+        itemCount > previousCount || !hasLoadMore,
+        `pagination transition for ${itemSelector}`
+      ).to.eq(true)
+    })
+  }
+
   const clickIfExists = (remaining: number): void => {
-    if (remaining === 0) return
+    if (remaining === 0) {
+      cy.get('body').then($body => {
+        const { hasLoadMore } = getPagerState($body)
+
+        if (hasLoadMore) {
+          throw new Error(`Load more button is still visible after ${maxClicks} clicks`)
+        }
+      })
+      return
+    }
 
     cy.get('body').then($body => {
-      const loadMore = $body.find('[data-cy="loadMore"]:visible')[0] as HTMLElement | undefined
-      if (!loadMore) {
+      const { itemCount, hasLoadMore } = getPagerState($body)
+
+      if (!hasLoadMore) {
         return
       }
 
-      loadMore.click()
+      cy.get(loadMoreSelector).filter(':visible').first().click()
       if (apiPattern) {
         cy.wait(`@${alias}`)
       }
+      waitForPageTransition(itemCount)
       clickIfExists(remaining - 1)
     })
   }
 
+  waitForPageTransition(0)
   clickIfExists(maxClicks)
 }
 
@@ -791,8 +815,7 @@ export function createDspOffering({
 
   // Step 2: Product Specification (DSP-compatible)
   cy.wait('@prodSpecList')
-  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*')
-  waitForAtLeastOneRenderedItem('[data-cy="prodSpecs"] tr')
+  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*', '[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains(productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -844,8 +867,7 @@ export function createDspOffering({
   })
 
   cy.closeFeedbackModalIfVisible()
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
-  waitForAtLeastOneRenderedItem('[data-cy="offerRow"]')
+  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
 
   cy.getBySel('offers').should('be.visible')
   cy.getBySel('offers').contains(name).should('be.visible')

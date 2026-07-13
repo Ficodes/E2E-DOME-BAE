@@ -4,7 +4,6 @@ import {
   updateOffering,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
-  waitForAtLeastOneRenderedItem,
 } from './form-helpers'
 
 export const unchecked= 'unchecked'
@@ -126,8 +125,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
       cy.visit('/search')
     })
     cy.wait('@cartItem', {timeout: 60000})
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
-    waitForAtLeastOneRenderedItem('[data-cy="baeCard"]')
+    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="baeCard"]')
     cy.openAddToCartDrawerFromSearch(offeringName)
   }
 

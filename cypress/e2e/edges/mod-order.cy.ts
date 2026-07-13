@@ -6,7 +6,7 @@ import {
   updateOffering,
   createCheckoutBilling,
   clickLoadMoreUntilGone,
-  waitForListRequestsToFinish,
+  waitForInitialPaginatedList,
 } from '../../support/form-helpers'
 
 /**
@@ -119,7 +119,7 @@ describe('Product Modification Order E2E', {
     updateOffering({ name: offeringName, status: 'launched' })
 
     // Verify offering exists
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
@@ -140,7 +140,7 @@ describe('Product Modification Order E2E', {
     cy.getBySel('orgCountry').select('ES')
     cy.getBySel('orgUpdate').click()
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
@@ -231,7 +231,7 @@ describe('Product Modification Order E2E', {
     // ============================================
     // Verify product in inventory as active
     // ============================================
-    waitForListRequestsToFinish('**/inventory/product?*', () => {
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
       cy.visit('/product-inventory')
     })
     clickLoadMoreUntilGone(10, '**/inventory/product?*')
@@ -286,7 +286,7 @@ describe('Product Modification Order E2E', {
     cy.getBySel('ordersTable').should('be.visible')
     cy.getBySel('ordersTable').contains('completed')
 
-    waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+    waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
     clickLoadMoreUntilGone(10, '**/billing/customerBill?*')

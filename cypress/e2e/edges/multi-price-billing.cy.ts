@@ -3,7 +3,7 @@ import {
   updateOffering,
   clickLoadMoreUntilGone,
   createOffering,
-  waitForListRequestsToFinish,
+  waitForInitialPaginatedList,
 } from '../../support/form-helpers'
 
 /**
@@ -117,7 +117,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.getBySel('offerNext').click()
 
     // Step 1.8: Finish
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerFinish').click()
     })
     cy.closeFeedbackModalIfVisible()
@@ -129,7 +129,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     updateOffering({ name: offeringName, status: 'launched' })
 
     // Verify Offering exists in table with Launched status
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
@@ -145,7 +145,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     // ============================================
     cy.visit('/dashboard')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
@@ -275,7 +275,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.getBySel('procurement').select('automatic')
     cy.getBySel('offerNext').click()
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerFinish').click()
     })
     cy.closeFeedbackModalIfVisible()
@@ -283,7 +283,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     updateOffering({ name: offeringName, status: 'launched' })
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
@@ -294,7 +294,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     cy.visit('/dashboard')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
@@ -375,7 +375,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     })
     updateOffering({ name: offeringName, status: 'launched' })
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
@@ -386,7 +386,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     // Count the number of invoices BEFORE purchase
     cy.visit('/product-orders')
-    waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+    waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
     cy.wait(1000)
@@ -399,7 +399,7 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     cy.visit('/dashboard')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
@@ -435,7 +435,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.getBySel('ordersTable').contains('completed')
 
     // Verify that NO new invoice was created (usage-only offerings don't generate immediate invoices)
-    waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+    waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
     clickLoadMoreUntilGone(10, '**/billing/customerBill?*')

@@ -3,7 +3,7 @@ import {
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
-  waitForListRequestsToFinish,
+  waitForInitialPaginatedList,
 } from '../../support/form-helpers'
 
 describe('Manual Offering E2E', {
@@ -77,7 +77,7 @@ describe('Manual Offering E2E', {
     // ============================================
     // Verify Offering exists in table with Launched status
     // ============================================
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     cy.getBySel('offers').should('be.visible')
@@ -96,7 +96,7 @@ describe('Manual Offering E2E', {
     cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
@@ -197,7 +197,7 @@ describe('Manual Offering E2E', {
     cy.getBySel('invoiceDetail').contains('INITIAL PAYMENT')
 
     // Verify product is in inventory with active status
-    waitForListRequestsToFinish('**/inventory/product?*', () => {
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
       cy.visit('/product-inventory')
     })
 
@@ -277,7 +277,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     // Verify Offering exists in table with Launched status
     // ============================================
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     cy.getBySel('offers').should('be.visible')
@@ -296,7 +296,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
@@ -379,7 +379,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.getBySel('invoiceDetail').contains('INITIAL PAYMENT')
 
     // Verify product is in inventory with active status
-    waitForListRequestsToFinish('**/inventory/product?*', () => {
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
       cy.visit('/product-inventory')
     })
 

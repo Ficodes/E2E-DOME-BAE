@@ -3,7 +3,7 @@ import {
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
-  waitForListRequestsToFinish,
+  waitForInitialPaginatedList,
 } from './form-helpers'
 
 export const unchecked= 'unchecked'
@@ -121,7 +121,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
 
   const openOfferingDrawer = (offeringName: string) => {
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem', {timeout: 60000})

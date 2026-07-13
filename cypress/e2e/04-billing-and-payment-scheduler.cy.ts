@@ -2,7 +2,7 @@ import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 import {
   updateOffering,
   clickLoadMoreUntilGone,
-  waitForListRequestsToFinish,
+  waitForInitialPaginatedList,
 } from '../support/form-helpers'
 
 /**
@@ -143,7 +143,7 @@ describe('Billing Scheduler Period Coverage', {
     cy.getBySel('procurement').select('automatic')
     cy.getBySel('offerNext').click()
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerFinish').click()
     })
     cy.closeFeedbackModalIfVisible()
@@ -154,7 +154,7 @@ describe('Billing Scheduler Period Coverage', {
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     updateOffering({ name: offeringName, status: 'launched' })
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
@@ -165,7 +165,7 @@ describe('Billing Scheduler Period Coverage', {
     // ============================================
     cy.changeSessionTo('BUYER ORG')
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
@@ -210,7 +210,7 @@ describe('Billing Scheduler Period Coverage', {
     // ============================================
     // Step 5: Get product from inventory to capture startDate
     // ============================================
-    waitForListRequestsToFinish('**/inventory/product?*', () => {
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
       cy.visit('/product-inventory')
     })
     clickLoadMoreUntilGone(10, '**/inventory/product?*')
@@ -312,7 +312,7 @@ describe('Billing Scheduler Period Coverage', {
           // Step 8: Navigate to invoices and open the CustomerBill
           // ============================================
           cy.visit('/product-orders')
-          waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
           clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
@@ -397,7 +397,7 @@ describe('Billing Scheduler Period Coverage', {
           cy.request({ url: 'http://localhost:8006/charging/api/test/billingScheduler', method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
           cy.visit('/product-orders')
-          waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
           clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
@@ -430,7 +430,7 @@ describe('Billing Scheduler Period Coverage', {
           cy.request({ url: 'http://localhost:8006/charging/api/test/billingScheduler', method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
           cy.visit('/product-orders')
-          waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
           clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
@@ -453,7 +453,7 @@ describe('Billing Scheduler Period Coverage', {
           cy.request({ url: 'http://localhost:8006/charging/api/test/billingScheduler', method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
           cy.visit('/product-orders')
-          waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
           clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
@@ -503,7 +503,7 @@ describe('Billing Scheduler Period Coverage', {
           }).then((res) => { expect(res.status).to.eq(200) })
 
           cy.visit('/product-orders')
-          waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
           clickLoadMoreUntilGone(10, '**/billing/customerBill?*')

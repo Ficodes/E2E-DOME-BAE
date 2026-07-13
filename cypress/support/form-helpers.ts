@@ -272,7 +272,7 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
   cy.getBySel('btnNext').click() // Finish creation, view spec summary
 
   // Create product spec
-  waitForListRequestsToFinish('**/catalog/productSpecification?*', () => {
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
     cy.getBySel('btnCreateProduct').should('be.enabled').click()
   })
 
@@ -396,7 +396,7 @@ export function createOffering({
   cy.getBySel('offerNext').click()
 
   // Step 8: Finish
-  waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+  waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
     cy.getBySel('offerFinish').click()
   })
 
@@ -439,36 +439,26 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
 }
 
 /**
- * Run an action and wait until the matching list requests are idle.
+ * Run an action that opens a paginated list and wait until its prefetch page has completed.
  */
-export function waitForListRequestsToFinish(apiPattern: string, action: () => void, idleMs = 300): void {
-  let pendingRequests = 0
-  let lastActivity = Date.now()
-  let requestId = 0
+export function waitForInitialPaginatedList(apiPattern: string, action: () => void): void {
+  const alias = 'initialPaginatedList'
 
-  cy.intercept('GET', apiPattern, (req) => {
-    const id = requestId++
-    const finishedRequests = new Set<number>()
-    pendingRequests += 1
-    lastActivity = Date.now()
-
-    const finishRequest = () => {
-      if (finishedRequests.has(id)) return
-      finishedRequests.add(id)
-      pendingRequests = Math.max(0, pendingRequests - 1)
-      lastActivity = Date.now()
-    }
-
-    req.on('response', finishRequest)
-    req.on('after:response', finishRequest)
-  })
-
+  cy.intercept('GET', apiPattern).as(alias)
   action()
 
-  cy.wrap(null).should(() => {
-    expect(pendingRequests, `${apiPattern} pending requests`).to.eq(0)
-    expect(Date.now() - lastActivity, `${apiPattern} idle time`).to.be.greaterThan(idleMs)
-  })
+  const waitUntilPrefetch = (): void => {
+    cy.wait(`@${alias}`).then((interception) => {
+      const url = new URL(interception.request.url)
+      const offset = Number(url.searchParams.get('offset') || '0')
+
+      if (offset <= 0) {
+        waitUntilPrefetch()
+      }
+    })
+  }
+
+  waitUntilPrefetch()
 }
 
 /**
@@ -723,7 +713,7 @@ export function createDspProductSpec({ name, version = '0.1', brand, productNumb
   cy.getBySel('btnNext').click() // Relationships
   cy.getBySel('btnNext').click() // Summary
 
-  waitForListRequestsToFinish('**/catalog/productSpecification?*', () => {
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
     cy.getBySel('btnCreateProduct').should('be.enabled').click()
   })
   cy.closeFeedbackModalIfVisible()
@@ -836,7 +826,7 @@ export function createDspOffering({
   cy.getBySel('offerNext').click()
 
   // Step 9: Summary → Create
-  waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+  waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
     cy.getBySel('offerFinish').click()
   })
 

@@ -2,7 +2,7 @@ import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
   updateOffering,
   clickLoadMoreUntilGone,
-  waitForListRequestsToFinish,
+  waitForInitialPaginatedList,
 } from '../../support/form-helpers'
 
 /**
@@ -92,7 +92,7 @@ describe('Manual Bill Settle Edge Case', {
     cy.getBySel('procurement').select('automatic')
     cy.getBySel('offerNext').click()
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerFinish').click()
     })
     cy.closeFeedbackModalIfVisible()
@@ -103,7 +103,7 @@ describe('Manual Bill Settle Edge Case', {
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
     updateOffering({ name: offeringName, status: 'launched' })
 
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*')
@@ -118,7 +118,7 @@ describe('Manual Bill Settle Edge Case', {
     // Step 5: Count existing invoices before purchase
     // ============================================
     cy.visit('/product-orders')
-    waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+    waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
     cy.wait(1000)
@@ -137,7 +137,7 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 7: Add offering to cart and purchase
     // ============================================
-    waitForListRequestsToFinish('**/catalog/productOffering?*', () => {
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
@@ -226,7 +226,7 @@ describe('Manual Bill Settle Edge Case', {
     // Step 11: Verify customer bill count increased by 1 and last bill is settled
     // ============================================
     cy.visit('/product-orders')
-    waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+    waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
     clickLoadMoreUntilGone(10, '**/billing/customerBill?*')
@@ -242,7 +242,7 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 12: Verify product appears in inventory and capture product ID
     // ============================================
-    waitForListRequestsToFinish('**/inventory/product?*', () => {
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
       cy.visit('/product-inventory')
     })
     clickLoadMoreUntilGone(10, '**/inventory/product?*')
@@ -257,7 +257,7 @@ describe('Manual Bill Settle Edge Case', {
       // Step 13: Go to invoices and verify the invoice detail contains the product ID
       // ============================================
       cy.visit('/product-orders')
-      waitForListRequestsToFinish('**/billing/customerBill?*', () => {
+      waitForInitialPaginatedList('**/billing/customerBill?*', () => {
         cy.getBySel('invoices').click()
       })
       clickLoadMoreUntilGone(10, '**/billing/customerBill?*')

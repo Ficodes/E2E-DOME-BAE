@@ -280,6 +280,7 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
   cy.closeFeedbackModalIfVisible()
 
   // Verify product spec appears in table
+  clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="prodSpecRow"]')
   cy.getBySel('prodSpecTable').should('be.visible')
   cy.getBySel('prodSpecTable').contains(name).should('be.visible')
 }
@@ -334,13 +335,12 @@ export function createOffering({
   cy.getBySel('offerName').should('be.visible').type(name)
   cy.getBySel('offerVersion').should('have.value', version)
   cy.getBySel('textArea').type(description)
-  // Register intercept before click so the step-2 request is captured
-  cy.intercept('GET', '**/catalog/productSpecification?*').as('prodSpecList')
-  cy.getBySel('offerNext').click()
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+    cy.getBySel('offerNext').click()
+  })
 
   // Step 2: Select the Product Specification
-  cy.wait('@prodSpecList')
-  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*', '[data-cy="prodSpecs"] tr')
+  clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains( productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -404,7 +404,7 @@ export function createOffering({
   cy.closeFeedbackModalIfVisible()
 
   // Load all offerings
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+  clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
 
   // Verify offering was created in table
   cy.getBySel('offers').should('be.visible')
@@ -415,9 +415,6 @@ export function createOffering({
  * Update offering status
  */
 export function updateOffering({ name, status }: UpdateOfferingParams): void {
-  // Load all offerings
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
-
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
     cy.get('button[type="button"]').first().click() // Click edit button
   })
@@ -438,92 +435,123 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
   cy.closeFeedbackModalIfVisible()
 }
 
+const PAGINATED_LIST_ALIAS = 'paginatedList'
+
+interface PaginatedResponse {
+  count: number
+  limit: number
+}
+
+interface ListInterception {
+  request: {
+    url: string
+  }
+  response?: {
+    body?: unknown
+  }
+}
+
 /**
- * Run an action that opens a paginated list and wait until its prefetch page has completed.
+ * Run an action that opens a paginated list after registering the shared list interceptor.
  */
 export function waitForInitialPaginatedList(apiPattern: string, action: () => void): void {
-  const alias = 'initialPaginatedList'
-
-  cy.intercept('GET', apiPattern).as(alias)
+  cy.intercept('GET', apiPattern).as(PAGINATED_LIST_ALIAS)
   action()
+}
 
-  const waitUntilPrefetch = (): void => {
-    cy.wait(`@${alias}`).then((interception) => {
-      const url = new URL(interception.request.url)
-      const offset = Number(url.searchParams.get('offset') || '0')
-
-      if (offset <= 0) {
-        waitUntilPrefetch()
-      }
-    })
+const getResponseItems = (body: unknown): unknown[] | undefined => {
+  if (Array.isArray(body)) {
+    return body
   }
 
-  waitUntilPrefetch()
+  if (body && typeof body === 'object' && Array.isArray((body as { data?: unknown }).data)) {
+    return (body as { data: unknown[] }).data
+  }
+
+  return undefined
+}
+
+const getLimit = (url: string): number | undefined => {
+  const limit = Number(new URL(url).searchParams.get('limit'))
+
+  return Number.isFinite(limit) && limit > 0 ? limit : undefined
+}
+
+const getPaginatedResponse = (interception: ListInterception): PaginatedResponse | undefined => {
+  const items = getResponseItems(interception.response?.body)
+  const limit = getLimit(interception.request.url)
+
+  if (!items || !limit) {
+    return undefined
+  }
+
+  return {
+    count: items.filter(item => item != null).length,
+    limit
+  }
+}
+
+const waitForPaginatedResponse = (alias: string): Cypress.Chainable<PaginatedResponse> => {
+  return cy.wait(alias).then((interception) => {
+    const response = getPaginatedResponse(interception)
+
+    if (response) {
+      return response
+    }
+
+    return waitForPaginatedResponse(alias)
+  }) as unknown as Cypress.Chainable<PaginatedResponse>
+}
+
+const waitForRenderedItems = (itemSelector: string, expectedCount: number): void => {
+  cy.get('body').should($body => {
+    expect(
+      $body.find(itemSelector).filter(':visible').length,
+      `rendered ${itemSelector} count`
+    ).to.eq(expectedCount)
+  })
 }
 
 /**
  * Click "Load More" button repeatedly until all items are loaded
  */
-export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string, itemSelector?: string): void {
+export function clickLoadMoreUntilGone(maxClicks = 10, alias?: string, itemSelector?: string): void {
+  if (!alias?.startsWith('@')) {
+    throw new Error('clickLoadMoreUntilGone requires an interceptor alias')
+  }
+
   if (!itemSelector) {
     throw new Error('clickLoadMoreUntilGone requires an item selector')
   }
 
-  const alias = 'loadMoreList'
   const loadMoreSelector = '[data-cy="loadMore"]'
+  let expectedRenderedCount = 0
 
-  if (apiPattern) {
-    cy.intercept('GET', apiPattern).as(alias)
-  }
-
-  const getPagerState = ($body: JQuery<HTMLElement>) => {
-    const itemCount = $body.find(itemSelector).filter(':visible').length
-    const hasLoadMore = $body.find(loadMoreSelector).filter(':visible').length > 0
-
-    return { itemCount, hasLoadMore }
-  }
-
-  const waitForPageTransition = (previousCount: number): void => {
-    cy.get('body').should($body => {
-      const { itemCount, hasLoadMore } = getPagerState($body)
-
-      expect(
-        itemCount > previousCount || !hasLoadMore,
-        `pagination transition for ${itemSelector}`
-      ).to.eq(true)
-    })
-  }
-
-  const clickIfExists = (remaining: number): void => {
-    if (remaining === 0) {
-      cy.get('body').then($body => {
-        const { hasLoadMore } = getPagerState($body)
-
-        if (hasLoadMore) {
-          throw new Error(`Load more button is still visible after ${maxClicks} clicks`)
-        }
-      })
+  const appendPrefetchedPage = (prefetchedPage: PaginatedResponse, remainingClicks: number): void => {
+    if (prefetchedPage.count === 0) {
       return
     }
 
-    cy.get('body').then($body => {
-      const { itemCount, hasLoadMore } = getPagerState($body)
+    if (remainingClicks === 0) {
+      throw new Error(`Load more button still has prefetched items after ${maxClicks} clicks`)
+    }
 
-      if (!hasLoadMore) {
-        return
-      }
+    cy.get(loadMoreSelector).filter(':visible').first().click()
+    expectedRenderedCount += prefetchedPage.count
+    waitForRenderedItems(itemSelector, expectedRenderedCount)
 
-      cy.get(loadMoreSelector).filter(':visible').first().click()
-      if (apiPattern) {
-        cy.wait(`@${alias}`)
-      }
-      waitForPageTransition(itemCount)
-      clickIfExists(remaining - 1)
+    waitForPaginatedResponse(alias).then((nextPrefetchedPage) => {
+      appendPrefetchedPage(nextPrefetchedPage, remainingClicks - 1)
     })
   }
 
-  waitForPageTransition(0)
-  clickIfExists(maxClicks)
+  waitForPaginatedResponse(alias).then((firstPage) => {
+    expectedRenderedCount = firstPage.count
+    waitForRenderedItems(itemSelector, expectedRenderedCount)
+  })
+  waitForPaginatedResponse(alias).then((prefetchedPage) => {
+    appendPrefetchedPage(prefetchedPage, maxClicks)
+  })
 }
 
 /**
@@ -754,6 +782,7 @@ export function createDspProductSpec({ name, version = '0.1', brand, productNumb
   })
   cy.closeFeedbackModalIfVisible()
 
+  clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="prodSpecRow"]')
   cy.getBySel('prodSpecTable').should('be.visible')
   cy.getBySel('prodSpecTable').contains(name).should('be.visible')
 }
@@ -809,13 +838,12 @@ export function createDspOffering({
   cy.getBySel('offerName').should('be.visible').type(name)
   cy.getBySel('offerVersion').should('have.value', version)
   cy.getBySel('textArea').type(description)
-  // Register intercept before click so the step-2 request is captured
-  cy.intercept('GET', '**/catalog/productSpecification?*').as('prodSpecList')
-  cy.getBySel('offerNext').click()
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+    cy.getBySel('offerNext').click()
+  })
 
   // Step 2: Product Specification (DSP-compatible)
-  cy.wait('@prodSpecList')
-  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*', '[data-cy="prodSpecs"] tr')
+  clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains(productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -867,7 +895,7 @@ export function createDspOffering({
   })
 
   cy.closeFeedbackModalIfVisible()
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+  clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
 
   cy.getBySel('offers').should('be.visible')
   cy.getBySel('offers').contains(name).should('be.visible')

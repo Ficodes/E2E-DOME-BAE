@@ -100,13 +100,13 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 3: Launch offering
     // ============================================
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -122,7 +122,7 @@ describe('Manual Bill Settle Edge Case', {
       cy.getBySel('invoices').click()
     })
     cy.wait(1000)
-    clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
     cy.get('body').then($body => {
       const initialCount = $body.find('[data-cy="invoiceRow"]').length
       cy.log(`Initial invoice count: ${initialCount}`)
@@ -141,7 +141,7 @@ describe('Manual Bill Settle Edge Case', {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="baeCard"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -229,7 +229,7 @@ describe('Manual Bill Settle Edge Case', {
     waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
-    clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
 
     cy.get('@initialInvoiceCount').then((initialCount: any) => {
       cy.getBySel('invoiceRow').should('have.length', initialCount + 1)
@@ -245,7 +245,7 @@ describe('Manual Bill Settle Edge Case', {
     waitForInitialPaginatedList('**/inventory/product?*', () => {
       cy.visit('/product-inventory')
     })
-    clickLoadMoreUntilGone(10, '**/inventory/product?*', '[data-cy="productInventory"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="productInventory"]')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
     cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
 
@@ -260,7 +260,7 @@ describe('Manual Bill Settle Edge Case', {
       waitForInitialPaginatedList('**/billing/customerBill?*', () => {
         cy.getBySel('invoices').click()
       })
-      clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+      clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
 
       cy.getBySel('invoiceRow').last().within(() => {
         cy.getBySel('invoiceDetails').click()

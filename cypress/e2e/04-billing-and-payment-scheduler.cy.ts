@@ -151,13 +151,13 @@ describe('Billing Scheduler Period Coverage', {
     // ============================================
     // Step 2: Launch the offering
     // ============================================
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -169,7 +169,7 @@ describe('Billing Scheduler Period Coverage', {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="baeCard"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -213,7 +213,7 @@ describe('Billing Scheduler Period Coverage', {
     waitForInitialPaginatedList('**/inventory/product?*', () => {
       cy.visit('/product-inventory')
     })
-    clickLoadMoreUntilGone(10, '**/inventory/product?*', '[data-cy="productInventory"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="productInventory"]')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
     cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
 
@@ -315,7 +315,7 @@ describe('Billing Scheduler Period Coverage', {
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
-          clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+          clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
 
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
@@ -400,7 +400,7 @@ describe('Billing Scheduler Period Coverage', {
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
-          clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+          clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
           })
@@ -433,7 +433,7 @@ describe('Billing Scheduler Period Coverage', {
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
-          clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+          clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
           })
@@ -456,7 +456,7 @@ describe('Billing Scheduler Period Coverage', {
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
-          clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+          clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
           })
@@ -506,7 +506,7 @@ describe('Billing Scheduler Period Coverage', {
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
-          clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+          clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
 
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()

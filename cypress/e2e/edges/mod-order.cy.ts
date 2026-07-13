@@ -75,7 +75,6 @@ describe('Product Modification Order E2E', {
       ]
     })
 
-    clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*', '[data-cy="prodSpecRow"]')
     updateProductSpecStatus({ name: productSpecName, status: 'launched' })
 
     // ============================================
@@ -122,7 +121,7 @@ describe('Product Modification Order E2E', {
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -145,7 +144,7 @@ describe('Product Modification Order E2E', {
     })
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="baeCard"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -234,7 +233,7 @@ describe('Product Modification Order E2E', {
     waitForInitialPaginatedList('**/inventory/product?*', () => {
       cy.visit('/product-inventory')
     })
-    clickLoadMoreUntilGone(10, '**/inventory/product?*', '[data-cy="productInventory"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="productInventory"]')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
 
     // ============================================
@@ -289,7 +288,7 @@ describe('Product Modification Order E2E', {
     waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
-    clickLoadMoreUntilGone(10, '**/billing/customerBill?*', '[data-cy="invoiceRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="invoiceRow"]')
 
     cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
       cy.contains('settled').should('be.visible')

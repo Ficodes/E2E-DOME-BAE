@@ -81,7 +81,7 @@ describe('Manual Offering E2E', {
       cy.getBySel('offerSection').click()
     })
     cy.getBySel('offers').should('be.visible')
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
 
     cy.getBySel('offers').contains(manualOfferingName).should('be.visible').parent().contains('Launched')
 
@@ -101,7 +101,7 @@ describe('Manual Offering E2E', {
     })
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="baeCard"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="baeCard"]')
     // Find the manual offering card and open its add-to-cart drawer
     cy.openAddToCartDrawerFromSearch(manualOfferingName)
 
@@ -201,7 +201,7 @@ describe('Manual Offering E2E', {
       cy.visit('/product-inventory')
     })
 
-    clickLoadMoreUntilGone(10, '**/inventory/product?*', '[data-cy="productInventory"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="productInventory"]')
 
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', manualOfferingName).contains('active')
   })
@@ -281,7 +281,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
       cy.getBySel('offerSection').click()
     })
     cy.getBySel('offers').should('be.visible')
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="offerRow"]')
 
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
@@ -301,7 +301,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     })
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="baeCard"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="baeCard"]')
     // Find the offering card and open its add-to-cart drawer
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -383,7 +383,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
       cy.visit('/product-inventory')
     })
 
-    clickLoadMoreUntilGone(10, '**/inventory/product?*', '[data-cy="productInventory"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="productInventory"]')
 
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
   })

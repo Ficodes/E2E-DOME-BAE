@@ -125,7 +125,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
       cy.visit('/search')
     })
     cy.wait('@cartItem', {timeout: 60000})
-    clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="baeCard"]')
+    clickLoadMoreUntilGone(10, '@paginatedList', '[data-cy="baeCard"]')
     cy.openAddToCartDrawerFromSearch(offeringName)
   }
 

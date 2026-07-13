@@ -292,7 +292,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     // Switch to BUYER and purchase
     cy.changeSessionTo('BUYER ORG')
 
-    cy.visit('/dashboard')
+    // cy.visit('/dashboard')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')
@@ -373,6 +373,7 @@ describe('Multi-Price Component Billing Edge Cases', {
          usageInput: [HAPPY_JOURNEY.metric.name, HAPPY_JOURNEY.metric.metrics[0].name]},
       procurement: "automatic"
     })
+
     updateOffering({ name: offeringName, status: 'launched' })
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
@@ -397,7 +398,7 @@ describe('Multi-Price Component Billing Edge Cases', {
       cy.wrap(initialCount).as('initialInvoiceCount')
     })
 
-    cy.visit('/dashboard')
+    // cy.visit('/dashboard')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')

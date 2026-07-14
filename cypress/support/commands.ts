@@ -42,7 +42,7 @@ Cypress.Commands.add('loginAsAdmin', () => {
 // Close feedback modal if it appears
 Cypress.Commands.add('closeFeedbackModalIfVisible', () => {
   // Wait a bit for modal to potentially appear
-  cy.wait(3000)
+  // cy.wait(3000)
 
   // Try to find and close the modal with multiple retries
   cy.get('body').then($body => {

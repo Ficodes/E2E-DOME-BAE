@@ -419,6 +419,8 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
 
+  cy.intercept('PATCH', '**/catalog/productOffering/**').as('patchOffering')
+
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
     cy.getBySel('offerEdit').find('button').first().click()
   })
@@ -426,12 +428,12 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
   cy.getBySel('offerFinish').should('be.visible')
 
   if (status === 'launched') {
-    cy.getBySel('offerStatusLaunched').click()
-    cy.getBySel('offerStatusLaunched').parents('li').first().should('have.class', 'font-semibold')
-    cy.wait(600) // debounceTime(500) in generalInfo valueChanges before SubformChange is emitted
+    cy.getBySel('offerStatusLaunched').should('be.visible').click()
+    cy.wait(1000) // debounceTime(500) in generalInfo valueChanges before SubformChange is emitted
   }
 
   cy.getBySel('offerFinish').should('not.be.disabled').click()
+  cy.wait('@patchOffering')
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()

@@ -419,14 +419,14 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
 
-  cy.getBySel('offers').contains(name
-
-  ).parents('[data-cy="offerRow"]').within(() => {
+  cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
     cy.getBySel('offerEdit').find('button').first().click()
   })
 
+  cy.getBySel('offerFinish').should('be.visible')
+
   if (status === 'launched') {
-    cy.getBySel('offerStatusLaunched').should('be.visible').click()
+    cy.getBySel('offerStatusLaunched').click()
     cy.getBySel('offerStatusLaunched').parents('li').first().should('have.class', 'font-semibold')
     cy.wait(600) // debounceTime(500) in generalInfo valueChanges before SubformChange is emitted
   }

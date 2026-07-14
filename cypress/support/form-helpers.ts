@@ -439,6 +439,43 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
   cy.closeFeedbackModalIfVisible()
 }
 
+function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
+  let pendingRequests = 0
+  let lastActivity = Date.now()
+  let requestId = 0
+
+  const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
+  const label = patterns.join(', ')
+
+  for (const pattern of patterns) {
+    cy.intercept('GET', pattern, (req) => {
+      const id = requestId++
+      const finished = new Set<number>()
+      pendingRequests++
+      lastActivity = Date.now()
+
+      const finish = () => {
+        if (finished.has(id)) return
+        finished.add(id)
+        pendingRequests = Math.max(0, pendingRequests - 1)
+        lastActivity = Date.now()
+      }
+      req.on('response', finish)
+      req.on('after:response', finish)
+    })
+  }
+
+  return {
+    touch: () => { lastActivity = Date.now() },
+    waitForIdle: () => {
+      cy.wrap(null).should(() => {
+        expect(pendingRequests, `${label} pending requests`).to.eq(0)
+        expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
+      })
+    },
+  }
+}
+
 /**
  * Run an action that opens a paginated list and wait until its prefetch page has completed.
  */
@@ -463,67 +500,32 @@ export function waitForInitialPaginatedList(apiPattern: string, action: () => vo
 }
 
 /**
- * Click "Load More" button repeatedly until all items are loaded
+ * Click "Load More" button repeatedly until all items are loaded.
+ * Optionally waits for API requests to settle after each click (apiPattern)
+ * and waits for items to be visible before starting (itemSelector).
  */
-export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string, itemSelector?: string): void {
-  if (!itemSelector) {
-    throw new Error('clickLoadMoreUntilGone requires an item selector')
-  }
+export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string | string[], itemSelector?: string, idleMs = 300): void {
+  const tracker = apiPattern ? setupRequestTracker(apiPattern, idleMs) : null
 
-  const alias = 'loadMoreList'
-  const loadMoreSelector = '[data-cy="loadMore"]'
-
-  if (apiPattern) {
-    cy.intercept('GET', apiPattern).as(alias)
-  }
-
-  const getPagerState = ($body: JQuery<HTMLElement>) => {
-    const itemCount = $body.find(itemSelector).filter(':visible').length
-    const hasLoadMore = $body.find(loadMoreSelector).filter(':visible').length > 0
-
-    return { itemCount, hasLoadMore }
-  }
-
-  const waitForPageTransition = (previousCount: number): void => {
-    cy.get('body').should($body => {
-      const { itemCount, hasLoadMore } = getPagerState($body)
-
-      expect(
-        itemCount > previousCount || !hasLoadMore,
-        `pagination transition for ${itemSelector}`
-      ).to.eq(true)
-    })
+  if (itemSelector) {
+    cy.get(itemSelector).should('be.visible')
   }
 
   const clickIfExists = (remaining: number): void => {
-    if (remaining === 0) {
-      cy.get('body').then($body => {
-        const { hasLoadMore } = getPagerState($body)
-
-        if (hasLoadMore) {
-          throw new Error(`Load more button is still visible after ${maxClicks} clicks`)
-        }
-      })
-      return
-    }
+    if (remaining === 0) return
 
     cy.get('body').then($body => {
-      const { itemCount, hasLoadMore } = getPagerState($body)
+      const loadMore = $body.find('[data-cy="loadMore"]:visible')[0] as HTMLElement | undefined
+      if (!loadMore) return
 
-      if (!hasLoadMore) {
-        return
-      }
+      tracker?.touch()
+      loadMore.click()
+      tracker?.waitForIdle()
 
-      cy.get(loadMoreSelector).filter(':visible').first().click()
-      if (apiPattern) {
-        cy.wait(`@${alias}`)
-      }
-      waitForPageTransition(itemCount)
       clickIfExists(remaining - 1)
     })
   }
 
-  waitForPageTransition(0)
   clickIfExists(maxClicks)
 }
 

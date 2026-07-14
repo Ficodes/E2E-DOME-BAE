@@ -144,6 +144,7 @@ describe('Product Modification Order E2E', {
       cy.visit('/search')
     })
     cy.wait('@cartItem')
+    cy.getBySel('baeCard').should('be.visible')
 
     clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="baeCard"]')
 
@@ -274,7 +275,7 @@ describe('Product Modification Order E2E', {
       cy.get('button').contains(/confirm|Confirm/i).click()
     })
     cy.wait('@createOrder')
-    
+
     // ============================================
     // Verify modification: checkin + order + invoice
     // ============================================

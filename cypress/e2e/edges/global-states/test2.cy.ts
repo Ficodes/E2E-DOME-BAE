@@ -44,7 +44,7 @@ describe('Check order global states',  {
         manualName
       }, 2)
     })
-    
+
     // At the moment I have done this test, orders are ordered by the most recent first.
     it('should give the correct global state: test 2 - Google Sheet', () => {
       cy.visit('/')
@@ -77,7 +77,6 @@ describe('Check order global states',  {
         cy.getBySel('completeOrder').click()
       })
       cy.getBySel('confirmActionBtn').click()
-      cy.wait(2000)
       cy.wait('@getOrders')
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -98,7 +97,6 @@ describe('Check order global states',  {
         cy.getBySel('completeOrder').click()
       })
       cy.getBySel('confirmActionBtn').click()
-      cy.wait(2000)
       cy.wait('@getOrders')
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {

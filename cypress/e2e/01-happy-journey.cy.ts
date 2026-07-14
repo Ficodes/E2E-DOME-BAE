@@ -135,7 +135,6 @@ describe('Happy Journey E2E', {
     // ============================================
     // Step 8: Add offer to cart
     // ============================================
-    cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     cy.visit('/search')
     cy.wait('@cartItem')

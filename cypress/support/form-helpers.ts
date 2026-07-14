@@ -403,11 +403,12 @@ export function createOffering({
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
 
+  // Verify offering was created in table
+  cy.getBySel('offers').should('be.visible')
+
   // Load all offerings
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
 
-  // Verify offering was created in table
-  cy.getBySel('offers').should('be.visible')
   cy.getBySel('offers').contains(name).should('be.visible')
 }
 
@@ -418,21 +419,19 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
   clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
 
-  cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
+  cy.getBySel('offers').contains(name
+
+  ).parents('[data-cy="offerRow"]').within(() => {
     cy.getBySel('offerEdit').find('button').first().click()
   })
 
-  // Wait for edit page to load
-  cy.wait(2000)
-
-  // Change status
   if (status === 'launched') {
-    cy.getBySel('offerStatusLaunched').click()
-    cy.wait(1000)
+    cy.getBySel('offerStatusLaunched').should('be.visible').click()
+    cy.getBySel('offerStatusLaunched').parents('li').first().should('have.class', 'font-semibold')
+    cy.wait(600) // debounceTime(500) in generalInfo valueChanges before SubformChange is emitted
   }
 
-  // Click update button
-  cy.get('button').contains('Update Offer').click()
+  cy.getBySel('offerFinish').should('not.be.disabled').click()
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()

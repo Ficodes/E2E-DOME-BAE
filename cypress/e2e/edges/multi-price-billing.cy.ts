@@ -386,7 +386,6 @@ describe('Multi-Price Component Billing Edge Cases', {
     waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
-    cy.wait(1000)
     clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
     cy.get('body').then($body => {
       const initialCount = $body.find('[data-cy="invoiceRow"]').length

@@ -254,7 +254,7 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
 
       // Save characteristic
       cy.getBySel('btnSaveCharacteristic').click()
-      cy.wait(1000)
+      cy.getBySel('btnNewCharacteristic').should('be.visible')
     })
   }
 
@@ -623,7 +623,7 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
 
       // Save characteristic
       cy.getBySel('servSpecSaveChar').click()
-      cy.wait(1000)
+      cy.getBySel('servSpecNewChar').should('be.visible')
     })
   }
 
@@ -637,7 +637,6 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
   cy.closeFeedbackModalIfVisible()
 
   // Verify service spec appears in list
-  cy.wait(2000)
   cy.contains(name).should('be.visible')
 }
 
@@ -686,7 +685,7 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
 
       // Save characteristic
       cy.getBySel('resSpecSaveChar').click()
-      cy.wait(1000)
+      cy.getBySel('resSpecNewChar').should('be.visible')
     })
   }
 
@@ -700,7 +699,6 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
   cy.closeFeedbackModalIfVisible()
 
   // Verify resource spec appears in list
-  cy.wait(2000)
   cy.contains(name).should('be.visible')
 }
 
@@ -931,7 +929,7 @@ export function createUsageSpec({ name, description, metrics = [] }: UsageSpecPa
 
       // Save metric
       cy.getBySel('btnSaveMetric').click()
-      cy.wait(1000)
+      cy.getBySel('btnNewMetric').should('be.visible')
     })
   }
 
@@ -945,7 +943,6 @@ export function createUsageSpec({ name, description, metrics = [] }: UsageSpecPa
   cy.closeFeedbackModalIfVisible()
 
   // Verify usage spec appears in table
-  cy.wait(2000)
   cy.getBySel('usageSpecTable').should('be.visible')
   cy.getBySel('usageSpecTable').contains(name).should('be.visible')
 }

@@ -53,10 +53,7 @@ Cypress.Commands.add('closeFeedbackModalIfVisible', () => {
       cy.get('button[data-modal-hide="details-modal"]')
         .should('be.visible')
         .click({ force: true })
-        .then(() => {
-          // Wait a bit for modal to close
-          cy.wait(500)
-        })
+      cy.get('button[data-modal-hide="details-modal"]').should('not.be.visible')
     }
   })
 })

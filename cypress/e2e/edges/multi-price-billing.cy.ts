@@ -143,7 +143,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     // ============================================
     // Step 4: Add offering to cart and purchase
     // ============================================
-    cy.visit('/dashboard')
+    // cy.visit('/dashboard')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.visit('/search')

@@ -440,27 +440,98 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
 }
 
 
-/**
- * Run an action that opens a paginated list and wait until its prefetch page has completed.
- */
-export function waitForInitialPaginatedList(apiPattern: string, action: () => void): void {
-  const alias = 'initialPaginatedList'
+function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
+  let pendingRequests = 0
+  let lastActivity = Date.now()
+  let requestId = 0
 
-  cy.intercept('GET', apiPattern).as(alias)
-  action()
+  const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
+  const label = patterns.join(', ')
 
-  const waitUntilPrefetch = (): void => {
-    cy.wait(`@${alias}`).then((interception) => {
-      const url = new URL(interception.request.url)
-      const offset = Number(url.searchParams.get('offset') || '0')
+  for (const pattern of patterns) {
+    cy.intercept('GET', pattern, (req) => {
+      const id = requestId++
+      const finished = new Set<number>()
+      pendingRequests++
+      lastActivity = Date.now()
 
-      if (offset <= 0) {
-        waitUntilPrefetch()
+      const finish = () => {
+        if (finished.has(id)) return
+        finished.add(id)
+        pendingRequests = Math.max(0, pendingRequests - 1)
+        lastActivity = Date.now()
       }
+      req.on('response', finish)
+      req.on('after:response', finish)
     })
   }
 
-  waitUntilPrefetch()
+  return {
+    waitForIdle: () => {
+      cy.wrap(null).should(() => {
+        expect(pendingRequests, `${label} pending requests`).to.eq(0)
+        expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
+      })
+    },
+  }
+}
+
+/**
+ * Run an action that triggers a paginated list load and wait until all matching requests settle.
+ */
+export function waitForInitialPaginatedList(apiPattern: string | string[], action: () => void, idleMs = 300): void {
+  const tracker = setupRequestTracker(apiPattern, idleMs)
+  action()
+  tracker.waitForIdle()
+}
+
+/**
+ * Register a single intercept for reuse across multiple actions.
+ * Avoids accumulating handlers when the same URL pattern must be waited on multiple times.
+ * Use waitForAction() instead of registering a new intercept each time.
+ */
+export function createRequestTracker(apiPattern: string | string[], idleMs = 300) {
+  let pendingRequests = 0
+  let lastActivity = Date.now()
+  let seenRequest = false
+  let requestId = 0
+
+  const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
+  const label = patterns.join(', ')
+
+  for (const pattern of patterns) {
+    cy.intercept('GET', pattern, (req) => {
+      const id = requestId++
+      const finished = new Set<number>()
+      seenRequest = true
+      pendingRequests++
+      lastActivity = Date.now()
+
+      const finish = () => {
+        if (finished.has(id)) return
+        finished.add(id)
+        pendingRequests = Math.max(0, pendingRequests - 1)
+        lastActivity = Date.now()
+      }
+      req.on('response', finish)
+      req.on('after:response', finish)
+    })
+  }
+
+  return {
+    waitForAction: (action: () => void) => {
+      cy.then(() => {
+        seenRequest = false
+        lastActivity = Date.now()
+      })
+      action()
+      cy.wrap(null).should(() => {
+        expect(seenRequest, `${label} has seen requests`).to.eq(true)
+        expect(pendingRequests, `${label} pending requests`).to.eq(0)
+        expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
+      })
+    },
+  }
 }
 
 /**

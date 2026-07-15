@@ -340,7 +340,7 @@ export function createOffering({
 
   // Step 2: Select the Product Specification
   cy.wait('@prodSpecList')
-  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*', '[data-cy="prodSpecs"] tr')
+  clickLoadMoreUntilGone(10, '[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains( productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -407,7 +407,7 @@ export function createOffering({
   cy.getBySel('offers').should('be.visible')
 
   // Load all offerings
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
 
   cy.getBySel('offers').contains(name).should('be.visible')
 }
@@ -417,7 +417,7 @@ export function createOffering({
  */
 export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
 
   cy.intercept('PATCH', '**/catalog/productOffering/**').as('patchOffering')
 
@@ -439,42 +439,6 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
   cy.closeFeedbackModalIfVisible()
 }
 
-function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
-  let pendingRequests = 0
-  let lastActivity = Date.now()
-  let requestId = 0
-
-  const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
-  const label = patterns.join(', ')
-
-  for (const pattern of patterns) {
-    cy.intercept('GET', pattern, (req) => {
-      const id = requestId++
-      const finished = new Set<number>()
-      pendingRequests++
-      lastActivity = Date.now()
-
-      const finish = () => {
-        if (finished.has(id)) return
-        finished.add(id)
-        pendingRequests = Math.max(0, pendingRequests - 1)
-        lastActivity = Date.now()
-      }
-      req.on('response', finish)
-      req.on('after:response', finish)
-    })
-  }
-
-  return {
-    touch: () => { lastActivity = Date.now() },
-    waitForIdle: () => {
-      cy.wrap(null).should(() => {
-        expect(pendingRequests, `${label} pending requests`).to.eq(0)
-        expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
-      })
-    },
-  }
-}
 
 /**
  * Run an action that opens a paginated list and wait until its prefetch page has completed.
@@ -501,12 +465,10 @@ export function waitForInitialPaginatedList(apiPattern: string, action: () => vo
 
 /**
  * Click "Load More" button repeatedly until all items are loaded.
- * Optionally waits for API requests to settle after each click (apiPattern)
- * and waits for items to be visible before starting (itemSelector).
+ * Waits for the loadMoreLoading spinner to appear then disappear after each click.
+ * Optionally waits for itemSelector to be visible before starting.
  */
-export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string | string[], itemSelector?: string, idleMs = 300): void {
-  const tracker = apiPattern ? setupRequestTracker(apiPattern, idleMs) : null
-
+export function clickLoadMoreUntilGone(maxClicks = 10, itemSelector?: string): void {
   if (itemSelector) {
     cy.get(itemSelector).should('be.visible')
   }
@@ -518,9 +480,8 @@ export function clickLoadMoreUntilGone(maxClicks = 10, apiPattern?: string | str
       const loadMore = $body.find('[data-cy="loadMore"]:visible')[0] as HTMLElement | undefined
       if (!loadMore) return
 
-      tracker?.touch()
       loadMore.click()
-      tracker?.waitForIdle()
+      cy.getBySel('loadMoreLoading').should('not.exist')
 
       clickIfExists(remaining - 1)
     })
@@ -818,7 +779,7 @@ export function createDspOffering({
 
   // Step 2: Product Specification (DSP-compatible)
   cy.wait('@prodSpecList')
-  clickLoadMoreUntilGone(10, '**/catalog/productSpecification?*', '[data-cy="prodSpecs"] tr')
+  clickLoadMoreUntilGone(10, '[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains(productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -870,7 +831,7 @@ export function createDspOffering({
   })
 
   cy.closeFeedbackModalIfVisible()
-  clickLoadMoreUntilGone(10, '**/catalog/productOffering?*', '[data-cy="offerRow"]')
+  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
 
   cy.getBySel('offers').should('be.visible')
   cy.getBySel('offers').contains(name).should('be.visible')

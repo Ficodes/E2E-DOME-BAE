@@ -154,9 +154,7 @@ describe('Manual Bill Settle Edge Case', {
     cy.getBySel('shoppingCart').click()
     cy.getBySel('cartPurchase').click()
 
-    cy.wait(2000)
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
 
     // Intercept order creation to capture the order id

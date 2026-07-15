@@ -169,9 +169,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     // ============================================
     // Step 5: Wait for billing address and checkout
     // ============================================
-    cy.wait(2000)
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')
@@ -312,9 +310,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.getBySel('shoppingCart').click()
     cy.getBySel('cartPurchase').click()
 
-    cy.wait(2000)
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')
@@ -421,9 +417,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.getBySel('shoppingCart').click()
     cy.getBySel('cartPurchase').click()
 
-    cy.wait(2000)
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')

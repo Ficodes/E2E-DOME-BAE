@@ -109,9 +109,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
       cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
 
-      cy.wait(2000)
       cy.wait('@getBilling')
-      cy.wait(2000)
       cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
       cy.wait('@createOrder')
       cy.wait('@getOrders')

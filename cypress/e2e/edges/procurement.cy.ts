@@ -118,9 +118,7 @@ describe('Manual Offering E2E', {
     // ============================================
     // Step 5: wait billing address
     // ============================================
-    cy.wait(2000)
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')
@@ -318,9 +316,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     // Step 5: Complete checkout (automatic payment)
     // ============================================
-    cy.wait(2000)
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')

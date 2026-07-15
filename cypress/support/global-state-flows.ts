@@ -167,9 +167,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
 
   cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
 
-  cy.wait(2000)
   cy.wait('@getBilling')
-  cy.wait(2000)
   cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
   cy.wait('@createOrder', { timeout: 60000 })
   cy.wait('@getOrders')

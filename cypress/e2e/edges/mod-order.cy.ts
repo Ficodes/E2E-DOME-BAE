@@ -194,7 +194,6 @@ describe('Product Modification Order E2E', {
     })
 
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')
@@ -266,7 +265,6 @@ describe('Product Modification Order E2E', {
     // ============================================
     // The modal appears with existing billing addresses
     cy.wait('@getBilling')
-    cy.wait(2000)
 
     // Click on the first billing address to select it
     cy.get('.backdrop-blur-sm').should('be.visible').within(() => {

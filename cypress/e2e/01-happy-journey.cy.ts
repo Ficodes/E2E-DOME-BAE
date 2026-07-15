@@ -167,8 +167,6 @@ describe('Happy Journey E2E', {
 
     cy.wait('@saveBilling')
     cy.wait('@getBilling')
-    // Wait for the billing address to be processed and selected
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')

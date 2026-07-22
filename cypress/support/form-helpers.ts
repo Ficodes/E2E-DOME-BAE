@@ -254,7 +254,7 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
 
       // Save characteristic
       cy.getBySel('btnSaveCharacteristic').click()
-      cy.wait(1000)
+      cy.getBySel('btnNewCharacteristic').should('be.visible')
     })
   }
 
@@ -489,12 +489,17 @@ export function waitForInitialPaginatedList(apiPattern: string | string[], actio
  * Register a single intercept for reuse across multiple actions.
  * Avoids accumulating handlers when the same URL pattern must be waited on multiple times.
  * Use waitForAction() instead of registering a new intercept each time.
+ *
+ * abandonMs: requests with no response after this many ms are treated as aborted and ignored.
+ * Cypress does not fire req.on('response') for requests cancelled by the app (AbortController /
+ * browser navigation), so without this, pendingRequests stays elevated indefinitely.
  */
-export function createRequestTracker(apiPattern: string | string[], idleMs = 300) {
+export function createRequestTracker(apiPattern: string | string[], idleMs = 300, abandonMs = 5000) {
   let pendingRequests = 0
   let lastActivity = Date.now()
   let seenRequest = false
   let requestId = 0
+  const pendingStartTimes = new Map<number, number>()
 
   const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
   const label = patterns.join(', ')
@@ -505,12 +510,14 @@ export function createRequestTracker(apiPattern: string | string[], idleMs = 300
       const finished = new Set<number>()
       seenRequest = true
       pendingRequests++
+      pendingStartTimes.set(id, Date.now())
       lastActivity = Date.now()
 
       const finish = () => {
         if (finished.has(id)) return
         finished.add(id)
         pendingRequests = Math.max(0, pendingRequests - 1)
+        pendingStartTimes.delete(id)
         lastActivity = Date.now()
       }
       req.on('response', finish)
@@ -522,10 +529,22 @@ export function createRequestTracker(apiPattern: string | string[], idleMs = 300
     waitForAction: (action: () => void) => {
       cy.then(() => {
         seenRequest = false
+        pendingRequests = 0
+        pendingStartTimes.clear()
         lastActivity = Date.now()
       })
       action()
       cy.wrap(null).should(() => {
+        // Requests aborted by the app (AbortController, navigation) never fire req.on('response').
+        // After abandonMs without a response, treat them as done so we don't block forever.
+        const now = Date.now()
+        for (const [id, startTime] of pendingStartTimes) {
+          if (now - startTime > abandonMs) {
+            pendingRequests = Math.max(0, pendingRequests - 1)
+            pendingStartTimes.delete(id)
+            lastActivity = now
+          }
+        }
         expect(seenRequest, `${label} has seen requests`).to.eq(true)
         expect(pendingRequests, `${label} pending requests`).to.eq(0)
         expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
@@ -623,7 +642,7 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
 
       // Save characteristic
       cy.getBySel('servSpecSaveChar').click()
-      cy.wait(1000)
+      cy.getBySel('servSpecNewChar').should('be.visible')
     })
   }
 
@@ -637,7 +656,6 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
   cy.closeFeedbackModalIfVisible()
 
   // Verify service spec appears in list
-  cy.wait(2000)
   cy.contains(name).should('be.visible')
 }
 
@@ -686,7 +704,7 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
 
       // Save characteristic
       cy.getBySel('resSpecSaveChar').click()
-      cy.wait(1000)
+      cy.getBySel('resSpecNewChar').should('be.visible')
     })
   }
 
@@ -700,7 +718,6 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
   cy.closeFeedbackModalIfVisible()
 
   // Verify resource spec appears in list
-  cy.wait(2000)
   cy.contains(name).should('be.visible')
 }
 
@@ -931,7 +948,7 @@ export function createUsageSpec({ name, description, metrics = [] }: UsageSpecPa
 
       // Save metric
       cy.getBySel('btnSaveMetric').click()
-      cy.wait(1000)
+      cy.getBySel('btnNewMetric').should('be.visible')
     })
   }
 
@@ -945,7 +962,6 @@ export function createUsageSpec({ name, description, metrics = [] }: UsageSpecPa
   cy.closeFeedbackModalIfVisible()
 
   // Verify usage spec appears in table
-  cy.wait(2000)
   cy.getBySel('usageSpecTable').should('be.visible')
   cy.getBySel('usageSpecTable').contains(name).should('be.visible')
 }

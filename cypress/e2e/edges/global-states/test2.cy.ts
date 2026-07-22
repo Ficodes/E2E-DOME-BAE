@@ -58,8 +58,7 @@ describe('Check order global states',  {
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
       cy.wait('@getOrders')
-      cy.wait(500)
-      cy.getBySel('asProviderTab').click()
+      cy.getBySel('asProviderTab').should('be.visible').click()
       cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
       // check global state
@@ -120,8 +119,7 @@ describe('Check order global states',  {
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
       cy.wait('@getOrders')
-      cy.wait(500)
-      cy.getBySel('asProviderTab').click()
+      cy.getBySel('asProviderTab').should('be.visible').click()
       cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
       // check global state

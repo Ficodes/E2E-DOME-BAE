@@ -174,8 +174,7 @@ describe('Product Modification Order E2E', {
     // ============================================
     // Create billing address if needed
     // ============================================
-    cy.wait(2000)
-
+    cy.wait('@getBilling')
     cy.get('body').then($body => {
       if ($body.find('[data-cy="billingTitle"]').length > 0) {
         createCheckoutBilling({
@@ -189,11 +188,9 @@ describe('Product Modification Order E2E', {
           phoneNumber: '600123456'
         })
         cy.intercept('POST', '**/account/billingAccount').as('saveBilling')
-        cy.wait(2000)
       }
     })
 
-    cy.wait('@getBilling')
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')

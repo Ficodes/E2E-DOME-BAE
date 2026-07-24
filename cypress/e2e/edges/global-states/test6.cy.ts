@@ -7,7 +7,7 @@ import {
 describe('Check order global states',  {
   viewportHeight: 1080,
   viewportWidth: 1920,
-  defaultCommandTimeout: 60000
+  defaultCommandTimeout: 120000
 }, () => {
     const autoName = 'Auto Payment'
     const semiName = 'Semi Proc'

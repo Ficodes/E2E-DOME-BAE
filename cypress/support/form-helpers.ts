@@ -480,9 +480,8 @@ function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
  * Run an action that triggers a paginated list load and wait until all matching requests settle.
  */
 export function waitForInitialPaginatedList(apiPattern: string | string[], action: () => void, idleMs = 300): void {
-  const tracker = setupRequestTracker(apiPattern, idleMs)
-  action()
-  tracker.waitForIdle()
+  const tracker = createRequestTracker(apiPattern, idleMs)
+  tracker.waitForAction(action)
 }
 
 /**

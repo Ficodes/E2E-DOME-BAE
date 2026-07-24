@@ -44,7 +44,7 @@ describe('Check order global states',  {
         manualName
       }, 1)
     })
-    
+
     // At the moment I have done this test, orders are ordered by the most recent first.
     it('should give the correct global state: test 1 - Google Sheet', () => {
       cy.visit('/')
@@ -58,8 +58,7 @@ describe('Check order global states',  {
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
       cy.wait('@getOrders')
-      cy.wait(500)
-      cy.getBySel('asProviderTab').click()
+      cy.getBySel('asProviderTab').should('be.visible').click()
       cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
       // check global state
@@ -77,7 +76,7 @@ describe('Check order global states',  {
         cy.getBySel('completeOrder').click()
       })
       cy.getBySel('confirmActionBtn').click()
-      cy.wait(2000)
+      cy.wait('@patchOrder')
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -97,8 +96,7 @@ describe('Check order global states',  {
         cy.getBySel('completeOrder').click()
       })
       cy.getBySel('confirmActionBtn').click()
-      cy.wait(2000)
-
+      cy.wait('@patchOrder')
       cy.wait('@getOrders')
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -121,8 +119,7 @@ describe('Check order global states',  {
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
       cy.wait('@getOrders')
-      cy.wait(500)
-      cy.getBySel('asProviderTab').click()
+      cy.getBySel('asProviderTab').should('be.visible').click()
       cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
       // check global state

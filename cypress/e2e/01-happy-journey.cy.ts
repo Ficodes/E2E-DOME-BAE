@@ -135,7 +135,6 @@ describe('Happy Journey E2E', {
     // ============================================
     // Step 8: Add offer to cart
     // ============================================
-    cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     cy.visit('/search')
     cy.wait('@cartItem')
@@ -154,7 +153,6 @@ describe('Happy Journey E2E', {
     // Step 9: create billing address
     // ============================================
 
-    cy.wait(2000)
     createCheckoutBilling({
       title: "billing 1",
       country: "ES",
@@ -168,8 +166,6 @@ describe('Happy Journey E2E', {
 
     cy.wait('@saveBilling')
     cy.wait('@getBilling')
-    // Wait for the billing address to be processed and selected
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')
@@ -201,19 +197,21 @@ describe('Happy Journey E2E', {
     // ============================================
     // Step 12: Verify service Inventory
     // ============================================
+    cy.intercept('GET', '**/serviceInventory/service?*').as('getServiceInventory')
     cy.getBySel('inventoryServices').click()
 
     // Verify service spec appears
-    cy.wait(2000)
+    cy.wait('@getServiceInventory')
     cy.contains(HAPPY_JOURNEY.serviceSpec.name).should('be.visible')
 
     // ============================================
     // Step 13: Verify resources Inventory
     // ============================================
+    cy.intercept('GET', '**/resourceInventory/resource?*').as('getResourceInventory')
     cy.getBySel('inventoryResources').click()
 
     // Verify resource spec appears
-    cy.wait(2000)
+    cy.wait('@getResourceInventory')
     cy.contains(HAPPY_JOURNEY.resourceSpec.name).should('be.visible')
 
   })

@@ -2,6 +2,7 @@ import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
   updateOffering,
   clickLoadMoreUntilGone,
+  waitForInitialPaginatedList,
 } from '../../support/form-helpers'
 
 /**
@@ -91,17 +92,21 @@ describe('Manual Bill Settle Edge Case', {
     cy.getBySel('procurement').select('automatic')
     cy.getBySel('offerNext').click()
 
-    cy.getBySel('offerFinish').click()
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerFinish').click()
+    })
     cy.closeFeedbackModalIfVisible()
 
     // ============================================
     // Step 3: Launch offering
     // ============================================
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
 
-    cy.getBySel('offerSection').click()
-    clickLoadMoreUntilGone()
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerSection').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -113,9 +118,10 @@ describe('Manual Bill Settle Edge Case', {
     // Step 5: Count existing invoices before purchase
     // ============================================
     cy.visit('/product-orders')
-    cy.getBySel('invoices').click()
-    cy.wait(1000)
-    clickLoadMoreUntilGone()
+    waitForInitialPaginatedList('**/billing/customerBill?*', () => {
+      cy.getBySel('invoices').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
     cy.get('body').then($body => {
       const initialCount = $body.find('[data-cy="invoiceRow"]').length
       cy.log(`Initial invoice count: ${initialCount}`)
@@ -130,9 +136,11 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 7: Add offering to cart and purchase
     // ============================================
-    cy.visit('/search')
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.visit('/search')
+    })
     cy.wait('@cartItem')
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -145,9 +153,7 @@ describe('Manual Bill Settle Edge Case', {
     cy.getBySel('shoppingCart').click()
     cy.getBySel('cartPurchase').click()
 
-    cy.wait(2000)
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
 
     // Intercept order creation to capture the order id
@@ -217,8 +223,10 @@ describe('Manual Bill Settle Edge Case', {
     // Step 11: Verify customer bill count increased by 1 and last bill is settled
     // ============================================
     cy.visit('/product-orders')
-    cy.getBySel('invoices').click()
-    clickLoadMoreUntilGone()
+    waitForInitialPaginatedList('**/billing/customerBill?*', () => {
+      cy.getBySel('invoices').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
 
     cy.get('@initialInvoiceCount').then((initialCount: any) => {
       cy.getBySel('invoiceRow').should('have.length', initialCount + 1)
@@ -231,8 +239,10 @@ describe('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 12: Verify product appears in inventory and capture product ID
     // ============================================
-    cy.visit('/product-inventory')
-    clickLoadMoreUntilGone()
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
+      cy.visit('/product-inventory')
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
     cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
 
@@ -244,8 +254,10 @@ describe('Manual Bill Settle Edge Case', {
       // Step 13: Go to invoices and verify the invoice detail contains the product ID
       // ============================================
       cy.visit('/product-orders')
-      cy.getBySel('invoices').click()
-      clickLoadMoreUntilGone()
+      waitForInitialPaginatedList('**/billing/customerBill?*', () => {
+        cy.getBySel('invoices').click()
+      })
+      clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
 
       cy.getBySel('invoiceRow').last().within(() => {
         cy.getBySel('invoiceDetails').click()

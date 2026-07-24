@@ -6,6 +6,7 @@ import {
   updateOffering,
   createCheckoutBilling,
   clickLoadMoreUntilGone,
+  waitForInitialPaginatedList,
 } from '../../support/form-helpers'
 
 /**
@@ -74,7 +75,7 @@ describe('Product Modification Order E2E', {
       ]
     })
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '[data-cy="prodSpecRow"]')
     updateProductSpecStatus({ name: productSpecName, status: 'launched' })
 
     // ============================================
@@ -118,8 +119,10 @@ describe('Product Modification Order E2E', {
     updateOffering({ name: offeringName, status: 'launched' })
 
     // Verify offering exists
-    cy.getBySel('offerSection').click()
-    clickLoadMoreUntilGone()
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerSection').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
@@ -137,10 +140,13 @@ describe('Product Modification Order E2E', {
     cy.getBySel('orgCountry').select('ES')
     cy.getBySel('orgUpdate').click()
 
-    cy.visit('/search')
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.visit('/search')
+    })
     cy.wait('@cartItem')
+    cy.getBySel('baeCard').should('be.visible')
 
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '[data-cy="baeCard"]')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -168,8 +174,7 @@ describe('Product Modification Order E2E', {
     // ============================================
     // Create billing address if needed
     // ============================================
-    cy.wait(2000)
-
+    cy.wait('@getBilling')
     cy.get('body').then($body => {
       if ($body.find('[data-cy="billingTitle"]').length > 0) {
         createCheckoutBilling({
@@ -183,12 +188,9 @@ describe('Product Modification Order E2E', {
           phoneNumber: '600123456'
         })
         cy.intercept('POST', '**/account/billingAccount').as('saveBilling')
-        cy.wait(2000)
       }
     })
 
-    cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')
@@ -226,8 +228,10 @@ describe('Product Modification Order E2E', {
     // ============================================
     // Verify product in inventory as active
     // ============================================
-    cy.visit('/product-inventory')
-    clickLoadMoreUntilGone()
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
+      cy.visit('/product-inventory')
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
 
     // ============================================
@@ -258,7 +262,6 @@ describe('Product Modification Order E2E', {
     // ============================================
     // The modal appears with existing billing addresses
     cy.wait('@getBilling')
-    cy.wait(2000)
 
     // Click on the first billing address to select it
     cy.get('.backdrop-blur-sm').should('be.visible').within(() => {
@@ -267,7 +270,7 @@ describe('Product Modification Order E2E', {
       cy.get('button').contains(/confirm|Confirm/i).click()
     })
     cy.wait('@createOrder')
-    
+
     // ============================================
     // Verify modification: checkin + order + invoice
     // ============================================
@@ -279,8 +282,10 @@ describe('Product Modification Order E2E', {
     cy.getBySel('ordersTable').should('be.visible')
     cy.getBySel('ordersTable').contains('completed')
 
-    cy.getBySel('invoices').click()
-    clickLoadMoreUntilGone()
+    waitForInitialPaginatedList('**/billing/customerBill?*', () => {
+      cy.getBySel('invoices').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
 
     cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
       cy.contains('settled').should('be.visible')

@@ -3,6 +3,7 @@ import {
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
+  waitForInitialPaginatedList,
 } from '../../support/form-helpers'
 
 describe('Manual Offering E2E', {
@@ -32,6 +33,7 @@ describe('Manual Offering E2E', {
     cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
+    cy.intercept('PATCH', '**/ordering/productOrder/**').as('patchOrder')
 
     // ============================================
     // Verify that catalog and product spec exist (from happy journey test)
@@ -76,9 +78,11 @@ describe('Manual Offering E2E', {
     // ============================================
     // Verify Offering exists in table with Launched status
     // ============================================
-    cy.getBySel('offerSection').click()
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerSection').click()
+    })
     cy.getBySel('offers').should('be.visible')
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
 
     cy.getBySel('offers').contains(manualOfferingName).should('be.visible').parent().contains('Launched')
 
@@ -90,13 +94,15 @@ describe('Manual Offering E2E', {
     // ============================================
     // Step 4: Add manual offer to cart
     // ============================================
-    cy.visit('/dashboard')
+    // cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    cy.visit('/search')
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.visit('/search')
+    })
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '[data-cy="baeCard"]')
     // Find the manual offering card and open its add-to-cart drawer
     cy.openAddToCartDrawerFromSearch(manualOfferingName)
 
@@ -113,9 +119,7 @@ describe('Manual Offering E2E', {
     // ============================================
     // Step 5: wait billing address
     // ============================================
-    cy.wait(2000)
     cy.wait('@getBilling')
-    cy.wait(2000)
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
     cy.wait('@getOrders')
@@ -150,7 +154,7 @@ describe('Manual Offering E2E', {
     // Acknowledge the order
     cy.getBySel('acknowledgeOrder').click()
     cy.getBySel('confirmActionBtn').click()
-    cy.wait(2000)
+    cy.wait('@patchOrder')
 
     // Find the most recent order (first row) and acknowledge it
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -160,7 +164,7 @@ describe('Manual Offering E2E', {
     // Start order treatment
     cy.getBySel('startOrderTreatment').click()
     cy.getBySel('confirmActionBtn').click()
-    cy.wait(2000)
+    cy.wait('@patchOrder')
 
     // Find the most recent order (first row) and acknowledge it
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -169,7 +173,7 @@ describe('Manual Offering E2E', {
     // Complete the order
     cy.getBySel('completeOrder').click()
     cy.getBySel('confirmActionBtn').click()
-    cy.wait(2000)
+    cy.wait('@patchOrder')
 
     // ============================================
     // Step 8: Verify order is now completed as BUYER
@@ -192,9 +196,11 @@ describe('Manual Offering E2E', {
     cy.getBySel('invoiceDetail').contains('INITIAL PAYMENT')
 
     // Verify product is in inventory with active status
-    cy.visit('/product-inventory')
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
+      cy.visit('/product-inventory')
+    })
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
 
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', manualOfferingName).contains('active')
   })
@@ -226,6 +232,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
+    cy.intercept('PATCH', '**/ordering/productOrder/**').as('patchOrder')
 
     // ============================================
     // Verify that catalog and product spec exist (from happy journey test)
@@ -270,9 +277,11 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     // Verify Offering exists in table with Launched status
     // ============================================
-    cy.getBySel('offerSection').click()
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerSection').click()
+    })
     cy.getBySel('offers').should('be.visible')
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
 
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
@@ -284,13 +293,15 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     // Step 4: Add offer to cart and checkout
     // ============================================
-    cy.visit('/dashboard')
+    // cy.visit('/dashboard')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
-    cy.visit('/search')
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.visit('/search')
+    })
     cy.wait('@cartItem')
 
-    clickLoadMoreUntilGone(10, true)
+    clickLoadMoreUntilGone(10, '[data-cy="baeCard"]')
     // Find the offering card and open its add-to-cart drawer
     cy.openAddToCartDrawerFromSearch(offeringName)
 
@@ -307,7 +318,6 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     // Step 5: Complete checkout (automatic payment)
     // ============================================
-    cy.wait(2000)
     cy.wait('@getBilling')
     cy.wait(2000)
     cy.deferPaymentRedirect()
@@ -347,7 +357,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Complete the order
     cy.getBySel('completeOrder').click()
     cy.getBySel('confirmActionBtn').click()
-    cy.wait(2000)
+    cy.wait('@patchOrder')
 
     // ============================================
     // Step 8: Verify order is now completed as BUYER
@@ -370,9 +380,11 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.getBySel('invoiceDetail').contains('INITIAL PAYMENT')
 
     // Verify product is in inventory with active status
-    cy.visit('/product-inventory')
+    waitForInitialPaginatedList('**/inventory/product?*', () => {
+      cy.visit('/product-inventory')
+    })
 
-    clickLoadMoreUntilGone()
+    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
 
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
   })

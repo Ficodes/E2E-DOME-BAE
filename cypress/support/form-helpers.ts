@@ -128,6 +128,47 @@ export interface UsageSpecParams {
   metrics?: Metric[]
 }
 
+export interface DspEndpoint {
+  name: string
+  url: string
+  description: string
+}
+
+export interface DspConfig {
+  endpoint: DspEndpoint
+  upstreamAddress: string
+  targetSpecification: string
+  serviceConfiguration: string
+  credentialsConfig: string
+  policyConfig: string
+}
+
+export interface DspContractDefinition {
+  accessPolicy: string
+  contractPolicy: string
+}
+
+export interface DspProductSpecParams {
+  name: string
+  version?: string
+  brand: string
+  productNumber: string
+  dspConfig: DspConfig
+}
+
+export interface DspOfferingParams {
+  name: string
+  version?: string
+  description: string
+  productSpecName: string
+  catalogName: string
+  detailedDescription: string
+  procurement: string
+  pricePlan?: PricePlan
+  priceComponent?: PriceComponent
+  contractDefinition: DspContractDefinition
+}
+
 /**
  * Create a new catalog
  */
@@ -144,11 +185,9 @@ export function createCatalog({ name, description }: CatalogParams): void {
   // Step 2: Finish catalog creation
   cy.getBySel('catalogFinish').click()
 
-  // Wait for redirect back to catalog list
-  cy.wait(3000)
-
-  // Close feedback modal if it appears
+  // Close feedback modal if it appears, then wait for redirect back to catalog list
   cy.closeFeedbackModalIfVisible()
+  cy.getBySel('catalogTable').should('be.visible')
 
   // Verify catalog appears in table
   cy.getBySel('catalogTable').should('be.visible')
@@ -222,10 +261,11 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
 
       // Save characteristic
       cy.getBySel('btnSaveCharacteristic').click()
-      cy.wait(1000)
+      cy.getBySel('btnNewCharacteristic').should('be.visible')
     })
   }
 
+  cy.getBySel('btnNext').click() // Skip Data space config
   cy.getBySel('btnNext').click() // Go to Resource step
   if (resourceSpecName){
     cy.getBySel('tableResourceSpecs').contains('tr', resourceSpecName).find('[id="select-checkbox"]').click()
@@ -239,7 +279,9 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
   cy.getBySel('btnNext').click() // Finish creation, view spec summary
 
   // Create product spec
-  cy.getBySel('btnCreateProduct').should('be.enabled').click()
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+    cy.getBySel('btnCreateProduct').should('be.enabled').click()
+  })
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -300,10 +342,13 @@ export function createOffering({
   cy.getBySel('offerName').should('be.visible').type(name)
   cy.getBySel('offerVersion').should('have.value', version)
   cy.getBySel('textArea').type(description)
+  // Register intercept before click so the step-2 request is captured
+  cy.intercept('GET', '**/catalog/productSpecification?*').as('prodSpecList')
   cy.getBySel('offerNext').click()
 
   // Step 2: Select the Product Specification
-  clickLoadMoreUntilGone()
+  cy.wait('@prodSpecList')
+  clickLoadMoreUntilGone(10, '[data-cy="prodSpecs"] tr')
   cy.getBySel('prodSpecs').contains( productSpecName).click()
   cy.getBySel('offerNext').click()
 
@@ -359,16 +404,19 @@ export function createOffering({
   cy.getBySel('offerNext').click()
 
   // Step 8: Finish
-  cy.getBySel('offerFinish').click()
+  waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+    cy.getBySel('offerFinish').click()
+  })
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
 
-  // Load all offerings
-  clickLoadMoreUntilGone()
-
   // Verify offering was created in table
   cy.getBySel('offers').should('be.visible')
+
+  // Load all offerings
+  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
+
   cy.getBySel('offers').contains(name).should('be.visible')
 }
 
@@ -377,59 +425,166 @@ export function createOffering({
  */
 export function updateOffering({ name, status }: UpdateOfferingParams): void {
   // Load all offerings
-  clickLoadMoreUntilGone()
+  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
+
+  cy.intercept('PATCH', '**/catalog/productOffering/**').as('patchOffering')
 
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
-    cy.get('button[type="button"]').first().click() // Click edit button
+    cy.getBySel('offerEdit').find('button').first().click()
   })
 
-  // Wait for edit page to load
-  cy.wait(2000)
+  cy.getBySel('offerFinish').should('be.visible')
 
-  // Change status
   if (status === 'launched') {
-    cy.getBySel('offerStatusLaunched').click()
-    cy.wait(1000)
+    cy.getBySel('offerStatusLaunched').should('be.visible').click()
+    cy.wait(1000) // debounceTime(500) in generalInfo valueChanges before SubformChange is emitted
   }
 
-  // Click update button
-  cy.get('button').contains('Update Offer').click()
+  cy.getBySel('offerFinish').should('not.be.disabled').click()
+  cy.wait('@patchOffering')
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
 }
 
-/**
- * Click "Load More" button repeatedly until all items are loaded
- */
-export function clickLoadMoreUntilGone(maxClicks = 10, offering: boolean = false): void {
-  if(offering){
-    cy.intercept('**/catalog/productOffering?*').as('offeringList')
-  }
-  cy.wait(5000)
-  const clickIfExists = (remainingClicks: number, retries = 5): void => {
-    if (remainingClicks === 0) return
 
-    cy.wait(2000)
-    cy.get('body').then($body => {
-      const $btn = $body.find('[data-cy="loadMore"]:visible')
-      const $loading = $body.find('[data-cy="loadMoreLoading"]:visible')
-      if ($btn.length > 0) {
-        cy.wrap($btn).click()
-        if (offering) {
-          cy.wait('@offeringList')
-        }
-        clickIfExists(remainingClicks - 1)
-      } else if ($loading.length > 0) {
-        cy.getBySel('loadMoreLoading', { timeout: 120000 }).should('not.exist')
-        clickIfExists(remainingClicks)
-      } else if (retries > 0) {
-        // Retry: button might still be loading
-        clickIfExists(remainingClicks, retries - 1)
+function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
+  let pendingRequests = 0
+  let lastActivity = Date.now()
+  let requestId = 0
+
+  const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
+  const label = patterns.join(', ')
+
+  for (const pattern of patterns) {
+    cy.intercept('GET', pattern, (req) => {
+      const id = requestId++
+      const finished = new Set<number>()
+      pendingRequests++
+      lastActivity = Date.now()
+
+      const finish = () => {
+        if (finished.has(id)) return
+        finished.add(id)
+        pendingRequests = Math.max(0, pendingRequests - 1)
+        lastActivity = Date.now()
       }
-      // No button after all retries = done
+      req.on('response', finish)
+      req.on('after:response', finish)
     })
   }
+
+  return {
+    waitForIdle: () => {
+      cy.wrap(null).should(() => {
+        expect(pendingRequests, `${label} pending requests`).to.eq(0)
+        expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
+      })
+    },
+  }
+}
+
+/**
+ * Run an action that triggers a paginated list load and wait until all matching requests settle.
+ */
+export function waitForInitialPaginatedList(apiPattern: string | string[], action: () => void, idleMs = 300): void {
+  const tracker = setupRequestTracker(apiPattern, idleMs)
+  action()
+  tracker.waitForIdle()
+}
+
+/**
+ * Register a single intercept for reuse across multiple actions.
+ * Avoids accumulating handlers when the same URL pattern must be waited on multiple times.
+ * Use waitForAction() instead of registering a new intercept each time.
+ *
+ * abandonMs: requests with no response after this many ms are treated as aborted and ignored.
+ * Cypress does not fire req.on('response') for requests cancelled by the app (AbortController /
+ * browser navigation), so without this, pendingRequests stays elevated indefinitely.
+ */
+export function createRequestTracker(apiPattern: string | string[], idleMs = 300, abandonMs = 5000) {
+  let pendingRequests = 0
+  let lastActivity = Date.now()
+  let seenRequest = false
+  let requestId = 0
+  const pendingStartTimes = new Map<number, number>()
+
+  const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
+  const label = patterns.join(', ')
+
+  for (const pattern of patterns) {
+    cy.intercept('GET', pattern, (req) => {
+      const id = requestId++
+      const finished = new Set<number>()
+      seenRequest = true
+      pendingRequests++
+      pendingStartTimes.set(id, Date.now())
+      lastActivity = Date.now()
+
+      const finish = () => {
+        if (finished.has(id)) return
+        finished.add(id)
+        pendingRequests = Math.max(0, pendingRequests - 1)
+        pendingStartTimes.delete(id)
+        lastActivity = Date.now()
+      }
+      req.on('response', finish)
+      req.on('after:response', finish)
+    })
+  }
+
+  return {
+    waitForAction: (action: () => void) => {
+      cy.then(() => {
+        seenRequest = false
+        pendingRequests = 0
+        pendingStartTimes.clear()
+        lastActivity = Date.now()
+      })
+      action()
+      cy.wrap(null).should(() => {
+        // Requests aborted by the app (AbortController, navigation) never fire req.on('response').
+        // After abandonMs without a response, treat them as done so we don't block forever.
+        const now = Date.now()
+        for (const [id, startTime] of pendingStartTimes) {
+          if (now - startTime > abandonMs) {
+            pendingRequests = Math.max(0, pendingRequests - 1)
+            pendingStartTimes.delete(id)
+            lastActivity = now
+          }
+        }
+        expect(seenRequest, `${label} has seen requests`).to.eq(true)
+        expect(pendingRequests, `${label} pending requests`).to.eq(0)
+        expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
+      })
+    },
+  }
+}
+
+/**
+ * Click "Load More" button repeatedly until all items are loaded.
+ * Waits for the loadMoreLoading spinner to appear then disappear after each click.
+ * Optionally waits for itemSelector to be visible before starting.
+ */
+export function clickLoadMoreUntilGone(maxClicks = 10, itemSelector?: string): void {
+  if (itemSelector) {
+    cy.get(itemSelector).should('be.visible')
+  }
+
+  const clickIfExists = (remaining: number): void => {
+    if (remaining === 0) return
+
+    cy.get('body').then($body => {
+      const loadMore = $body.find('[data-cy="loadMore"]:visible')[0] as HTMLElement | undefined
+      if (!loadMore) return
+
+      loadMore.click()
+      cy.getBySel('loadMoreLoading').should('not.exist')
+
+      clickIfExists(remaining - 1)
+    })
+  }
+
   clickIfExists(maxClicks)
 }
 
@@ -495,7 +650,7 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
 
       // Save characteristic
       cy.getBySel('servSpecSaveChar').click()
-      cy.wait(1000)
+      cy.getBySel('servSpecNewChar').should('be.visible')
     })
   }
 
@@ -509,7 +664,6 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
   cy.closeFeedbackModalIfVisible()
 
   // Verify service spec appears in list
-  cy.wait(2000)
   cy.contains(name).should('be.visible')
 }
 
@@ -558,7 +712,7 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
 
       // Save characteristic
       cy.getBySel('resSpecSaveChar').click()
-      cy.wait(1000)
+      cy.getBySel('resSpecNewChar').should('be.visible')
     })
   }
 
@@ -572,7 +726,6 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
   cy.closeFeedbackModalIfVisible()
 
   // Verify resource spec appears in list
-  cy.wait(2000)
   cy.contains(name).should('be.visible')
 }
 
@@ -617,6 +770,170 @@ export function updateServiceSpecStatus({ name, status }: UpdateServiceSpecStatu
 }
 
 /**
+ * Create a DSP-compatible product specification
+ * Enables the DSP toggle and fills the dsp_config step
+ * Steps: General → Compliance → Characteristics → DSP Config → Resource → Service → Attachments → Relationships → Summary
+ */
+export function createDspProductSpec({ name, version = '0.1', brand, productNumber, dspConfig }: DspProductSpecParams): void {
+  cy.visit('/my-offerings')
+  cy.getBySel('prdSpecSection').click()
+  cy.getBySel('createProdSpec').click()
+
+  // Step 1: General info + enable DSP compatible
+  cy.getBySel('inputName').should('be.visible').type(name)
+  cy.getBySel('inputVersion').should('have.value', version)
+  cy.getBySel('inputBrand').type(brand)
+  cy.getBySel('inputIdNumber').type(productNumber)
+  cy.get('#dsp-compatible').check({ force: true })
+
+  cy.getBySel('btnNext').click() // Compliance
+  cy.getBySel('btnNext').click() // Characteristics
+  cy.getBySel('btnNext').click() // DSP Config (inserted after characteristics)
+
+  // DSP Config step: endpoint
+  cy.getBySel('dspEndpointName').type(dspConfig.endpoint.name)
+  cy.getBySel('dspEndpointUrl').type(dspConfig.endpoint.url)
+  cy.getBySel('dspEndpointDescription').type(dspConfig.endpoint.description)
+  cy.getBySel('dspAddEndpoint').click()
+
+  // DSP Config step: form fields
+  cy.getBySel('dspUpstreamAddress').type(dspConfig.upstreamAddress)
+  cy.getBySel('dspTargetSpecification').type(dspConfig.targetSpecification, { parseSpecialCharSequences: false })
+  cy.getBySel('dspServiceConfiguration').type(dspConfig.serviceConfiguration, { parseSpecialCharSequences: false })
+  cy.getBySel('dspCredentialsConfig').type(dspConfig.credentialsConfig, { parseSpecialCharSequences: false })
+  cy.getBySel('dspPolicyConfig').type(dspConfig.policyConfig, { parseSpecialCharSequences: false })
+
+  cy.getBySel('btnNext').click() // Resource
+  cy.getBySel('btnNext').click() // Service
+  cy.getBySel('btnNext').click() // Attachments
+  cy.getBySel('btnNext').click() // Relationships
+  cy.getBySel('btnNext').click() // Summary
+
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+    cy.getBySel('btnCreateProduct').should('be.enabled').click()
+  })
+  cy.closeFeedbackModalIfVisible()
+
+  cy.getBySel('prodSpecTable').should('be.visible')
+  cy.getBySel('prodSpecTable').contains(name).should('be.visible')
+}
+
+/**
+ * Update a DSP product spec status.
+ * In the update component, dsp_config is inserted AFTER 'service' (not after 'characteristics' as in create).
+ * The step appears automatically when prod.externalId is set (no need to toggle dsp-compatible again).
+ */
+export function updateDspProductSpecStatus({ name, status }: UpdateProductSpecStatusParams): void {
+  cy.getBySel('prodSpecTable').contains(name).parents('[data-cy="prodSpecRow"]').find('[data-cy="productSpecEdit"]').click()
+
+  if (status === 'launched') {
+    cy.getBySel('productSpecStatusLaunched').click()
+  }
+
+  cy.getBySel('btnNext').click() // Compliance
+  cy.getBySel('btnNext').click() // Characteristics
+  cy.getBySel('btnNext').click() // Resource
+  cy.getBySel('btnNext').click() // Service
+  cy.getBySel('btnNext').click() // DSP Config (inserted after service in update flow)
+  cy.getBySel('btnNext').click() // Attachments
+  cy.getBySel('btnNext').click() // Relationships
+
+  cy.getBySel('productSpecUpdate').click()
+  cy.closeFeedbackModalIfVisible()
+}
+
+/**
+ * Create a DSP-compatible offering with contract definition
+ * The CONTRACT_DEFINITION step is automatically inserted after LICENSE
+ * when the selected product spec is DSP compatible.
+ * Steps: General → ProdSpec → Catalogue → Category → License → Contract Definition → Price → Procurement → Summary
+ */
+export function createDspOffering({
+  name,
+  version = '0.1',
+  description,
+  productSpecName,
+  catalogName,
+  detailedDescription,
+  procurement,
+  pricePlan,
+  priceComponent,
+  contractDefinition
+}: DspOfferingParams): void {
+  cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
+  cy.visit('/my-offerings')
+  cy.getBySel('offerSection').click()
+  cy.getBySel('newOffering').click()
+
+  // Step 1: General info
+  cy.getBySel('offerName').should('be.visible').type(name)
+  cy.getBySel('offerVersion').should('have.value', version)
+  cy.getBySel('textArea').type(description)
+  // Register intercept before click so the step-2 request is captured
+  cy.intercept('GET', '**/catalog/productSpecification?*').as('prodSpecList')
+  cy.getBySel('offerNext').click()
+
+  // Step 2: Product Specification (DSP-compatible)
+  cy.wait('@prodSpecList')
+  clickLoadMoreUntilGone(10, '[data-cy="prodSpecs"] tr')
+  cy.getBySel('prodSpecs').contains(productSpecName).click()
+  cy.getBySel('offerNext').click()
+
+  // Step 3: Catalogue
+  cy.getBySel('catalogList').contains(catalogName).click()
+  cy.getBySel('offerNext').click()
+
+  // Step 4: Category (skip)
+  cy.getBySel('offerNext').click()
+
+  // Step 5: License / Description
+  cy.getBySel('textArea').type(detailedDescription)
+  cy.getBySel('offerNext').click()
+
+  // Step 6: Contract Definition (auto-inserted because product spec is DSP compatible)
+  cy.get('#dsp-compatible').check({ force: true })
+  cy.getBySel('dspAccessPolicy').should('be.visible').type(contractDefinition.accessPolicy, { parseSpecialCharSequences: false })
+  cy.getBySel('dspContractPolicy').should('be.visible').type(contractDefinition.contractPolicy, { parseSpecialCharSequences: false })
+  cy.getBySel('offerNext').click()
+
+  // Step 7: Price Plans
+  if (pricePlan) {
+    cy.getBySel('pricePlanType').select('paid')
+    cy.getBySel('newPricePlan').click()
+    cy.getBySel('pricePlanName').type(pricePlan.name)
+    cy.getBySel('textArea').type(pricePlan.description || '')
+    cy.getBySel('savePricePlan').should('have.attr', 'disabled')
+    if (priceComponent) {
+      cy.getBySel('newPriceComponent').click()
+      cy.getBySel('priceComponentName').type(priceComponent.name)
+      cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type(priceComponent.description)
+      cy.getBySel('price').type(String(priceComponent.price))
+      cy.getBySel('priceType').select(priceComponent.type)
+      cy.getBySel('savePriceComponent').click()
+    }
+    cy.getBySel('savePricePlan').click()
+  } else {
+    cy.getBySel('pricePlanType').select('free')
+  }
+  cy.getBySel('offerNext').click()
+
+  // Step 8: Procurement
+  cy.getBySel('procurement').select(procurement)
+  cy.getBySel('offerNext').click()
+
+  // Step 9: Summary → Create
+  waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+    cy.getBySel('offerFinish').click()
+  })
+
+  cy.closeFeedbackModalIfVisible()
+  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
+
+  cy.getBySel('offers').should('be.visible')
+  cy.getBySel('offers').contains(name).should('be.visible')
+}
+
+/**
  * Create a new usage specification
  */
 export function createUsageSpec({ name, description, metrics = [] }: UsageSpecParams): void {
@@ -639,7 +956,7 @@ export function createUsageSpec({ name, description, metrics = [] }: UsageSpecPa
 
       // Save metric
       cy.getBySel('btnSaveMetric').click()
-      cy.wait(1000)
+      cy.getBySel('btnNewMetric').should('be.visible')
     })
   }
 
@@ -653,7 +970,6 @@ export function createUsageSpec({ name, description, metrics = [] }: UsageSpecPa
   cy.closeFeedbackModalIfVisible()
 
   // Verify usage spec appears in table
-  cy.wait(2000)
   cy.getBySel('usageSpecTable').should('be.visible')
   cy.getBySel('usageSpecTable').contains(name).should('be.visible')
 }

@@ -76,8 +76,6 @@ describe('DOME System E2E Tests', {
 
   it('should interact with frontend after loading', () => {
     cy.visit('/')
-    cy.wait(2000)
-
     // Verify page loaded
     cy.get('body').should('be.visible')
   })

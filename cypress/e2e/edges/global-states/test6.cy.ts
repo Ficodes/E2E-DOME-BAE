@@ -77,7 +77,7 @@ describe('Check order global states',  {
         cy.getBySel('completeOrder').click()
       })
       cy.getBySel('confirmActionBtn').click()
-      cy.wait(2000)
+      cy.wait('@patchOrder')
       cy.wait('@getOrders')
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -98,7 +98,7 @@ describe('Check order global states',  {
         cy.getBySel('completeOrder').click()
       })
       cy.getBySel('confirmActionBtn').click()
-      cy.wait(2000)
+      cy.wait('@patchOrder')
       cy.wait('@getOrders')
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {

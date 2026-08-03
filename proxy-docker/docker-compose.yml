@@ -34,6 +34,7 @@ services:
           # Service Configuration
           - BAE_LP_PORT=8004
           - BAE_LP_HOST=0.0.0.0
+          - BAE_LP_CORS_EXPOSE_REDIRECT=true
 
           # Charging Backend Connection
           - BAE_LP_CHARGING_SERVER=http://charging.docker:8006

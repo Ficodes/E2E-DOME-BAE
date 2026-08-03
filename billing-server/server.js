@@ -160,7 +160,7 @@ app.post('/v1/checkout/sessions', (req, res) => {
     status: 'open',
     customer: customerId,
     payment_intent: paymentIntentId,
-    url: `http://localhost:${PORT}/stripe-checkout?session_id=${sessionId}`,
+    url: `http://localhost:${PORT}/stripe/checkin`,
     line_items: lineItems,
   }
   stripeSessions.set(sessionId, session)

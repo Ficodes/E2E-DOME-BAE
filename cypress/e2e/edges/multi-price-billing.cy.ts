@@ -3,6 +3,7 @@ import {
   updateOffering,
   clickLoadMoreUntilGone,
   createOffering,
+  selectProcurementMode,
 } from '../../support/form-helpers'
 
 /**
@@ -43,6 +44,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
+    cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
 
     // ============================================
     // Verify that catalog and product spec exist (from happy journey test)
@@ -112,7 +114,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.getBySel('offerNext').click()
 
     // Step 1.7: Procurement - Set to automatic
-    cy.getBySel('procurement').select('automatic')
+    selectProcurementMode('automatic')
     cy.getBySel('offerNext').click()
 
     // Step 1.8: Finish
@@ -165,14 +167,16 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait(2000)
     cy.wait('@getBilling')
     cy.wait(2000)
+    cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
-    cy.wait('@getOrders')
+    cy.waitForOrdersBeforePayment()
 
     // Complete payment simulation
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.completePayment()
+    cy.completePayment({ recurring: true })
     cy.wait('@checkin')
+    cy.waitForOrdersAfterPayment()
 
     // ============================================
     // Step 6: Verify Customer Bill and ACBRs
@@ -207,6 +211,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
+    cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
 
     // Verify catalog and product spec exist
     cy.visit('/my-offerings')
@@ -265,7 +270,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.getBySel('savePricePlan').click()
     cy.getBySel('offerNext').click()
 
-    cy.getBySel('procurement').select('automatic')
+    selectProcurementMode('automatic')
     cy.getBySel('offerNext').click()
 
     cy.getBySel('offerFinish').click()
@@ -274,6 +279,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     clickLoadMoreUntilGone()
     updateOffering({ name: offeringName, status: 'launched' })
 
+    cy.visit('/my-offerings')
     cy.getBySel('offerSection').click()
     clickLoadMoreUntilGone()
     cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
@@ -302,13 +308,15 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait(2000)
     cy.wait('@getBilling')
     cy.wait(2000)
+    cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
-    cy.wait('@getOrders')
+    cy.waitForOrdersBeforePayment()
 
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.completePayment()
+    cy.completePayment({ recurring: true })
     cy.wait('@checkin')
+    cy.waitForOrdersAfterPayment()
 
     cy.getBySel('ordersTable').should('be.visible')
     cy.getBySel('ordersTable').contains('completed')
@@ -404,13 +412,15 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.wait(2000)
     cy.wait('@getBilling')
     cy.wait(2000)
+    cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
-    cy.wait('@getOrders')
+    cy.waitForOrdersBeforePayment()
 
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.completePayment()
+    cy.completePayment({ recurring: true })
     cy.wait('@checkin')
+    cy.waitForOrdersAfterPayment()
 
     cy.getBySel('ordersTable').should('be.visible')
     cy.getBySel('ordersTable').contains('completed')

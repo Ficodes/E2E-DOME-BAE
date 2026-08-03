@@ -189,14 +189,16 @@ describe('Product Modification Order E2E', {
 
     cy.wait('@getBilling')
     cy.wait(2000)
+    cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
-    cy.wait('@getOrders')
+    cy.waitForOrdersBeforePayment()
 
     // Confirm payment
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.completePayment()
+    cy.completePayment({ recurring: true })
     cy.wait('@checkin')
+    cy.waitForOrdersAfterPayment()
 
     // ============================================
     // Verify initial purchase: order completed + invoice
@@ -264,6 +266,7 @@ describe('Product Modification Order E2E', {
     cy.get('.backdrop-blur-sm').should('be.visible').within(() => {
       cy.get('app-billing-address').first().click()
       // Click confirm modify button
+      cy.deferPaymentRedirect()
       cy.get('button').contains(/confirm|Confirm/i).click()
     })
     cy.wait('@createOrder')
@@ -272,7 +275,7 @@ describe('Product Modification Order E2E', {
     // Verify modification: checkin + order + invoice
     // ============================================
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkinModify')
-    cy.completePayment()
+    cy.completePayment({ recurring: true })
     cy.wait('@checkinModify')
 
     cy.visit('/product-orders')

@@ -59,6 +59,13 @@ export interface UpdateOfferingParams {
   status: string
 }
 
+export function selectProcurementMode(procurement: string): void {
+  cy.wait('@getPaymentInfo')
+  cy.getBySel('procurement')
+    .select(procurement)
+    .should('have.value', procurement)
+}
+
 export interface BillingParams {
   title: string
   country: string
@@ -284,6 +291,7 @@ export function createOffering({
   procurement
 }: OfferingParams): void {
   cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
+  cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
   cy.visit('/my-offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
@@ -347,7 +355,7 @@ export function createOffering({
   cy.getBySel('offerNext').click()
 
   // Step 7: procurement info
-  cy.getBySel('procurement').select(procurement)
+  selectProcurementMode(procurement)
   cy.getBySel('offerNext').click()
 
   // Step 8: Finish
@@ -405,12 +413,16 @@ export function clickLoadMoreUntilGone(maxClicks = 10, offering: boolean = false
     cy.wait(2000)
     cy.get('body').then($body => {
       const $btn = $body.find('[data-cy="loadMore"]:visible')
+      const $loading = $body.find('[data-cy="loadMoreLoading"]:visible')
       if ($btn.length > 0) {
         cy.wrap($btn).click()
         if (offering) {
           cy.wait('@offeringList')
         }
         clickIfExists(remainingClicks - 1)
+      } else if ($loading.length > 0) {
+        cy.getBySel('loadMoreLoading', { timeout: 120000 }).should('not.exist')
+        clickIfExists(remainingClicks)
       } else if (retries > 0) {
         // Retry: button might still be loading
         clickIfExists(remainingClicks, retries - 1)

@@ -1,6 +1,12 @@
 // Import commands
 import './commands'
 
+afterEach(() => {
+  if (Cypress.env('PAYMENT_METHOD') === 'redsys') {
+    cy.visit('/')
+  }
+})
+
 // Extend Cypress namespace with custom commands
 declare global {
   namespace Cypress {
@@ -39,10 +45,30 @@ declare global {
       clearBilling(): Chainable<void>
 
       /**
-       * Complete the pending checkout, redirecting back to the order's success url
-       * @example cy.completePayment()
+       * Save the next payment redirect so the test can complete or cancel it later.
+       * @example cy.deferPaymentRedirect()
        */
-      completePayment(): Chainable<void>
+      deferPaymentRedirect(): Chainable<void>
+
+      /**
+       * Wait for orders before payment when using a mock payment gateway.
+       * Redsys skips this wait so Cypress can complete its external form first.
+       * @example cy.waitForOrdersBeforePayment()
+       */
+      waitForOrdersBeforePayment(): Chainable<void>
+
+      /**
+       * Wait for orders after payment when using Redsys.
+       * @example cy.waitForOrdersAfterPayment()
+       */
+      waitForOrdersAfterPayment(): Chainable<void>
+
+      /**
+       * Complete the pending checkout, redirecting back to the order's success url
+       * @param options - Set recurring for Redsys payments that require 3DS authentication
+       * @example cy.completePayment({ recurring: true })
+       */
+      completePayment(options?: { recurring?: boolean }): Chainable<void>
 
       /**
        * Cancel the pending checkout, redirecting back to the order's cancel url

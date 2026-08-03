@@ -45,7 +45,11 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.intercept('POST', '**/shoppingCart/item/').as('postCart')
       cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
       cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
+      cy.intercept('GET', '**/ordering/productOrder?*relatedParty.role=seller*').as('getProviderOrders')
       cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
+      cy.intercept('GET', '**/catalog/productOffering?*', (request) => {
+        delete request.headers['if-none-match']
+      })
 
       cy.loginAsAdmin()
       cy.on('uncaught:exception', (err) => {
@@ -102,7 +106,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('shoppingCart').click()
       cy.getBySel('cartPurchase').click()
 
-      cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
+      cy.deferPaymentRedirect()
       cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
       cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
 
@@ -111,7 +115,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.wait(2000)
       cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
       cy.wait('@createOrder')
-      cy.wait('@getOrders')
+      cy.waitForOrdersBeforePayment()
 
       // Fail the auto and semi offering
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
@@ -123,9 +127,9 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       // Navigate to product orders as provider
       cy.visit('/product-orders')
       cy.wait('@getOrders')
-      cy.wait(500)
-      cy.getBySel('asProviderTab').click()
-      cy.wait('@getOrders')
+      cy.getBySel('ordersTable').should('be.visible')
+      cy.getBySel('asProviderTab').should('be.visible').click()
+      cy.wait('@getProviderOrders')
       cy.getBySel('ordersTable').should('be.visible')
 
       // Find the most recent order and set auto and semi to failed

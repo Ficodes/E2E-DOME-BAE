@@ -103,7 +103,11 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.intercept('POST', '**/shoppingCart/item/').as('postCart')
   cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
   cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
+  cy.intercept('GET', '**/ordering/productOrder?*relatedParty.role=seller*').as('getProviderOrders')
   cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
+  cy.intercept('GET', '**/catalog/productOffering?*', (request) => {
+    delete request.headers['if-none-match']
+  })
 
   cy.loginAsAdmin()
   cy.on('uncaught:exception', (err) => {
@@ -162,7 +166,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.getBySel('shoppingCart').click()
   cy.getBySel('cartPurchase').click()
 
-  cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
+  cy.deferPaymentRedirect()
 
   cy.wait(2000)
   cy.wait('@getBilling')
@@ -176,9 +180,9 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.visit('/product-orders')
 
   cy.wait('@getOrders')
-  cy.getBySel('asProviderTab').click()
-  cy.wait('@getOrders')
-  cy.wait('@getOrders')
+  cy.getBySel('ordersTable').should('be.visible')
+  cy.getBySel('asProviderTab').should('be.visible').click()
+  cy.wait('@getProviderOrders')
   cy.wait(2000)
   cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
 

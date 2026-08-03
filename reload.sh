@@ -19,6 +19,10 @@ cd proxy-docker
 docker compose down
 cd ..
 
+cd billing-server
+docker compose down
+cd ..
+
 cd proxy-repo
 echo -e "\033[35mrecreating proxy image\033[0m"
 docker build -t proxy-system-dev -f docker/Dockerfile .
@@ -36,3 +40,8 @@ cd proxy-docker
 docker compose up -d
 cd ..
 
+# Start Billing Server
+echo -e "\033[35mStarting Billing Server...\033[0m"
+cd billing-server
+docker compose up -d --build
+cd ..

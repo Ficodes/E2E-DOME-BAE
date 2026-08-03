@@ -62,30 +62,141 @@ Cypress.Commands.add('closeFeedbackModalIfVisible', () => {
 })
 
 const BILLING_SERVER_URL = 'http://localhost:4201'
+const PAYMENT_METHOD = Cypress.env('PAYMENT_METHOD')
+const IS_REDSYS = PAYMENT_METHOD === 'redsys'
+const REDSYS_ORIGIN = Cypress.env('REDSYS_ORIGIN')
+const REDSYS_AUTH_ORIGIN = Cypress.env('REDSYS_AUTH_ORIGIN')
+let deferredPaymentUrl: string | undefined
 
 // Payment gateway endpoints are namespaced under /stripe for the Stripe client;
-// the DPAS client uses the unprefixed endpoints.
-const PAYMENT_PREFIX = Cypress.env('PAYMENT_METHOD') === 'dpas' ? '' : '/stripe'
+// the DPAS and Redsys clients use the unprefixed endpoints.
+const PAYMENT_PREFIX = ['dpas', 'redsys'].includes(PAYMENT_METHOD) ? '' : '/stripe'
 
 // Reset the mock billing-server's payment gateway state (Stripe by default)
 Cypress.Commands.add('clearBilling', () => {
+  if (IS_REDSYS) {
+    return
+  }
+
   cy.request({ url: `${BILLING_SERVER_URL}${PAYMENT_PREFIX}/clear`, method: 'POST' }).then((response) => {
     expect(response.status).to.eq(200)
   })
 })
 
+// Keep the browser on the frontend while a test inspects the unpaid order.
+// The redirect is resumed by completePayment() or cancelPayment().
+Cypress.Commands.add('deferPaymentRedirect', () => {
+  deferredPaymentUrl = undefined
+
+  cy.intercept('POST', '**/ordering/productOrder', (request) => {
+    request.continue((response) => {
+      const redirectHeader = Object.keys(response.headers).find(
+        (header) => header.toLowerCase() === 'x-redirect-url'
+      )
+      const redirectUrl = redirectHeader
+        ? response.headers[redirectHeader]
+        : undefined
+
+      if (!redirectHeader || typeof redirectUrl !== 'string' || !redirectUrl) {
+        throw new Error('Payment redirect was not returned by charging')
+      }
+
+      deferredPaymentUrl = redirectUrl
+      delete response.headers[redirectHeader]
+    })
+  }).as('createOrder')
+})
+
+const takeDeferredPaymentUrl = () => {
+  const paymentUrl = deferredPaymentUrl
+  deferredPaymentUrl = undefined
+  return paymentUrl
+}
+
+// The mock gateways redirect through /checkin before the orders page is loaded.
+// Redsys must be completed first because its external payment form is already open.
+Cypress.Commands.add('waitForOrdersBeforePayment', () => {
+  if (!IS_REDSYS) {
+    cy.wait('@getOrders')
+  }
+})
+
+Cypress.Commands.add('waitForOrdersAfterPayment', () => {
+  if (IS_REDSYS) {
+    cy.wait('@getOrders')
+  }
+})
+
 // Complete the pending checkout, redirecting back to the order's success url
-Cypress.Commands.add('completePayment', () => {
-  cy.visit(`${BILLING_SERVER_URL}${PAYMENT_PREFIX}/checkin`)
+Cypress.Commands.add('completePayment', (options: { recurring?: boolean } = {}) => {
+  const paymentUrl = takeDeferredPaymentUrl()
+
+  if (IS_REDSYS) {
+    if (options.recurring) {
+      cy.origin(REDSYS_AUTH_ORIGIN, () => {
+        Cypress.on('uncaught:exception', (err) => {
+          if (err.message.includes('$ is not defined')) {
+            return false
+          }
+        })
+      })
+    }
+
+    if (paymentUrl) {
+      cy.visit(paymentUrl)
+    }
+
+    cy.origin(REDSYS_ORIGIN, () => {
+      cy.get('#card-number').should('be.visible').type('4548814479727229')
+      cy.get('#card-expiration').type('1249')
+      cy.get('#card-cvv').type('123')
+      cy.get('body').then(($body) => {
+        if ($body.find('#cardholder-name').length) {
+          cy.get('#cardholder-name').type('E2E TEST')
+        }
+      })
+      cy.get('#divImgAceptar').should('be.visible').click()
+    })
+
+    if (options.recurring) {
+      cy.origin(REDSYS_AUTH_ORIGIN, () => {
+        cy.get('input[name="option"][value="1"]').should('be.visible').check()
+        cy.get('#boton').should('be.visible').click()
+      })
+    }
+
+    return cy.origin(REDSYS_ORIGIN, () => {
+      cy.get('input[type="button"][lngid="continuar"]').should('be.visible').click()
+    })
+  }
+
+  cy.visit(paymentUrl || `${BILLING_SERVER_URL}${PAYMENT_PREFIX}/checkin`)
 })
 
 // Cancel the pending checkout, redirecting back to the order's cancel url
 Cypress.Commands.add('cancelPayment', () => {
+  const paymentUrl = takeDeferredPaymentUrl()
+
+  if (IS_REDSYS) {
+    if (paymentUrl) {
+      cy.visit(paymentUrl)
+    }
+
+    return cy.origin(REDSYS_ORIGIN, () => {
+      cy.get('#divImgCancelar').should('be.visible').click()
+      cy.get('input[type="button"][lngid="continuar"]').should('be.visible').click()
+    })
+  }
+
   cy.visit(`${BILLING_SERVER_URL}${PAYMENT_PREFIX}/bad-checkin`)
 })
 
 // Mark the next checkout as left pending instead of completed
 Cypress.Commands.add('setPaymentPending', () => {
+  if (IS_REDSYS) {
+    return
+  }
+
   cy.request({ url: `${BILLING_SERVER_URL}${PAYMENT_PREFIX}/set-pending`, method: 'GET' }).then((response) => {
     expect(response.status).to.eq(200)
   })

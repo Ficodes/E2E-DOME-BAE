@@ -156,18 +156,25 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.wait('@postCart')
 
   //MANUAL
+  const cartReadyTracker = createRequestTracker([
+    '**/shoppingCart/item/',
+    '**/catalog/productOffering/**',
+    '**/catalog/productSpecification/**',
+  ], 500)
   openOfferingDrawer(offeringManualName)
   // Select the drawer that contains the manual offering name
-  cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringManualName} to cart`).within(() => {
-    cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
-    cy.getBySel('acceptTermsCheckbox').click()
-    cy.getBySel('addToCart').click()
+  cartReadyTracker.waitForAction(() => {
+    cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringManualName} to cart`).within(() => {
+      cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
+      cy.getBySel('acceptTermsCheckbox').click()
+      cy.getBySel('addToCart').click()
+    })
   })
   cy.wait('@postOrder')
   cy.wait('@postCart')
 
   cy.getBySel('shoppingCart').click()
-  cy.getBySel('cartPurchase').click()
+  cy.getBySel('cartPurchase').should('be.visible').should('not.be.disabled').click()
 
   cy.deferPaymentRedirect()
 

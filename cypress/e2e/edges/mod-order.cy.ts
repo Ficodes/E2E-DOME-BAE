@@ -177,6 +177,7 @@ describe('Product Modification Order E2E', {
     cy.wait('@getBilling')
     cy.get('body').then($body => {
       if ($body.find('[data-cy="billingTitle"]').length > 0) {
+        cy.intercept('POST', '**/account/billingAccount').as('saveBilling')
         createCheckoutBilling({
           title: 'ModOrder Billing',
           country: 'ES',
@@ -187,11 +188,11 @@ describe('Product Modification Order E2E', {
           email: 'buyer@test.com',
           phoneNumber: '600123456'
         })
-        cy.intercept('POST', '**/account/billingAccount').as('saveBilling')
+        cy.wait('@saveBilling')
+        cy.wait('@getBilling')
       }
     })
 
-    cy.wait('@getBilling')
     cy.wait(2000)
     cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()

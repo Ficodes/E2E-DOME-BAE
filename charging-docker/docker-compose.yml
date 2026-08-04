@@ -61,7 +61,7 @@ services:
         # Payment Configuration
         - BAE_CB_PAYMENT_METHOD=redsys
         - BAE_CB_REDSYS_MERCHANT_CODE=263100000
-        - BAE_CB_REDSYS_TERMINAL=068
+        - BAE_CB_REDSYS_TERMINAL=005
         - BAE_CB_REDSYS_SECRET_KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7
         - BAE_CB_BILLING_ENGINE=local
         - BAE_CB_DPAS_CLIENT_API_URL=http://host.docker.internal:4201/api/payment-start

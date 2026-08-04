@@ -69,7 +69,9 @@ describe('Multi-Price Component Billing Edge Cases', {
     // Step 1.1: Basic Info
     cy.getBySel('offerName').should('be.visible').type(offeringName)
     cy.getBySel('textArea').type('Offering with recurring and recurring-prepaid components')
-    cy.getBySel('offerNext').click()
+    waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+      cy.getBySel('offerNext').click()
+    })
 
     // Step 1.2: Select Product Spec
     cy.getBySel('prodSpecs').contains(productSpecName).click()
@@ -236,7 +238,9 @@ describe('Multi-Price Component Billing Edge Cases', {
 
     cy.getBySel('offerName').should('be.visible').type(offeringName)
     cy.getBySel('textArea').type('Offering with one-time and recurring-prepaid')
-    cy.getBySel('offerNext').click()
+    waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+      cy.getBySel('offerNext').click()
+    })
 
     cy.getBySel('prodSpecs').contains(productSpecName).click()
     cy.getBySel('offerNext').click()

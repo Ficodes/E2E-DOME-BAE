@@ -33,6 +33,7 @@ services:
         # Service Configuration
         - BAE_SERVICE_HOST=http://proxy.docker:8004/
         - BAE_CB_LOCAL_SITE=http://charging.docker:8006/
+        - GUNICORN_CMD_ARGS=--timeout 120
 
         # TMForum APIs - all-in-one (port 8633)
         - BAE_CB_CATALOG=http://host.docker.internal:8633/tmf-api/productCatalogManagement/v4
@@ -58,7 +59,10 @@ services:
         - BAE_LP_OAUTH2_CUSTOMER_ROLE=customer
         - BAE_LP_OAUTH2_ORG_ADMIN_ROLE=orgAdmin
         # Payment Configuration
-        - BAE_CB_PAYMENT_METHOD=stripe
+        - BAE_CB_PAYMENT_METHOD=redsys
+        - BAE_CB_REDSYS_MERCHANT_CODE=263100000
+        - BAE_CB_REDSYS_TERMINAL=005
+        - BAE_CB_REDSYS_SECRET_KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7
         - BAE_CB_BILLING_ENGINE=local
         - BAE_CB_DPAS_CLIENT_API_URL=http://host.docker.internal:4201/api/payment-start
         - BAE_SERVICE_HOST=http://localhost:4200/
@@ -70,4 +74,3 @@ services:
 networks:
     main:
         external: true
-

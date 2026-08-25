@@ -13,7 +13,9 @@ export default defineConfig({
     requestTimeout: 30000,
     responseTimeout: 60000,
     env: {
-      PAYMENT_METHOD: process.env.BAE_CB_PAYMENT_METHOD || 'stripe'
+      PAYMENT_METHOD: process.env.BAE_CB_PAYMENT_METHOD || 'redsys',
+      REDSYS_ORIGIN: process.env.BAE_CB_REDSYS_ORIGIN || 'https://sis-t.redsys.es:25443',
+      REDSYS_AUTH_ORIGIN: process.env.BAE_CB_REDSYS_AUTH_ORIGIN || 'https://sis-d.redsys.es'
     }
   }
 })

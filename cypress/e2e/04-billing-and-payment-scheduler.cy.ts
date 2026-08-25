@@ -17,13 +17,15 @@ import {
  *
  * After each billing scheduler run, also triggers the payment scheduler
  * cron job and verifies that the resulting CustomerBill ends up 'settled'
- * once the recurring charge against the stored Stripe payment method succeeds.
+ * once the recurring charge against the stored payment method succeeds.
  *
  * Requires BAE_CB_BILLING_HTTP_ENABLED=true in the charging container.
  */
 const CHARGING_URL = 'http://localhost:8006'
 const TMF_URL = 'http://localhost:8633'
+const SCORPIO_URL = 'http://localhost:1026'
 const BILLING_SERVER_URL = 'http://localhost:4201'
+const IS_REDSYS = Cypress.env('PAYMENT_METHOD') === 'redsys'
 
 const runPaymentScheduler = () => {
   cy.request({ url: `${CHARGING_URL}/charging/api/test/paymentScheduler`, method: 'POST' }).then((res) => {
@@ -38,6 +40,65 @@ const expectCustomerBillState = (billId: string, expectedState: string) => {
   }).then((res) => {
     expect(res.status).to.eq(200)
     expect(res.body.state, `CustomerBill ${billId} state`).to.eq(expectedState)
+  })
+}
+
+const patchCustomerBillAmountInScorpio = (
+  billId: string,
+  taxIncludedAmount: { unit: string, value: number | string }
+) => {
+  const value = Number(taxIncludedAmount.value)
+
+  cy.request({
+    url: `${SCORPIO_URL}/ngsi-ld/v1/entities/${encodeURIComponent(billId)}/attrs`,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/ld+json' },
+    body: {
+      taxIncludedAmount: {
+        type: 'Property',
+        tmfValue: { type: 'Property', value },
+        unit: { type: 'Property', value: taxIncludedAmount.unit },
+        value: { tmfValue: value, unit: taxIncludedAmount.unit },
+      },
+      '@context': ['https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld'],
+    },
+  }).then((res) => {
+    expect(res.status).to.eq(204)
+  })
+}
+
+const expectRecurringPaymentToRetry = (
+  billId: string,
+  stripeStatus: 'processing' | 'requires_payment_method'
+) => {
+  const runAndVerifyRetry = (restorePayment: () => void = () => {}) => {
+    runPaymentScheduler()
+    expectCustomerBillState(billId, 'new')
+
+    restorePayment()
+    runPaymentScheduler()
+    expectCustomerBillState(billId, 'settled')
+  }
+
+  if (!IS_REDSYS) {
+    cy.request(`${BILLING_SERVER_URL}/stripe/set-recurring-status/${stripeStatus}`)
+    runAndVerifyRetry()
+    return
+  }
+
+  cy.request({
+    url: `${TMF_URL}/tmf-api/customerBillManagement/v4/customerBill/${billId}`,
+    method: 'GET',
+  }).then((res) => {
+    expect(res.status).to.eq(200)
+    const originalAmount = res.body.taxIncludedAmount
+    const rejectedAmount = {
+      ...originalAmount,
+      value: `${Math.floor(Number(originalAmount.value))}.96`,
+    }
+
+    patchCustomerBillAmountInScorpio(billId, rejectedAmount)
+    runAndVerifyRetry(() => patchCustomerBillAmountInScorpio(billId, originalAmount))
   })
 }
 
@@ -66,6 +127,7 @@ describe('Billing Scheduler Period Coverage', {
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
+    cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
 
     // ============================================
     // Verify catalog and product spec exist (from happy journey)
@@ -140,7 +202,12 @@ describe('Billing Scheduler Period Coverage', {
     cy.getBySel('savePricePlan').click()
     cy.getBySel('offerNext').click()
 
-    cy.getBySel('procurement').select('automatic')
+    cy.wait('@getPaymentInfo')
+      .its('response.body.gatewaysCount')
+      .should('be.greaterThan', 0)
+    cy.getBySel('procurement')
+      .select('automatic')
+      .should('have.value', 'automatic')
     cy.getBySel('offerNext').click()
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
@@ -189,16 +256,19 @@ describe('Billing Scheduler Period Coverage', {
     cy.getBySel('cartPurchase').click()
 
     cy.wait('@getBilling')
+    cy.wait(2000)
+    cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
-    cy.wait('@getOrders')
+    cy.waitForOrdersBeforePayment()
 
     // ============================================
     // Step 4: Complete payment (activation)
     // ============================================
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.completePayment()
+    cy.completePayment({ recurring: true })
     cy.wait('@checkin')
+    cy.waitForOrdersAfterPayment()
 
     cy.getBySel('ordersTable').should('be.visible')
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -409,18 +479,12 @@ describe('Billing Scheduler Period Coverage', {
             expect(new Date(acbrs[0].periodCoverage.endDateTime).getTime()).to.equal(week2End.getTime())
 
             // ============================================
-            // Payment scheduler: recurring charge comes back pending on the
-            // first attempt, so the CB must be left untouched ('new'), then
-            // settles on the next scheduler run once the charge resolves.
+            // Stripe leaves the first charge pending; Redsys uses a sandbox
+            // rejection amount. Both must leave the bill 'new' and then settle.
             // ============================================
             const cbId = acbrs[0].bill.id
 
-            cy.request(`${BILLING_SERVER_URL}/stripe/set-recurring-status/processing`)
-            runPaymentScheduler()
-            expectCustomerBillState(cbId, 'new')
-
-            runPaymentScheduler()
-            expectCustomerBillState(cbId, 'settled')
+            expectRecurringPaymentToRetry(cbId, 'processing')
           })
 
           // — Week 3 —
@@ -465,18 +529,12 @@ describe('Billing Scheduler Period Coverage', {
             expect(new Date(acbrs[0].periodCoverage.endDateTime).getTime()).to.equal(week4End.getTime())
 
             // ============================================
-            // Payment scheduler: recurring charge fails on the first attempt,
-            // so the CB must be left untouched ('new'), then settles on the
-            // next scheduler run once the charge succeeds.
+            // Stripe requires a new payment method; Redsys uses a sandbox
+            // rejection amount. Both must leave the bill 'new' and then settle.
             // ============================================
             const cbId = acbrs[0].bill.id
 
-            cy.request(`${BILLING_SERVER_URL}/stripe/set-recurring-status/requires_payment_method`)
-            runPaymentScheduler()
-            expectCustomerBillState(cbId, 'new')
-
-            runPaymentScheduler()
-            expectCustomerBillState(cbId, 'settled')
+            expectRecurringPaymentToRetry(cbId, 'requires_payment_method')
           })
 
           // ============================================

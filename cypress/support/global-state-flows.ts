@@ -104,7 +104,11 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.intercept('POST', '**/shoppingCart/item/').as('postCart')
   cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
   cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
+  cy.intercept('GET', '**/ordering/productOrder?*relatedParty.role=seller*').as('getProviderOrders')
   cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
+  cy.intercept('GET', '**/catalog/productOffering?*', (request) => {
+    delete request.headers['if-none-match']
+  })
   cy.intercept('PATCH', '**/ordering/productOrder/**').as('patchOrder')
 
   cy.loginAsAdmin()
@@ -152,20 +156,27 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.wait('@postCart')
 
   //MANUAL
+  const cartReadyTracker = createRequestTracker([
+    '**/shoppingCart/item/',
+    '**/catalog/productOffering/**',
+    '**/catalog/productSpecification/**',
+  ], 500)
   openOfferingDrawer(offeringManualName)
   // Select the drawer that contains the manual offering name
-  cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringManualName} to cart`).within(() => {
-    cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
-    cy.getBySel('acceptTermsCheckbox').click()
-    cy.getBySel('addToCart').click()
+  cartReadyTracker.waitForAction(() => {
+    cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringManualName} to cart`).within(() => {
+      cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
+      cy.getBySel('acceptTermsCheckbox').click()
+      cy.getBySel('addToCart').click()
+    })
   })
   cy.wait('@postOrder')
   cy.wait('@postCart')
 
   cy.getBySel('shoppingCart').click()
-  cy.getBySel('cartPurchase').click()
+  cy.getBySel('cartPurchase').should('be.visible').should('not.be.disabled').click()
 
-  cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
+  cy.deferPaymentRedirect()
 
   cy.wait('@getBilling')
   cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
@@ -177,9 +188,10 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.visit('/product-orders')
 
   cy.wait('@getOrders')
-  cy.getBySel('asProviderTab').click()
-  cy.wait('@getOrders')
-  cy.wait('@getOrders')
+  cy.getBySel('ordersTable').should('be.visible')
+  cy.getBySel('asProviderTab').should('be.visible').click()
+  cy.wait('@getProviderOrders')
+  cy.wait(2000)
   cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
 
   // Find the most recent order (first row) and acknowledge it

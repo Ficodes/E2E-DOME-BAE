@@ -166,12 +166,16 @@ describe('Happy Journey E2E', {
 
     cy.wait('@saveBilling')
     cy.wait('@getBilling')
+    // Wait for the billing address to be processed and selected
+    cy.wait(2000)
+    cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
-    cy.wait('@getOrders')
+    cy.waitForOrdersBeforePayment()
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
     cy.completePayment()
     cy.wait('@checkin')
+    cy.waitForOrdersAfterPayment()
     cy.wait('@getBilling')
 
     // ============================================

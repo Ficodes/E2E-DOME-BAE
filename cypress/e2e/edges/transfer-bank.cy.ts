@@ -11,8 +11,12 @@ import {
  * Creates an offering, buys it as buyer, intercepts the order id,
  * then settles the customer bill directly via API (bypassing billing-server)
  * and verifies the order completes and product appears in inventory.
+ *
+ * This scenario is specific to the DPAS pending-payment flow.
  */
-describe('Manual Bill Settle Edge Case', {
+const describeForDpas = Cypress.env('PAYMENT_METHOD') === 'dpas' ? describe : describe.skip
+
+describeForDpas('Manual Bill Settle Edge Case', {
   viewportHeight: 1080,
   viewportWidth: 1920,
 }, () => {
@@ -154,6 +158,8 @@ describe('Manual Bill Settle Edge Case', {
     cy.getBySel('cartPurchase').click()
 
     cy.wait('@getBilling')
+    cy.wait(2000)
+    cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
 
     // Intercept order creation to capture the order id

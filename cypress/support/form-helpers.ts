@@ -59,6 +59,13 @@ export interface UpdateOfferingParams {
   status: string
 }
 
+export function selectProcurementMode(procurement: string): void {
+  cy.wait('@getPaymentInfo')
+  cy.getBySel('procurement')
+    .select(procurement)
+    .should('have.value', procurement)
+}
+
 export interface BillingParams {
   title: string
   country: string
@@ -326,6 +333,7 @@ export function createOffering({
   procurement
 }: OfferingParams): void {
   cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
+  cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
   cy.visit('/my-offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
@@ -392,7 +400,7 @@ export function createOffering({
   cy.getBySel('offerNext').click()
 
   // Step 7: procurement info
-  cy.getBySel('procurement').select(procurement)
+  selectProcurementMode(procurement)
   cy.getBySel('offerNext').click()
 
   // Step 8: Finish
@@ -443,6 +451,7 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
 function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
   let pendingRequests = 0
   let lastActivity = Date.now()
+  let seenRequest = false
   let requestId = 0
 
   const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
@@ -452,6 +461,7 @@ function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
     cy.intercept('GET', pattern, (req) => {
       const id = requestId++
       const finished = new Set<number>()
+      seenRequest = true
       pendingRequests++
       lastActivity = Date.now()
 
@@ -468,7 +478,8 @@ function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
 
   return {
     waitForIdle: () => {
-      cy.wrap(null).should(() => {
+      cy.wrap(null, { timeout: Cypress.config('responseTimeout') }).should(() => {
+        expect(seenRequest, `${label} has seen requests`).to.eq(true)
         expect(pendingRequests, `${label} pending requests`).to.eq(0)
         expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
       })
@@ -712,7 +723,9 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
   cy.getBySel('resSpecNext').click()
 
   // Step 3: Finish
-  cy.getBySel('resSpecFinish').should('be.enabled').click()
+  waitForInitialPaginatedList('**/resource/resourceSpecification?*', () => {
+    cy.getBySel('resSpecFinish').should('be.enabled').click()
+  })
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -725,6 +738,8 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
  * Update resource spec status
  */
 export function updateResourceSpecStatus({ name, status }: UpdateResourceSpecStatusParams): void {
+  cy.intercept('PATCH', '**/resource/resourceSpecification/**').as('patchResourceSpec')
+
   cy.getBySel('resSpecTable').contains(name).parents('[data-cy="resSpecRow"]').find('[data-cy="resourceSpecEdit"]').click()
 
   if (status === 'launched') {
@@ -736,6 +751,7 @@ export function updateResourceSpecStatus({ name, status }: UpdateResourceSpecSta
   cy.getBySel('resSpecUpdateNext').click() // Go to Summary step
 
   cy.getBySel('resourceSpecUpdate').click()
+  cy.wait('@patchResourceSpec').its('response.statusCode').should('eq', 200)
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()

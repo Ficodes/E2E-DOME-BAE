@@ -319,9 +319,11 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Step 5: Complete checkout (automatic payment)
     // ============================================
     cy.wait('@getBilling')
+    cy.wait(2000)
+    cy.deferPaymentRedirect()
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
-    cy.wait('@getOrders')
+    cy.waitForOrdersBeforePayment()
 
     // ============================================
     // Step 6: Verify order is in inProgress state (payment done, waiting for manual procurement)
@@ -329,6 +331,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
     cy.completePayment()
     cy.wait('@checkin')
+    cy.waitForOrdersAfterPayment()
     cy.getBySel('ordersTable').should('be.visible')
 
     // For manual procurement, get the most recent order (first row in tbody)

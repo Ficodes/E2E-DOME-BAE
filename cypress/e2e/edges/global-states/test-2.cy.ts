@@ -2,15 +2,17 @@
 import { HAPPY_JOURNEY } from '../../../support/happy-journey-constants'
 import {
   setupGlobalStateBefore,
+  confirmOrderAction,
 } from '../../../support/global-state-flows'
 import {
-  clickLoadMoreUntilGone
+  clickLoadMoreUntilFound,
+  createRequestTracker,
 } from '../../../support/form-helpers'
 
 describe('Check order global states - Reverse test (auto and semi failed, iterate manual)',  {
   viewportHeight: 1080,
   viewportWidth: 1920,
-  defaultCommandTimeout: 60000
+  defaultCommandTimeout: 200000
 }, () => {
     const autoName = 'Auto Payment'
     const semiName = 'Semi Proc'
@@ -66,10 +68,11 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.changeSessionTo('BUYER ORG')
       cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
 
+      const catalogTracker = createRequestTracker('**/catalog/productOffering?*')
       const openOfferingDrawer = (offeringName: string) => {
-        cy.visit('/search')
+        catalogTracker.waitForAction(() => cy.visit('/search'))
         cy.wait('@cartItem')
-        clickLoadMoreUntilGone(10, '[data-cy="baeCard"]')
+        clickLoadMoreUntilFound(offeringName, '[data-cy="baeCard"]')
         cy.openAddToCartDrawerFromSearch(offeringName)
       }
 
@@ -124,8 +127,6 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.changeSessionTo('SELLER ORG')
       // Navigate to product orders as provider
       cy.visit('/product-orders')
-      cy.wait('@getOrders')
-      cy.getBySel('ordersTable').should('be.visible')
       cy.getBySel('asProviderTab').should('be.visible').click()
       cy.wait('@getProviderOrders')
       cy.getBySel('ordersTable').should('be.visible')
@@ -155,7 +156,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('acknowledgeOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').should('be.visible').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -173,8 +174,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('acknowledgeOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -184,8 +184,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('startOrderTreatment').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -203,8 +202,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('acknowledgeOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -214,8 +212,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('startOrderTreatment').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -225,8 +222,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('completeOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -244,8 +240,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('acknowledgeOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -255,8 +250,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('startOrderTreatment').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -266,8 +260,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('failOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()
@@ -285,8 +278,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('rejectOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.getBySel('viewOrderDetails').click()

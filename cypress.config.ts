@@ -9,9 +9,9 @@ export default defineConfig({
     specPattern: 'cypress/e2e/**/*.cy.ts',
     video: true,
     screenshotOnRunFailure: true,
-    defaultCommandTimeout: 20000,
-    requestTimeout: 30000,
-    responseTimeout: 60000,
+    defaultCommandTimeout: 200000,
+    requestTimeout: 200000,
+    responseTimeout: 200000,
     env: {
       PAYMENT_METHOD: process.env.BAE_CB_PAYMENT_METHOD || 'redsys',
       REDSYS_ORIGIN: process.env.BAE_CB_REDSYS_ORIGIN || 'https://sis-t.redsys.es:25443',

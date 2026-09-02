@@ -11,7 +11,8 @@ import {
   createServiceSpec,
   updateResourceSpecStatus,
   updateServiceSpecStatus,
-  createUsageSpec
+  createUsageSpec,
+  waitForInitialPaginatedList
 } from '../support/form-helpers'
 
 describe('Happy Journey E2E', {
@@ -69,6 +70,8 @@ describe('Happy Journey E2E', {
 
     createProductSpec({
       name: productSpecName,
+      description: HAPPY_JOURNEY.productSpec.description,
+      howItWorks: HAPPY_JOURNEY.productSpec.description,
       brand: HAPPY_JOURNEY.productSpec.brand,
       productNumber: HAPPY_JOURNEY.productSpec.productNumber,
       serviceSpecName: HAPPY_JOURNEY.serviceSpec.name,
@@ -105,20 +108,29 @@ describe('Happy Journey E2E', {
     // ============================================
 
     // Verify Catalog exists in table
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
+    waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+      cy.visit('/my-offerings')
+      cy.getBySel('catalogSection').click()
+    })
+    cy.contains('button', 'Published').click()
     cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
+    cy.getBySel('catalogTable').contains(catalogName).parents('[data-cy="catalogRow"]').should('contain.text', 'Published')
 
     // Verify Product Spec exists in table
-    cy.getBySel('prdSpecSection').click()
+    waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+      cy.getBySel('prdSpecSection').click()
+    })
+    cy.contains('button', 'Validated').click()
     cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
+    cy.getBySel('prodSpecTable').contains(productSpecName).parents('[data-cy="prodSpecRow"]').should('contain.text', 'Validated')
 
     // Verify Offering exists in table
-    cy.getBySel('offerSection').click()
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerSection').click()
+    })
+    cy.contains('button', 'Published').click()
     cy.getBySel('offers').should('be.visible')
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
+    cy.getBySel('offers').contains(offeringName).parents('[data-cy="offerRow"]').should('contain.text', 'Published')
 
     // ============================================
     // Step 7: Set SELLER's country and Change session to BUYER ORG

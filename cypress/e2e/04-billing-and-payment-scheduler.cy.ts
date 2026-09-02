@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 import {
+  createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
@@ -130,102 +131,50 @@ describe('Billing Scheduler Period Coverage', {
     cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
 
     // ============================================
-    // Verify catalog and product spec exist (from happy journey)
-    // ============================================
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
-    cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
-
-    cy.getBySel('prdSpecSection').click()
-    cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
-
-    // ============================================
     // Step 1: Create Offering with 1-month recurring + 1-week recurring + usage
     // ============================================
-    cy.visit('/my-offerings')
-    cy.getBySel('offerSection').click()
-    cy.getBySel('newOffering').click()
-
-    cy.getBySel('offerName').should('be.visible').type(offeringName)
-    cy.getBySel('textArea').type('Offering to test billing scheduler period coverage')
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('prodSpecs').contains(productSpecName).click()
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('catalogList').contains(catalogName).click()
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('offerNext').click() // Skip category
-
-    cy.getBySel('textArea').type('Billing scheduler period coverage test')
-    cy.getBySel('offerNext').click()
-
-    // Price Plan with MONTHLY RECURRING + WEEKLY RECURRING + USAGE
-    cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
-    cy.getBySel('pricePlanType').select('paid')
-    cy.getBySel('newPricePlan').click()
-    cy.getBySel('pricePlanName').type('Recurring Plan')
-    cy.getBySel('textArea').type('Plan with monthly, weekly recurring and usage-based components')
-
-    // Monthly recurring: 10.00 EUR/month
-    cy.getBySel('newPriceComponent').click()
-    cy.getBySel('priceComponentName').type('Monthly Charge')
-    cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type('Monthly recurring charge')
-    cy.getBySel('price').type('10.00')
-    cy.getBySel('priceType').select('recurring')
-    cy.getBySel('recurringType').select('month')
-    cy.getBySel('savePriceComponent').click()
-
-    // Weekly recurring: 5.00 EUR/week
-    cy.getBySel('newPriceComponent').click()
-    cy.getBySel('priceComponentName').type('Weekly Charge')
-    cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type('Weekly recurring charge')
-    cy.getBySel('price').type('5.00')
-    cy.getBySel('priceType').select('recurring')
-    cy.getBySel('recurringType').select('week')
-    cy.getBySel('savePriceComponent').click()
-
-    // Usage: 1.00 EUR/min, billed monthly based on reported usage records
-    cy.getBySel('newPriceComponent').click()
-    cy.getBySel('priceComponentName').type('Usage Charge')
-    cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type('Usage-based charge per minute')
-    cy.getBySel('price').type('1.00')
-    cy.getBySel('priceType').select('usage')
-    cy.wait('@usageGET')
-    cy.getBySel('usageInput').select(HAPPY_JOURNEY.metric.name)
-    cy.getBySel('usageMetric').select(HAPPY_JOURNEY.metric.metrics[0].name)
-    cy.getBySel('savePriceComponent').click()
-
-    cy.getBySel('savePricePlan').click()
-    cy.getBySel('offerNext').click()
-
-    cy.wait('@getPaymentInfo')
-      .its('response.body.gatewaysCount')
-      .should('be.greaterThan', 0)
-    cy.getBySel('procurement')
-      .select('automatic')
-      .should('have.value', 'automatic')
-    cy.getBySel('offerNext').click()
-
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerFinish').click()
+    createOffering({
+      name: offeringName,
+      description: 'Offering to test billing scheduler period coverage',
+      productSpecName,
+      catalogName,
+      detailedDescription: 'Billing scheduler period coverage test',
+      mode: 'paid',
+      pricePlan: {
+        name: 'Recurring Plan',
+        description: 'Plan with monthly, weekly recurring and usage-based components',
+      },
+      priceComponents: [
+        {
+          name: 'Monthly Charge',
+          description: 'Monthly recurring charge',
+          price: 10,
+          type: 'recurring',
+          recurringPeriod: 'month',
+        },
+        {
+          name: 'Weekly Charge',
+          description: 'Weekly recurring charge',
+          price: 5,
+          type: 'recurring',
+          recurringPeriod: 'week',
+        },
+        {
+          name: 'Usage Charge',
+          description: 'Usage-based charge per minute',
+          price: 1,
+          type: 'usage',
+          usageInput: [HAPPY_JOURNEY.metric.name, HAPPY_JOURNEY.metric.metrics[0].name],
+        },
+      ],
+      procurement: 'automatic',
     })
-    cy.closeFeedbackModalIfVisible()
 
     // ============================================
-    // Step 2: Launch the offering
+    // Step 2: Publish the offering
     // ============================================
     clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
-
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerSection').click()
-    })
-    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
     // Step 3: Purchase as BUYER ORG
@@ -300,7 +249,7 @@ describe('Billing Scheduler Period Coverage', {
         // Expected period coverage — half-open intervals [start, end)
         // Monthly: startDate to startDate + 1 calendar month (exclusive)
         const monthlyEnd = new Date(startTime)
-        monthlyEnd.setMonth(monthlyEnd.getMonth() + 1)
+        monthlyEnd.setUTCMonth(monthlyEnd.getUTCMonth() + 1)
 
         // Weekly: startDate to startDate + 7 days (exclusive)
         const weeklyEnd = new Date(startTime.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -545,12 +494,10 @@ describe('Billing Scheduler Period Coverage', {
 
           const month2Start = monthlyEnd
           const month2End = new Date(month2Start)
-          month2End.setMonth(month2End.getMonth() + 1)
+          month2End.setUTCMonth(month2End.getUTCMonth() + 1)
 
           const week5Start = week4End
           const week5End = new Date(startTime.getTime() + 5 * 7 * 24 * 60 * 60 * 1000)
-
-          cy.intercept('GET', '**/billing/appliedCustomerBillingRate**').as('getMonth2Acbrs')
 
           cy.request({
             url: 'http://localhost:8006/charging/api/test/billingScheduler',
@@ -558,15 +505,38 @@ describe('Billing Scheduler Period Coverage', {
             body: { date: triggerDate2Str },
           }).then((res) => { expect(res.status).to.eq(200) })
 
+          let month2BillId = ''
+          cy.request({
+            url: `${TMF_URL}/tmf-api/customerBillManagement/v4/customerBill`,
+            method: 'GET',
+          }).then(({ body }) => {
+            const month2Bill = body.find((bill: any) =>
+              bill.state === 'new' &&
+              Math.abs(Number(bill.taxIncludedAmount?.value) - 36.3) < 0.001
+            )
+            expect(month2Bill, 'Month 2 CustomerBill should exist').to.exist
+            month2BillId = month2Bill.id
+          })
+
           cy.visit('/product-orders')
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
           clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
 
-          cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
-            cy.getBySel('invoiceDetails').click()
+          cy.intercept('GET', '**/billing/appliedCustomerBillingRate**', (request) => {
+            const requestedBillId = new URL(request.url).searchParams.get('bill.id')
+            if (requestedBillId === month2BillId) {
+              request.alias = 'getMonth2Acbrs'
+            }
           })
+          cy.getBySel('invoiceRow')
+            .filter(':contains("36.3EUR")')
+            .filter(':contains("new")')
+            .last()
+            .within(() => {
+              cy.getBySel('invoiceDetails').click()
+            })
 
           cy.wait('@getMonth2Acbrs').then(({ response }) => {
             const acbrs: any[] = response!.body

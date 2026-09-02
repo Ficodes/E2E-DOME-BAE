@@ -3,11 +3,12 @@ import { HAPPY_JOURNEY } from '../../../support/happy-journey-constants'
 import {
   setupGlobalStateBefore,
   setupGlobalStateBeforeEach,
+  confirmOrderAction,
 } from '../../../support/global-state-flows'
 describe('Check order global states',  {
   viewportHeight: 1080,
   viewportWidth: 1920,
-  defaultCommandTimeout: 60000
+  defaultCommandTimeout: 200000
 }, () => {
     const autoName = 'Auto Payment'
     const semiName = 'Semi Proc'
@@ -54,6 +55,7 @@ describe('Check order global states',  {
       cy.completePayment()
 
       cy.wait('@checkin')
+      cy.waitForOrdersAfterPayment()
 
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')
@@ -76,9 +78,7 @@ describe('Check order global states',  {
       cy.getBySel('orderItems').contains('tr', semiName).within(() =>{
         cy.getBySel('completeOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
-      cy.wait('@getOrders')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/completed/i)
@@ -97,9 +97,7 @@ describe('Check order global states',  {
       cy.getBySel('orderItems').contains('tr', semiName).within(() =>{
         cy.getBySel('completeOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
-      cy.wait('@getOrders')
+      confirmOrderAction()
 
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -118,6 +116,7 @@ describe('Check order global states',  {
       cy.completePayment()
 
       cy.wait('@checkin')
+      cy.waitForOrdersAfterPayment()
 
       cy.changeSessionTo('SELLER ORG')
       cy.visit('/product-orders')

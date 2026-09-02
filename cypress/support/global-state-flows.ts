@@ -3,7 +3,9 @@ import {
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
+  clickLoadMoreUntilFound,
   createRequestTracker,
+  waitForInitialPaginatedList,
 } from './form-helpers'
 
 export const unchecked= 'unchecked'
@@ -12,6 +14,12 @@ export const inProgress = 'inProgress'
 export const completed = 'completed'
 export const cancelled = 'cancelled'
 export const failed = 'failed'
+
+export function confirmOrderAction(): void {
+  cy.getBySel('confirmActionBtn').click()
+  cy.wait('@patchOrder')
+  cy.wait('@patchOrder')
+}
 
 interface GlobalStateSetupParams {
   catalogName: string
@@ -40,12 +48,24 @@ export function setupGlobalStateBefore(params: GlobalStateSetupParams) {
   })
   // Verify that catalog and product spec exist (from happy journey test)
   cy.visit('/my-offerings')
-  cy.getBySel('catalogSection').click()
+  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+    cy.getBySel('catalogSection').click()
+  })
+  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+    cy.contains('button', 'Published').click()
+  })
   cy.getBySel('catalogTable').should('be.visible')
+  clickLoadMoreUntilGone(10, '[data-cy="catalogRow"]')
   cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
 
-  cy.getBySel('prdSpecSection').click()
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+    cy.getBySel('prdSpecSection').click()
+  })
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+    cy.contains('button', 'Validated').click()
+  })
   cy.getBySel('prodSpecTable').should('be.visible')
+  clickLoadMoreUntilGone(10, '[data-cy="prodSpecRow"]')
   cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
 
   createOffering({
@@ -128,8 +148,8 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   const catalogTracker = createRequestTracker('**/catalog/productOffering?*')
   const openOfferingDrawer = (offeringName: string) => {
     catalogTracker.waitForAction(() => cy.visit('/search'))
-    cy.wait('@cartItem', {timeout: 60000})
-    clickLoadMoreUntilGone(10, '[data-cy="baeCard"]')
+    cy.wait('@cartItem')
+    clickLoadMoreUntilFound(offeringName, '[data-cy="baeCard"]')
     cy.openAddToCartDrawerFromSearch(offeringName)
   }
 
@@ -180,8 +200,8 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
 
   cy.wait('@getBilling')
   cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
-  cy.wait('@createOrder', { timeout: 60000 })
-  cy.wait('@getOrders')
+  cy.wait('@createOrder')
+  cy.waitForOrdersBeforePayment()
 
   cy.changeSessionTo('SELLER ORG')
   // Navigate to product orders as provider
@@ -192,7 +212,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.getBySel('asProviderTab').should('be.visible').click()
   cy.wait('@getProviderOrders')
   cy.wait(2000)
-  cy.getBySel('ordersTable', { timeout: 60000 }).should('be.visible')
+  cy.getBySel('ordersTable').should('be.visible')
 
   // Find the most recent order (first row) and acknowledge it
   cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -214,8 +234,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('acknowledgeOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
+      confirmOrderAction()
       // Find the most recent order (first row) and acknowledge it
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
@@ -226,9 +245,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('startOrderTreatment').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
-      cy.wait('@getOrders')
+      confirmOrderAction()
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
         cy.getBySel('viewOrderDetails').click()
@@ -241,9 +258,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel(orderAction).click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
-      cy.wait('@getOrders')
+      confirmOrderAction()
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
         cy.getBySel('viewOrderDetails').click()
@@ -254,9 +269,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
       cy.getBySel('orderItems').contains('tr', manualName).within(() => {
         cy.getBySel('rejectOrder').click()
       })
-      cy.getBySel('confirmActionBtn').click()
-      cy.wait('@patchOrder')
-      cy.wait('@getOrders')
+      confirmOrderAction()
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
         cy.contains(/inprogress/i)
         cy.getBySel('viewOrderDetails').click()

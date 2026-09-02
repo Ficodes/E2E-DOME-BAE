@@ -12,6 +12,8 @@ export interface UpdateCatalogStatusParams {
 
 export interface ProductSpecParams {
   name: string
+  description?: string
+  howItWorks?: string
   version?: string
   brand: string
   productNumber: string
@@ -38,6 +40,15 @@ export interface PriceComponent {
   recurringPeriod?: string
   usageInput?: [string, string]
   charLink?: { characteristicName: string; value?: string }
+  tier?: {
+    min: number
+    max: number
+    price: number
+    type: string
+    name: string
+    description: string
+    recurringPeriod?: string
+  }
 }
 
 export interface OfferingParams {
@@ -61,9 +72,20 @@ export interface UpdateOfferingParams {
 
 export function selectProcurementMode(procurement: string): void {
   cy.wait('@getPaymentInfo')
-  cy.getBySel('procurement')
-    .select(procurement)
-    .should('have.value', procurement)
+  cy.getBySel('procurement').click()
+  cy.getBySel(`procurement-${procurement}`).should('be.visible').click()
+  cy.getBySel('procurement').should('not.have.attr', 'aria-expanded', 'true')
+}
+
+function selectFirstAvailableOption(selector: string): void {
+  cy.get(selector)
+    .find('option')
+    .not('[value=""]')
+    .should('have.length.greaterThan', 0)
+    .first()
+    .then(($option) => {
+      cy.get(selector).select(String($option.val()))
+    })
 }
 
 export interface BillingParams {
@@ -198,90 +220,103 @@ export function createCatalog({ name, description }: CatalogParams): void {
  * Update catalog status
  */
 export function updateCatalogStatus({ name, status }: UpdateCatalogStatusParams): void {
-  cy.getBySel('catalogTable').contains(name).parents('[data-cy="catalogRow"]').find('[data-cy="catalogEdit"]').click()
+  expect(status).to.eq('launched')
+  cy.intercept('PATCH', '**/catalog/catalog/**').as('publishCatalog')
 
-  if (status === 'launched') {
-    cy.getBySel('catalogStatusLaunched').click()
-  }
-
-  cy.getBySel('catalogNext').click()
-  cy.getBySel('catalogUpdate').click()
+  cy.getBySel('catalogTable').contains(name).parents('[data-cy="catalogRow"]').within(() => {
+    cy.getBySel('catalogActions').click()
+  })
+  cy.getBySel('catalogPublish').should('be.visible').click()
+  cy.wait('@publishCatalog').its('response.statusCode').should('be.oneOf', [200, 204])
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
+
+  // Allow the TMForum API list cache to expire before requesting the new status.
+  cy.wait(2500)
+  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+    cy.contains('button', 'Published').click()
+  })
+  clickLoadMoreUntilGone(10, '[data-cy="catalogRow"]')
+  cy.getBySel('catalogTable').contains(name).parents('[data-cy="catalogRow"]').within(() => {
+    cy.getBySel('catalogStatus').should('contain.text', 'Published')
+  })
 }
 
 /**
  * Create a new product specification
  */
-export function createProductSpec({ name, version = '0.1', brand, productNumber, serviceSpecName = null, resourceSpecName = null, characteristics = [] }: ProductSpecParams): void {
+export function createProductSpec({
+  name,
+  description = 'E2E product specification description',
+  howItWorks = 'E2E product specification usage description',
+  serviceSpecName = null,
+  resourceSpecName = null,
+  characteristics = [],
+}: ProductSpecParams): void {
   cy.visit('/my-offerings')
   cy.getBySel('prdSpecSection').click()
   cy.getBySel('createProdSpec').click()
 
   // Fill product spec form - Step 1: General info
-  cy.getBySel('inputName').should('be.visible').type(name)
-  cy.getBySel('inputVersion').should('have.value', version)
-  cy.getBySel('inputBrand').type(brand)
-  cy.getBySel('inputIdNumber').type(productNumber)
+  cy.getBySel('prodSpecName').should('be.visible').type(name)
+  cy.get('#prod-image-upload').selectFile({
+    contents: Cypress.Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/Pu98WQAAAABJRU5ErkJggg==', 'base64'),
+    fileName: 'e2e-product.png',
+    mimeType: 'image/png'
+  }, { force: true })
 
-  // Navigate through all required steps
-  cy.getBySel('btnNext').click() // Go to Compliance step
-  cy.getBySel('btnNext').click() // Go to Characteristics step
+  cy.getBySel('prodSpecNext').should('be.enabled').click()
+  cy.getBySel('prodSpecDescription').find('textarea').type(description)
+  cy.getBySel('prodSpecHowItWorks').find('textarea').type(howItWorks)
 
-  // Step 3: Characteristics
   if (characteristics.length > 0) {
-    characteristics.forEach((char) => {
-      cy.getBySel('btnNewCharacteristic').click()
+    cy.contains('span', 'Configuration options').click({ force: true })
 
-      // Fill characteristic basic info (select type first to avoid form reset clearing name)
-      cy.getBySel('charType').should('be.visible').select(char.type)
-      cy.getBySel('charName').should('be.visible').type(char.name)
-      cy.getBySel('charDescription').type(char.description)
+    characteristics.forEach((characteristic) => {
+      cy.contains('button', 'Add configuration option').click()
+      cy.getBySel('prodSpecCharName').type(characteristic.name)
+      cy.getBySel('prodSpecCharType').select(characteristic.type)
+      cy.getBySel('prodSpecCharDescription').type(characteristic.description)
 
-      // Add values based on type
-      if (char.type === 'string') {
-        (char.values as string[]).forEach((value) => {
-          cy.getBySel('charStringValue').clear().type(value)
-          cy.getBySel('btnAddStringValue').click()
+      if (characteristic.type === 'string') {
+        ;(characteristic.values as string[]).forEach((value) => {
+          cy.getBySel('prodSpecCharValueString').type(value)
+          cy.getBySel('prodSpecAddCharValue').click()
         })
-      } else if (char.type === 'number') {
-        (char.values as CharacteristicValue[]).forEach((valueObj) => {
-          cy.getBySel('charNumberValue').clear().type(String(valueObj.value))
-          cy.getBySel('charNumberUnit').clear().type(valueObj.unit)
-          cy.getBySel('btnAddNumberValue').click()
+      } else if (characteristic.type === 'number') {
+        ;(characteristic.values as CharacteristicValue[]).forEach(({ value, unit }) => {
+          cy.getBySel('prodSpecCharValueNumber').type(String(value))
+          cy.getBySel('prodSpecCharValueUnit').type(unit)
+          cy.getBySel('prodSpecAddCharValue').click()
         })
-      } else if (char.type === 'range') {
-        const rangeValues = char.values as RangeValue
-        cy.getBySel('charRangeFrom').clear().type(String(rangeValues.from))
-        cy.getBySel('charRangeTo').clear().type(String(rangeValues.to))
-        cy.getBySel('charRangeUnit').clear().type(rangeValues.unit)
-        cy.getBySel('btnAddRangeValue').click()
+      } else {
+        const { from, to, unit } = characteristic.values as RangeValue
+        cy.getBySel('prodSpecCharValueFrom').type(String(from))
+        cy.getBySel('prodSpecCharValueTo').type(String(to))
+        cy.getBySel('prodSpecCharValueUnit').type(unit)
+        cy.getBySel('prodSpecAddCharValue').click()
       }
 
-      // Save characteristic
-      cy.getBySel('btnSaveCharacteristic').click()
-      cy.getBySel('btnNewCharacteristic').should('be.visible')
+      cy.getBySel('prodSpecSaveChar').should('be.enabled').click()
     })
   }
 
-  cy.getBySel('btnNext').click() // Skip Data space config
-  cy.getBySel('btnNext').click() // Go to Resource step
-  if (resourceSpecName){
-    cy.getBySel('tableResourceSpecs').contains('tr', resourceSpecName).find('[id="select-checkbox"]').click()
+  if (serviceSpecName) {
+    cy.contains('span', 'Service specifications').click({ force: true })
+    cy.contains('h2', 'Service specifications').parent().find('input[type="text"]').click()
+    cy.contains('label', serviceSpecName).should('be.visible').find('input[type="checkbox"]').check()
   }
-  cy.getBySel('btnNext').click() // Go to Service step
-  if (serviceSpecName){
-    cy.getBySel('tableServiceSpecs').contains('tr', serviceSpecName).find('[id="select-checkbox"]').click()
-  }
-  cy.getBySel('btnNext').click() // Go to Attachments step
-  cy.getBySel('btnNext').click() // Go to Relationships step
-  cy.getBySel('btnNext').click() // Finish creation, view spec summary
 
-  // Create product spec
-  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
-    cy.getBySel('btnCreateProduct').should('be.enabled').click()
-  })
+  if (resourceSpecName) {
+    cy.contains('span', 'Resource specifications').click({ force: true })
+    cy.contains('h2', 'Resource specification').parent().find('input[type="text"]').click()
+    cy.contains('label', resourceSpecName).should('be.visible').find('input[type="checkbox"]').check()
+  }
+
+  cy.contains('span', 'Compliance profile').click({ force: true })
+  cy.getBySel('prodSpecFinish').should('be.enabled').click()
+  cy.contains('button', 'Save as draft').should('be.enabled').click()
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -295,25 +330,24 @@ export function createProductSpec({ name, version = '0.1', brand, productNumber,
  * Update product spec status
  */
 export function updateProductSpecStatus({ name, status }: UpdateProductSpecStatusParams): void {
-  cy.getBySel('prodSpecTable').contains(name).parents('[data-cy="prodSpecRow"]').find('[data-cy="productSpecEdit"]').click()
+  expect(status).to.eq('launched')
+  cy.intercept('PATCH', '**/catalog/productSpecification/**').as('validateProductSpec')
 
-  if (status === 'launched') {
-    cy.getBySel('productSpecStatusLaunched').click()
-  }
-
-  // Navigate through steps to reach update button
-  cy.getBySel('btnNext').click() // Bundle step
-  cy.getBySel('btnNext').click() // Compliance step
-  cy.getBySel('btnNext').click() // Characteristics step
-  cy.getBySel('btnNext').click() // Resource step
-  cy.getBySel('btnNext').click() // Service step
-  cy.getBySel('btnNext').click() // Attachments step
-  cy.getBySel('btnNext').click() // Relationships step
-
-  cy.getBySel('productSpecUpdate').click()
+  cy.getBySel('prodSpecTable').contains(name).parents('[data-cy="prodSpecRow"]').within(() => {
+    cy.get('td').last().find('button').first().click()
+    cy.contains('button', 'Validate').should('be.visible').click()
+  })
+  cy.wait('@validateProductSpec').its('response.statusCode').should('be.oneOf', [200, 204])
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
+
+  cy.wait(2500)
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+    cy.contains('button', 'Validated').click()
+  })
+  clickLoadMoreUntilGone(10, '[data-cy="prodSpecRow"]')
+  cy.getBySel('prodSpecTable').contains(name).parents('[data-cy="prodSpecRow"]').should('contain.text', 'Validated')
 }
 
 /**
@@ -332,80 +366,92 @@ export function createOffering({
   priceComponents,
   procurement
 }: OfferingParams): void {
-  cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
   cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
   cy.visit('/my-offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
 
-  // Step 1: Basic Information
+  // Step 1: General information
   cy.getBySel('offerName').should('be.visible').type(name)
-  cy.getBySel('offerVersion').should('have.value', version)
-  cy.getBySel('textArea').type(description)
-  // Register intercept before click so the step-2 request is captured
-  cy.intercept('GET', '**/catalog/productSpecification?*').as('prodSpecList')
+  cy.get('#prodSpecSelect').should('be.visible').select(productSpecName)
+  cy.getBySel('offerCatalogSelect').should('be.visible').select(catalogName)
+  cy.get('body').then(($body) => {
+    if ($body.find('#generalInfoCategoryFilter').length > 0) {
+      selectFirstAvailableOption('#generalInfoCategoryFilter')
+    }
+  })
+  cy.getBySel('offerOverview').type(description)
   cy.getBySel('offerNext').click()
 
-  // Step 2: Select the Product Specification
-  cy.wait('@prodSpecList')
-  clickLoadMoreUntilGone(10, '[data-cy="prodSpecs"] tr')
-  cy.getBySel('prodSpecs').contains( productSpecName).click()
+  // Step 2: Category
+  selectFirstAvailableOption('#rootCategorySelect')
   cy.getBySel('offerNext').click()
 
-  // Step 3: Select the Catalog
-  cy.getBySel('catalogList').contains(catalogName).click()
+  // Step 3: Terms and conditions
+  cy.getBySel('tcText').find('textarea').type(detailedDescription)
   cy.getBySel('offerNext').click()
 
-  // Step 4: Select Category
-  // cy.getBySel('categoryList').should('have.length.at.least', 1)
-  // cy.getBySel('categoryList').first().click()
-  cy.getBySel('offerNext').click()
+  // Step 4: Price plans
+  if (mode === 'paid' && pricePlan) {
+    cy.contains('button', 'Online paid price').click()
+    cy.getBySel('addPricePlan').first().click()
+    cy.contains('button', 'Flex plan').click()
+    cy.getBySel('selectPlanTypeContinue').should('be.enabled').click()
+    cy.getBySel('paidName').type(pricePlan.name)
+    cy.getBySel('paidDescription').find('textarea').type(pricePlan.description || 'E2E price plan')
 
-  // Step 5: Description
-  cy.getBySel('textArea').type(detailedDescription)
-  cy.getBySel('offerNext').click()
+    const components = priceComponents || (priceComponent ? [priceComponent] : [])
+    components.forEach((pc) => {
+      cy.getBySel('addPriceComponent').click()
+      cy.getBySel('pcName').type(pc.name)
+      cy.getBySel('pcDescription').type(pc.description)
+      cy.getBySel('pcBasePrice').type(String(pc.price))
+      cy.getBySel('pcPriceType').click()
+      cy.getBySel(`pcPriceType-${pc.type}`).click()
 
-  // Step 6: Pricing (skip for basic offering)
-  cy.getBySel('pricePlanType').select(mode)
-  if(pricePlan){
-      cy.getBySel('newPricePlan').click()
-      cy.getBySel('pricePlanName').type(pricePlan.name)
-      cy.getBySel('textArea').type(pricePlan.description || '')
-      cy.getBySel('savePricePlan').should('have.attr', 'disabled')
-      const components = priceComponents || (priceComponent ? [priceComponent] : [])
-      components.forEach((pc) => {
-          cy.getBySel('newPriceComponent').click()
-          cy.getBySel('priceComponentName').type(pc.name)
-          cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type(pc.description)
-          cy.getBySel('price').type(String(pc.price))
-          if (pc.charLink) {
-              cy.getBySel('selectPriceSpecChar').select(pc.charLink.characteristicName)
-              if (pc.charLink.value) {
-                  cy.getBySel('selectPriceSpecCharValue').select(pc.charLink.value)
-              }
-          }
-          cy.getBySel('priceType').select(pc.type)
-          if (pc.recurringPeriod){
-              cy.getBySel('recurringType').select(pc.recurringPeriod)
-          }
-          else if (pc.usageInput){
-              cy.wait('@usageGET')
-              cy.getBySel('usageInput').select(pc.usageInput[0])
-              cy.getBySel('usageMetric').select(pc.usageInput[1])
-          }
-          cy.getBySel('savePriceComponent').click()
-      })
-      cy.getBySel('savePricePlan').click()
+      if (pc.charLink) {
+        cy.getBySel('pcConfigOption').select(pc.charLink.characteristicName)
+        if (pc.charLink.value) {
+          cy.getBySel('pcConfigValue').select(pc.charLink.value)
+        }
+      }
+
+      if (pc.recurringPeriod) {
+        cy.getBySel(`pcRecurringPeriod-${pc.recurringPeriod}`).check()
+      } else if (pc.usageInput) {
+        cy.getBySel('pcUsageSpec').select(pc.usageInput[0])
+        cy.getBySel('pcMetric').select(pc.usageInput[1])
+      }
+
+      if (pc.tier) {
+        cy.getBySel('pcAddTier').click()
+        cy.getBySel('tierMin').clear().type(String(pc.tier.min))
+        cy.getBySel('tierMax').clear().type(String(pc.tier.max))
+        cy.getBySel('tierPrice').type(String(pc.tier.price))
+        cy.getBySel('tierPriceType').select(pc.tier.type)
+        cy.getBySel('tierName').type(pc.tier.name)
+        cy.getBySel('tierDescription').type(pc.tier.description)
+        if (pc.tier.recurringPeriod) {
+          cy.get('[formcontrolname="recurringPeriod"]').filter(':visible').select(pc.tier.recurringPeriod)
+        }
+        cy.getBySel('pcSaveTier').should('be.enabled').click()
+      }
+
+      cy.getBySel('pcSave').should('be.enabled').click()
+    })
+
+    cy.getBySel('ppSave').should('be.enabled').click()
+  } else {
+    cy.contains('button', 'Free').click()
   }
   cy.getBySel('offerNext').click()
 
-  // Step 7: procurement info
+  // Step 5: Procurement info
   selectProcurementMode(procurement)
-  cy.getBySel('offerNext').click()
 
-  // Step 8: Finish
+  // Finish
   waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-    cy.getBySel('offerFinish').click()
+    cy.getBySel('offerFinish').should('be.enabled').click()
   })
 
   // Close feedback modal if it appears
@@ -414,8 +460,7 @@ export function createOffering({
   // Verify offering was created in table
   cy.getBySel('offers').should('be.visible')
 
-  // Load all offerings
-  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
+  clickLoadMoreUntilFound(name, '[data-cy="offerRow"]')
 
   cy.getBySel('offers').contains(name).should('be.visible')
 }
@@ -424,76 +469,28 @@ export function createOffering({
  * Update offering status
  */
 export function updateOffering({ name, status }: UpdateOfferingParams): void {
-  // Load all offerings
-  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
+  expect(status).to.eq('launched')
 
-  cy.intercept('PATCH', '**/catalog/productOffering/**').as('patchOffering')
+  clickLoadMoreUntilFound(name, '[data-cy="offerRow"]')
+
+  cy.intercept('PATCH', '**/catalog/productOffering/**').as('publishOffering')
 
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
-    cy.getBySel('offerEdit').find('button').first().click()
+    cy.getBySel('offerActions').find('button').first().click()
+    cy.contains('button', 'Publish').should('be.visible').and('not.be.disabled').click()
   })
-
-  cy.getBySel('offerFinish').should('be.visible')
-
-  if (status === 'launched') {
-    cy.getBySel('offerStatusLaunched').should('be.visible').click()
-    cy.wait(1000) // debounceTime(500) in generalInfo valueChanges before SubformChange is emitted
-  }
-
-  cy.getBySel('offerFinish').should('not.be.disabled').click()
-  cy.wait('@patchOffering')
+  cy.wait('@publishOffering').its('response.statusCode').should('be.oneOf', [200, 204])
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
 }
 
 
-function setupRequestTracker(apiPattern: string | string[], idleMs = 300) {
-  let pendingRequests = 0
-  let lastActivity = Date.now()
-  let seenRequest = false
-  let requestId = 0
-
-  const patterns = Array.isArray(apiPattern) ? apiPattern : [apiPattern]
-  const label = patterns.join(', ')
-
-  for (const pattern of patterns) {
-    cy.intercept('GET', pattern, (req) => {
-      const id = requestId++
-      const finished = new Set<number>()
-      seenRequest = true
-      pendingRequests++
-      lastActivity = Date.now()
-
-      const finish = () => {
-        if (finished.has(id)) return
-        finished.add(id)
-        pendingRequests = Math.max(0, pendingRequests - 1)
-        lastActivity = Date.now()
-      }
-      req.on('response', finish)
-      req.on('after:response', finish)
-    })
-  }
-
-  return {
-    waitForIdle: () => {
-      cy.wrap(null, { timeout: Cypress.config('responseTimeout') }).should(() => {
-        expect(seenRequest, `${label} has seen requests`).to.eq(true)
-        expect(pendingRequests, `${label} pending requests`).to.eq(0)
-        expect(Date.now() - lastActivity, `${label} idle time`).to.be.greaterThan(idleMs)
-      })
-    },
-  }
-}
-
 /**
  * Run an action that triggers a paginated list load and wait until all matching requests settle.
  */
 export function waitForInitialPaginatedList(apiPattern: string | string[], action: () => void, idleMs = 300): void {
-  const tracker = setupRequestTracker(apiPattern, idleMs)
-  action()
-  tracker.waitForIdle()
+  createRequestTracker(apiPattern, idleMs).waitForAction(action)
 }
 
 /**
@@ -581,14 +578,64 @@ export function clickLoadMoreUntilGone(maxClicks = 10, itemSelector?: string): v
       const loadMore = $body.find('[data-cy="loadMore"]:visible')[0] as HTMLElement | undefined
       if (!loadMore) return
 
-      loadMore.click()
-      cy.getBySel('loadMoreLoading').should('not.exist')
+      const previousItemCount = itemSelector ? $body.find(itemSelector).length : 0
+      cy.wrap(loadMore).click()
+
+      if (itemSelector) {
+        cy.get('body').should($updatedBody => {
+          const nextItemCount = $updatedBody.find(itemSelector).length
+          const stillHasLoadMore = $updatedBody.find('[data-cy="loadMore"]:visible').length > 0
+          expect(
+            nextItemCount > previousItemCount || !stillHasLoadMore,
+            `${itemSelector} grows or Load more disappears`,
+          ).to.eq(true)
+        })
+      } else {
+        cy.getBySel('loadMoreLoading').should('not.exist')
+      }
 
       clickIfExists(remaining - 1)
     })
   }
 
   clickIfExists(maxClicks)
+}
+
+/**
+ * Load paginated items until a specific card or row is present.
+ * This also waits for a delayed Load more button before deciding the item is absent.
+ */
+export function clickLoadMoreUntilFound(targetText: string, itemSelector: string, maxClicks = 10): void {
+  const findOrLoad = (remaining: number): void => {
+    cy.get('body').should($body => {
+      const hasTarget = [...$body.find(itemSelector)].some(item => item.textContent?.includes(targetText))
+      const hasLoadMore = $body.find('[data-cy="loadMore"]:visible').length > 0
+      expect(hasTarget || hasLoadMore, `${targetText} or Load more is available`).to.eq(true)
+    }).then($body => {
+      const hasTarget = [...$body.find(itemSelector)].some(item => item.textContent?.includes(targetText))
+      if (hasTarget) return
+
+      expect(remaining, `pages remaining while looking for ${targetText}`).to.be.greaterThan(0)
+      const loadMore = $body.find('[data-cy="loadMore"]:visible')[0] as HTMLElement
+      const previousItemCount = $body.find(itemSelector).length
+
+      cy.wrap(loadMore).scrollIntoView().click()
+      cy.get('body').should($updatedBody => {
+        const nextItemCount = $updatedBody.find(itemSelector).length
+        const nextHasTarget = [...$updatedBody.find(itemSelector)]
+          .some(item => item.textContent?.includes(targetText))
+        const stillHasLoadMore = $updatedBody.find('[data-cy="loadMore"]:visible').length > 0
+        expect(
+          nextHasTarget || nextItemCount > previousItemCount || !stillHasLoadMore,
+          `${itemSelector} grows, ${targetText} appears, or Load more disappears`,
+        ).to.eq(true)
+      })
+
+      findOrLoad(remaining - 1)
+    })
+  }
+
+  findOrLoad(maxClicks)
 }
 
 /**
@@ -624,11 +671,11 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
   // Step 2: Characteristics
   if (characteristics.length > 0) {
     characteristics.forEach((char) => {
-      cy.getBySel('servSpecNewChar').click()
+      cy.contains('button', 'Add configuration option').click()
 
       // Fill characteristic basic info
-      cy.getBySel('servSpecCharName').should('be.visible').type(char.name)
       cy.getBySel('servSpecCharType').select(char.type)
+      cy.getBySel('servSpecCharName').should('be.visible').type(char.name)
       cy.getBySel('servSpecCharDescription').type(char.description)
 
       // Add values based on type
@@ -653,15 +700,13 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
 
       // Save characteristic
       cy.getBySel('servSpecSaveChar').click()
-      cy.getBySel('servSpecNewChar').should('be.visible')
+      cy.getBySel('servSpecCharName').should('not.exist')
     })
   }
 
-  // Go to next step
-  cy.getBySel('servSpecNext').click()
-
-  // Step 3: Finish
+  // Finish and save as draft
   cy.getBySel('servSpecFinish').should('be.enabled').click()
+  cy.contains('button', 'Save as draft').should('be.enabled').click()
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -686,11 +731,11 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
   // Step 2: Characteristics
   if (characteristics.length > 0) {
     characteristics.forEach((char) => {
-      cy.getBySel('resSpecNewChar').click()
+      cy.contains('button', 'Add configuration option').click()
 
       // Fill characteristic basic info
-      cy.getBySel('resSpecCharName').should('be.visible').type(char.name)
       cy.getBySel('resSpecCharType').select(char.type)
+      cy.getBySel('resSpecCharName').should('be.visible').type(char.name)
       cy.getBySel('resSpecCharDescription').type(char.description)
 
       // Add values based on type
@@ -715,17 +760,13 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
 
       // Save characteristic
       cy.getBySel('resSpecSaveChar').click()
-      cy.getBySel('resSpecNewChar').should('be.visible')
+      cy.getBySel('resSpecCharName').should('not.exist')
     })
   }
 
-  // Go to next step
-  cy.getBySel('resSpecNext').click()
-
-  // Step 3: Finish
-  waitForInitialPaginatedList('**/resource/resourceSpecification?*', () => {
-    cy.getBySel('resSpecFinish').should('be.enabled').click()
-  })
+  // Finish and save as draft
+  cy.getBySel('resSpecFinish').should('be.enabled').click()
+  cy.contains('button', 'Save as draft').should('be.enabled').click()
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -738,43 +779,48 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
  * Update resource spec status
  */
 export function updateResourceSpecStatus({ name, status }: UpdateResourceSpecStatusParams): void {
-  cy.intercept('PATCH', '**/resource/resourceSpecification/**').as('patchResourceSpec')
+  expect(status).to.eq('launched')
+  cy.intercept('PATCH', '**/resource/resourceSpecification/**').as('validateResourceSpec')
 
-  cy.getBySel('resSpecTable').contains(name).parents('[data-cy="resSpecRow"]').find('[data-cy="resourceSpecEdit"]').click()
-
-  if (status === 'launched') {
-    cy.getBySel('resourceSpecStatusLaunched').click()
-  }
-
-  // Navigate through steps to reach update button
-  cy.getBySel('resSpecUpdateNext').click() // Go to Characteristics step
-  cy.getBySel('resSpecUpdateNext').click() // Go to Summary step
-
-  cy.getBySel('resourceSpecUpdate').click()
-  cy.wait('@patchResourceSpec').its('response.statusCode').should('eq', 200)
+  cy.getBySel('resSpecTable').contains(name).parents('[data-cy="resSpecRow"]').within(() => {
+    cy.get('td').last().find('button').first().click()
+    cy.contains('button', 'Validate').should('be.visible').click()
+  })
+  cy.wait('@validateResourceSpec').its('response.statusCode').should('be.oneOf', [200, 204])
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
+
+  cy.wait(2500)
+  waitForInitialPaginatedList('**/resource/resourceSpecification?*', () => {
+    cy.contains('button', 'Validated').click()
+  })
+  clickLoadMoreUntilGone(10, '[data-cy="resSpecRow"]')
+  cy.getBySel('resSpecTable').contains(name).parents('[data-cy="resSpecRow"]').should('contain.text', 'Validated')
 }
 
 /**
  * Update service spec status
  */
 export function updateServiceSpecStatus({ name, status }: UpdateServiceSpecStatusParams): void {
-  cy.getBySel('servSpecTable').contains(name).parents('[data-cy="servSpecRow"]').find('[data-cy="serviceSpecEdit"]').click()
+  expect(status).to.eq('launched')
+  cy.intercept('PATCH', '**/service/serviceSpecification/**').as('validateServiceSpec')
 
-  if (status === 'launched') {
-    cy.getBySel('serviceSpecStatusLaunched').click()
-  }
-
-  // Navigate through steps to reach update button
-  cy.getBySel('servSpecUpdateNext').click() // Go to Characteristics step
-  cy.getBySel('servSpecUpdateNext').click() // Go to Summary step
-
-  cy.getBySel('serviceSpecUpdate').click()
+  cy.getBySel('servSpecTable').contains(name).parents('[data-cy="servSpecRow"]').within(() => {
+    cy.get('td').last().find('button').first().click()
+    cy.contains('button', 'Validate').should('be.visible').click()
+  })
+  cy.wait('@validateServiceSpec').its('response.statusCode').should('be.oneOf', [200, 204])
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
+
+  cy.wait(2500)
+  waitForInitialPaginatedList('**/service/serviceSpecification?*', () => {
+    cy.contains('button', 'Validated').click()
+  })
+  clickLoadMoreUntilGone(10, '[data-cy="servSpecRow"]')
+  cy.getBySel('servSpecTable').contains(name).parents('[data-cy="servSpecRow"]').should('contain.text', 'Validated')
 }
 
 /**
@@ -787,39 +833,39 @@ export function createDspProductSpec({ name, version = '0.1', brand, productNumb
   cy.getBySel('prdSpecSection').click()
   cy.getBySel('createProdSpec').click()
 
-  // Step 1: General info + enable DSP compatible
-  cy.getBySel('inputName').should('be.visible').type(name)
-  cy.getBySel('inputVersion').should('have.value', version)
-  cy.getBySel('inputBrand').type(brand)
-  cy.getBySel('inputIdNumber').type(productNumber)
-  cy.get('#dsp-compatible').check({ force: true })
+  // General info
+  cy.getBySel('prodSpecName').should('be.visible').type(name)
+  cy.get('#prod-image-upload').selectFile({
+    contents: Cypress.Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/Pu98WQAAAABJRU5ErkJggg==', 'base64'),
+    fileName: 'e2e-dsp-product.png',
+    mimeType: 'image/png'
+  }, { force: true })
+  cy.getBySel('prodSpecDspCompatible').check({ force: true })
+  cy.getBySel('prodSpecNext').should('be.enabled').click()
 
-  cy.getBySel('btnNext').click() // Compliance
-  cy.getBySel('btnNext').click() // Characteristics
-  cy.getBySel('btnNext').click() // DSP Config (inserted after characteristics)
+  // Product details
+  cy.getBySel('prodSpecDescription').find('textarea').type(`${brand} ${productNumber}`)
+  cy.getBySel('prodSpecHowItWorks').find('textarea').type(`DSP product specification ${version}`)
 
-  // DSP Config step: endpoint
-  cy.getBySel('dspEndpointName').type(dspConfig.endpoint.name)
-  cy.getBySel('dspEndpointUrl').type(dspConfig.endpoint.url)
-  cy.getBySel('dspEndpointDescription').type(dspConfig.endpoint.description)
-  cy.getBySel('dspAddEndpoint').click()
+  // Dataspace configuration
+  cy.contains('span', 'Dataspace configuration').click({ force: true })
+  cy.get('input[placeholder="Endpoint name"]').should('be.visible').type(dspConfig.endpoint.name)
+  cy.get('input[placeholder="https://example.com/endpoint"]').type(dspConfig.endpoint.url)
+  cy.get('input[placeholder="Describe this endpoint"]').type(dspConfig.endpoint.description)
+  cy.contains('button', 'Add endpoint').click()
+  cy.get('[formcontrolname="upstreamAddress"]').type(dspConfig.upstreamAddress)
+  cy.contains('label', 'Target specification').parent().find('textarea')
+    .type(dspConfig.targetSpecification, { parseSpecialCharSequences: false })
+  cy.contains('label', 'Service configuration').parent().find('textarea')
+    .type(dspConfig.serviceConfiguration, { parseSpecialCharSequences: false })
+  cy.contains('label', 'Credentials config').parent().find('textarea')
+    .type(dspConfig.credentialsConfig, { parseSpecialCharSequences: false })
+  cy.contains('label', 'Policy config').parent().find('textarea')
+    .type(dspConfig.policyConfig, { parseSpecialCharSequences: false })
 
-  // DSP Config step: form fields
-  cy.getBySel('dspUpstreamAddress').type(dspConfig.upstreamAddress)
-  cy.getBySel('dspTargetSpecification').type(dspConfig.targetSpecification, { parseSpecialCharSequences: false })
-  cy.getBySel('dspServiceConfiguration').type(dspConfig.serviceConfiguration, { parseSpecialCharSequences: false })
-  cy.getBySel('dspCredentialsConfig').type(dspConfig.credentialsConfig, { parseSpecialCharSequences: false })
-  cy.getBySel('dspPolicyConfig').type(dspConfig.policyConfig, { parseSpecialCharSequences: false })
-
-  cy.getBySel('btnNext').click() // Resource
-  cy.getBySel('btnNext').click() // Service
-  cy.getBySel('btnNext').click() // Attachments
-  cy.getBySel('btnNext').click() // Relationships
-  cy.getBySel('btnNext').click() // Summary
-
-  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
-    cy.getBySel('btnCreateProduct').should('be.enabled').click()
-  })
+  cy.contains('span', 'Compliance profile').click({ force: true })
+  cy.getBySel('prodSpecFinish').should('be.enabled').click()
+  cy.contains('button', 'Save as draft').should('be.enabled').click()
   cy.closeFeedbackModalIfVisible()
 
   cy.getBySel('prodSpecTable').should('be.visible')
@@ -832,33 +878,17 @@ export function createDspProductSpec({ name, version = '0.1', brand, productNumb
  * The step appears automatically when prod.externalId is set (no need to toggle dsp-compatible again).
  */
 export function updateDspProductSpecStatus({ name, status }: UpdateProductSpecStatusParams): void {
-  cy.getBySel('prodSpecTable').contains(name).parents('[data-cy="prodSpecRow"]').find('[data-cy="productSpecEdit"]').click()
-
-  if (status === 'launched') {
-    cy.getBySel('productSpecStatusLaunched').click()
-  }
-
-  cy.getBySel('btnNext').click() // Compliance
-  cy.getBySel('btnNext').click() // Characteristics
-  cy.getBySel('btnNext').click() // Resource
-  cy.getBySel('btnNext').click() // Service
-  cy.getBySel('btnNext').click() // DSP Config (inserted after service in update flow)
-  cy.getBySel('btnNext').click() // Attachments
-  cy.getBySel('btnNext').click() // Relationships
-
-  cy.getBySel('productSpecUpdate').click()
-  cy.closeFeedbackModalIfVisible()
+  updateProductSpecStatus({ name, status })
 }
 
 /**
  * Create a DSP-compatible offering with contract definition
- * The CONTRACT_DEFINITION step is automatically inserted after LICENSE
+ * The contract-definition step is automatically inserted after terms and conditions
  * when the selected product spec is DSP compatible.
- * Steps: General → ProdSpec → Catalogue → Category → License → Contract Definition → Price → Procurement → Summary
+ * Steps: General → Category → Terms → Contract Definition → Price → Procurement → Summary
  */
 export function createDspOffering({
   name,
-  version = '0.1',
   description,
   productSpecName,
   catalogName,
@@ -868,76 +898,72 @@ export function createDspOffering({
   priceComponent,
   contractDefinition
 }: DspOfferingParams): void {
-  cy.intercept('GET', '**/usage/usageSpecification?*').as('usageGET')
+  cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
   cy.visit('/my-offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
 
-  // Step 1: General info
+  // Step 1: General information
   cy.getBySel('offerName').should('be.visible').type(name)
-  cy.getBySel('offerVersion').should('have.value', version)
-  cy.getBySel('textArea').type(description)
-  // Register intercept before click so the step-2 request is captured
-  cy.intercept('GET', '**/catalog/productSpecification?*').as('prodSpecList')
+  cy.get('#prodSpecSelect').should('be.visible').select(productSpecName)
+  cy.getBySel('offerCatalogSelect').should('be.visible').select(catalogName)
+  cy.get('body').then(($body) => {
+    if ($body.find('#generalInfoCategoryFilter').length > 0) {
+      selectFirstAvailableOption('#generalInfoCategoryFilter')
+    }
+  })
+  cy.getBySel('offerOverview').type(description)
   cy.getBySel('offerNext').click()
 
-  // Step 2: Product Specification (DSP-compatible)
-  cy.wait('@prodSpecList')
-  clickLoadMoreUntilGone(10, '[data-cy="prodSpecs"] tr')
-  cy.getBySel('prodSpecs').contains(productSpecName).click()
+  // Step 2: Category
+  selectFirstAvailableOption('#rootCategorySelect')
   cy.getBySel('offerNext').click()
 
-  // Step 3: Catalogue
-  cy.getBySel('catalogList').contains(catalogName).click()
+  // Step 3: Terms and conditions
+  cy.getBySel('tcText').find('textarea').type(detailedDescription)
   cy.getBySel('offerNext').click()
 
-  // Step 4: Category (skip)
-  cy.getBySel('offerNext').click()
-
-  // Step 5: License / Description
-  cy.getBySel('textArea').type(detailedDescription)
-  cy.getBySel('offerNext').click()
-
-  // Step 6: Contract Definition (auto-inserted because product spec is DSP compatible)
-  cy.get('#dsp-compatible').check({ force: true })
+  // Step 4: Contract definition
+  cy.get('app-edc-contract-definition-form input[type="checkbox"]').check({ force: true })
   cy.getBySel('dspAccessPolicy').should('be.visible').type(contractDefinition.accessPolicy, { parseSpecialCharSequences: false })
   cy.getBySel('dspContractPolicy').should('be.visible').type(contractDefinition.contractPolicy, { parseSpecialCharSequences: false })
   cy.getBySel('offerNext').click()
 
-  // Step 7: Price Plans
+  // Step 5: Price plans
   if (pricePlan) {
-    cy.getBySel('pricePlanType').select('paid')
-    cy.getBySel('newPricePlan').click()
-    cy.getBySel('pricePlanName').type(pricePlan.name)
-    cy.getBySel('textArea').type(pricePlan.description || '')
-    cy.getBySel('savePricePlan').should('have.attr', 'disabled')
+    cy.contains('button', 'Online paid price').click()
+    cy.getBySel('addPricePlan').first().click()
+    cy.contains('button', 'Flex plan').click()
+    cy.getBySel('selectPlanTypeContinue').should('be.enabled').click()
+    cy.getBySel('paidName').type(pricePlan.name)
+    cy.getBySel('paidDescription').find('textarea').type(pricePlan.description || 'DSP price plan')
+
     if (priceComponent) {
-      cy.getBySel('newPriceComponent').click()
-      cy.getBySel('priceComponentName').type(priceComponent.name)
-      cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type(priceComponent.description)
-      cy.getBySel('price').type(String(priceComponent.price))
-      cy.getBySel('priceType').select(priceComponent.type)
-      cy.getBySel('savePriceComponent').click()
+      cy.getBySel('addPriceComponent').click()
+      cy.getBySel('pcName').type(priceComponent.name)
+      cy.getBySel('pcDescription').type(priceComponent.description)
+      cy.getBySel('pcBasePrice').type(String(priceComponent.price))
+      cy.getBySel('pcPriceType').click()
+      cy.getBySel(`pcPriceType-${priceComponent.type}`).click()
+      cy.getBySel('pcSave').should('be.enabled').click()
     }
-    cy.getBySel('savePricePlan').click()
+    cy.getBySel('ppSave').should('be.enabled').click()
   } else {
-    cy.getBySel('pricePlanType').select('free')
+    cy.contains('button', 'Free').click()
   }
   cy.getBySel('offerNext').click()
 
-  // Step 8: Procurement
-  cy.getBySel('procurement').select(procurement)
-  cy.getBySel('offerNext').click()
+  // Step 6: Procurement
+  selectProcurementMode(procurement)
 
-  // Step 9: Summary → Create
+  // Step 7: Summary
   waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-    cy.getBySel('offerFinish').click()
+    cy.getBySel('offerFinish').should('be.enabled').click()
   })
 
   cy.closeFeedbackModalIfVisible()
-  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-
   cy.getBySel('offers').should('be.visible')
+  clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
   cy.getBySel('offers').contains(name).should('be.visible')
 }
 

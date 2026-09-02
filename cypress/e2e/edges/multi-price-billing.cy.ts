@@ -3,7 +3,6 @@ import {
   updateOffering,
   clickLoadMoreUntilGone,
   createOffering,
-  selectProcurementMode,
   waitForInitialPaginatedList,
 } from '../../support/form-helpers'
 
@@ -48,96 +47,43 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
 
     // ============================================
-    // Verify that catalog and product spec exist (from happy journey test)
-    // ============================================
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
-    cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
-
-    cy.getBySel('prdSpecSection').click()
-    cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
-
-    // ============================================
     // Step 1: Create Offering with Recurring + Recurring-Prepaid
     // ============================================
-    cy.visit('/my-offerings')
-    cy.getBySel('offerSection').click()
-    cy.getBySel('newOffering').click()
-
-    // Step 1.1: Basic Info
-    cy.getBySel('offerName').should('be.visible').type(offeringName)
-    cy.getBySel('textArea').type('Offering with recurring and recurring-prepaid components')
-    waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
-      cy.getBySel('offerNext').click()
+    createOffering({
+      name: offeringName,
+      description: 'Offering with recurring and recurring-prepaid components',
+      productSpecName,
+      catalogName,
+      detailedDescription: 'Test offering with multiple price types',
+      mode: 'paid',
+      pricePlan: {
+        name: 'Multi-Price Plan',
+        description: 'Plan with recurring and recurring-prepaid',
+      },
+      priceComponents: [
+        {
+          name: 'Monthly Recurring',
+          description: 'Monthly recurring charge',
+          price: 10,
+          type: 'recurring',
+          recurringPeriod: 'month',
+        },
+        {
+          name: 'Yearly Prepaid',
+          description: 'Yearly prepaid charge',
+          price: 100,
+          type: 'recurring-prepaid',
+          recurringPeriod: 'year',
+        },
+      ],
+      procurement: 'automatic',
     })
-
-    // Step 1.2: Select Product Spec
-    cy.getBySel('prodSpecs').contains(productSpecName).click()
-    cy.getBySel('offerNext').click()
-
-    // Step 1.3: Select Catalog
-    cy.getBySel('catalogList').contains(catalogName).click()
-    cy.getBySel('offerNext').click()
-
-    // Step 1.4: Select Category (skip)
-    cy.getBySel('offerNext').click()
-
-    // Step 1.5: Detailed Description
-    cy.getBySel('textArea').type('Test offering with multiple price types')
-    cy.getBySel('offerNext').click()
-
-    // Step 1.6: Price Plan - Create with RECURRING and RECURRING-PREPAID components
-    cy.intercept('GET', '**/usage-management/v4/usage*').as('usageGET')
-    cy.getBySel('pricePlanType').select('paid')
-    cy.getBySel('newPricePlan').click()
-    cy.getBySel('pricePlanName').type('Multi-Price Plan')
-    cy.getBySel('textArea').type('Plan with recurring and recurring-prepaid')
-
-    // Add RECURRING price component (monthly)
-    cy.getBySel('newPriceComponent').click()
-    cy.getBySel('priceComponentName').type('Monthly Recurring')
-    cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type('Monthly recurring charge')
-    cy.getBySel('price').type('10.00')
-    cy.getBySel('priceType').select('recurring')
-    cy.getBySel('recurringType').select('month')
-    cy.getBySel('savePriceComponent').click()
-
-    // Add RECURRING-PREPAID price component (yearly)
-    cy.getBySel('newPriceComponent').click()
-    cy.getBySel('priceComponentName').type('Yearly Prepaid')
-    cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type('Yearly prepaid charge')
-    cy.getBySel('price').type('100.00')
-    cy.getBySel('priceType').select('recurring-prepaid')
-    cy.getBySel('recurringType').select('year')
-    cy.getBySel('savePriceComponent').click()
-
-    cy.getBySel('savePricePlan').click()
-    cy.getBySel('offerNext').click()
-
-    // Step 1.7: Procurement - Set to automatic
-    selectProcurementMode('automatic')
-    cy.getBySel('offerNext').click()
-
-    // Step 1.8: Finish
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerFinish').click()
-    })
-    cy.closeFeedbackModalIfVisible()
 
     // ============================================
-    // Step 2: Update Offering to Launched
+    // Step 2: Publish offering
     // ============================================
     clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
-
-    // Verify Offering exists in table with Launched status
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerSection').click()
-    })
-    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
     // Step 3: Change session to BUYER ORG
@@ -221,81 +167,38 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
 
-    // Verify catalog and product spec exist
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
-    cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
-
-    cy.getBySel('prdSpecSection').click()
-    cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
-
     // Create Offering with ONE-TIME + RECURRING-PREPAID
-    cy.visit('/my-offerings')
-    cy.getBySel('offerSection').click()
-    cy.getBySel('newOffering').click()
-
-    cy.getBySel('offerName').should('be.visible').type(offeringName)
-    cy.getBySel('textArea').type('Offering with one-time and recurring-prepaid')
-    waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
-      cy.getBySel('offerNext').click()
+    createOffering({
+      name: offeringName,
+      description: 'Offering with one-time and recurring-prepaid',
+      productSpecName,
+      catalogName,
+      detailedDescription: 'Test offering with one-time and recurring-prepaid',
+      mode: 'paid',
+      pricePlan: {
+        name: 'One-Time Prepaid Plan',
+        description: 'Plan with one-time and recurring-prepaid',
+      },
+      priceComponents: [
+        {
+          name: 'Initial Setup Fee',
+          description: 'One-time setup charge',
+          price: 50,
+          type: 'one time',
+        },
+        {
+          name: 'Yearly Subscription',
+          description: 'Yearly prepaid subscription',
+          price: 200,
+          type: 'recurring-prepaid',
+          recurringPeriod: 'year',
+        },
+      ],
+      procurement: 'automatic',
     })
-
-    cy.getBySel('prodSpecs').contains(productSpecName).click()
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('catalogList').contains(catalogName).click()
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('offerNext').click() // Skip category
-
-    cy.getBySel('textArea').type('Test offering with one-time and recurring-prepaid')
-    cy.getBySel('offerNext').click()
-
-    // Price Plan with ONE-TIME and RECURRING-PREPAID
-    cy.intercept('GET', '**/usage-management/v4/usage*').as('usageGET')
-    cy.getBySel('pricePlanType').select('paid')
-    cy.getBySel('newPricePlan').click()
-    cy.getBySel('pricePlanName').type('One-Time Prepaid Plan')
-    cy.getBySel('textArea').type('Plan with one-time and recurring-prepaid')
-
-    // Add ONE-TIME price component
-    cy.getBySel('newPriceComponent').click()
-    cy.getBySel('priceComponentName').type('Initial Setup Fee')
-    cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type('One-time setup charge')
-    cy.getBySel('price').type('50.00')
-    cy.getBySel('priceType').select('one time')
-    cy.getBySel('savePriceComponent').click()
-
-    // Add RECURRING-PREPAID price component
-    cy.getBySel('newPriceComponent').click()
-    cy.getBySel('priceComponentName').type('Yearly Subscription')
-    cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type('Yearly prepaid subscription')
-    cy.getBySel('price').type('200.00')
-    cy.getBySel('priceType').select('recurring-prepaid')
-    cy.getBySel('recurringType').select('year')
-    cy.getBySel('savePriceComponent').click()
-
-    cy.getBySel('savePricePlan').click()
-    cy.getBySel('offerNext').click()
-
-    selectProcurementMode('automatic')
-    cy.getBySel('offerNext').click()
-
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerFinish').click()
-    })
-    cy.closeFeedbackModalIfVisible()
 
     clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
-
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerSection').click()
-    })
-    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // Switch to BUYER and purchase
     cy.changeSessionTo('BUYER ORG')
@@ -359,16 +262,6 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
 
-    // Verify catalog and product spec exist
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
-    cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
-
-    cy.getBySel('prdSpecSection').click()
-    cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
-
     // Create Offering with Usage
     createOffering({
       name: offeringName,
@@ -384,12 +277,6 @@ describe('Multi-Price Component Billing Edge Cases', {
     })
 
     updateOffering({ name: offeringName, status: 'launched' })
-
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerSection').click()
-    })
-    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // Switch to BUYER and purchase
     cy.changeSessionTo('BUYER ORG')

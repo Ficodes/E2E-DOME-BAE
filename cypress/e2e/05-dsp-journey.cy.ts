@@ -3,7 +3,8 @@ import {
   createDspProductSpec,
   updateDspProductSpecStatus,
   createDspOffering,
-  updateOffering
+  updateOffering,
+  waitForInitialPaginatedList,
 } from '../support/form-helpers'
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 
@@ -80,17 +81,26 @@ describe('DSP Journey E2E', {
     updateOffering({ name: offeringName, status: 'launched' })
 
     // ============================================
-    // Step 4: Verify all entities exist and are launched
+    // Step 4: Verify all entities exist with their published/validated status
     // ============================================
     cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
+    waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+      cy.getBySel('catalogSection').click()
+    })
+    cy.contains('button', 'Published').click()
     cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
 
-    cy.getBySel('prdSpecSection').click()
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
+    waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+      cy.getBySel('prdSpecSection').click()
+    })
+    cy.contains('button', 'Validated').click()
+    cy.getBySel('prodSpecTable').contains(productSpecName).parents('[data-cy="prodSpecRow"]').contains('Validated')
 
-    cy.getBySel('offerSection').click()
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerSection').click()
+    })
+    cy.contains('button', 'Published').click()
+    cy.getBySel('offers').contains(offeringName).parents('[data-cy="offerRow"]').contains('Published')
 
     // ============================================
     // Step 5: Verify DSP offering appears in search

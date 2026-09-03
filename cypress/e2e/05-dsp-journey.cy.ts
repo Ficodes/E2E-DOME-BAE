@@ -5,6 +5,7 @@ import {
   createDspOffering,
   updateOffering,
   waitForInitialPaginatedList,
+  waitForPaginatedTab,
 } from '../support/form-helpers'
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 
@@ -87,19 +88,25 @@ describe('DSP Journey E2E', {
     waitForInitialPaginatedList('**/catalog/catalog?*', () => {
       cy.getBySel('catalogSection').click()
     })
-    cy.contains('button', 'Published').click()
+    waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Published').click()
+    })
     cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
 
     waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
       cy.getBySel('prdSpecSection').click()
     })
-    cy.contains('button', 'Validated').click()
+    waitForPaginatedTab('**/catalog/productSpecification?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Validated').click()
+    })
     cy.getBySel('prodSpecTable').contains(productSpecName).parents('[data-cy="prodSpecRow"]').contains('Validated')
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
-    cy.contains('button', 'Published').click()
+    waitForPaginatedTab('**/catalog/productOffering?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Published').click()
+    })
     cy.getBySel('offers').contains(offeringName).parents('[data-cy="offerRow"]').contains('Published')
 
     // ============================================

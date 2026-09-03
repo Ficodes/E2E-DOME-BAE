@@ -235,7 +235,7 @@ export function updateCatalogStatus({ name, status }: UpdateCatalogStatusParams)
 
   // Allow the TMForum API list cache to expire before requesting the new status.
   cy.wait(2500)
-  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+  waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Published').click()
   })
   clickLoadMoreUntilGone(10, '[data-cy="catalogRow"]')
@@ -344,7 +344,7 @@ export function updateProductSpecStatus({ name, status }: UpdateProductSpecStatu
   cy.closeFeedbackModalIfVisible()
 
   cy.wait(2500)
-  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+  waitForPaginatedTab('**/catalog/productSpecification?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Validated').click()
   })
   clickLoadMoreUntilGone(10, '[data-cy="prodSpecRow"]')
@@ -528,6 +528,14 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
  */
 export function waitForInitialPaginatedList(apiPattern: string | string[], action: () => void, idleMs = 300): void {
   createRequestTracker(apiPattern, idleMs).waitForAction(action)
+}
+
+/**
+ * Switch a lifecycle tab and wait for every matching page request to settle.
+ * Tab changes stay on the same view, so slow requests must not be treated as abandoned.
+ */
+export function waitForPaginatedTab(apiPattern: string | string[], action: () => void, idleMs = 300): void {
+  createRequestTracker(apiPattern, idleMs, Number.POSITIVE_INFINITY).waitForAction(action)
 }
 
 /**
@@ -829,7 +837,7 @@ export function updateResourceSpecStatus({ name, status }: UpdateResourceSpecSta
   cy.closeFeedbackModalIfVisible()
 
   cy.wait(2500)
-  waitForInitialPaginatedList('**/resource/resourceSpecification?*', () => {
+  waitForPaginatedTab('**/resource/resourceSpecification?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Validated').click()
   })
   clickLoadMoreUntilGone(10, '[data-cy="resSpecRow"]')
@@ -853,7 +861,7 @@ export function updateServiceSpecStatus({ name, status }: UpdateServiceSpecStatu
   cy.closeFeedbackModalIfVisible()
 
   cy.wait(2500)
-  waitForInitialPaginatedList('**/service/serviceSpecification?*', () => {
+  waitForPaginatedTab('**/service/serviceSpecification?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Validated').click()
   })
   clickLoadMoreUntilGone(10, '[data-cy="servSpecRow"]')

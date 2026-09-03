@@ -6,6 +6,7 @@ import {
   clickLoadMoreUntilFound,
   createRequestTracker,
   waitForInitialPaginatedList,
+  waitForPaginatedTab,
 } from './form-helpers'
 
 export const unchecked= 'unchecked'
@@ -51,7 +52,7 @@ export function setupGlobalStateBefore(params: GlobalStateSetupParams) {
   waitForInitialPaginatedList('**/catalog/catalog?*', () => {
     cy.getBySel('catalogSection').click()
   })
-  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+  waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Published').click()
   })
   cy.getBySel('catalogTable').should('be.visible')
@@ -61,7 +62,7 @@ export function setupGlobalStateBefore(params: GlobalStateSetupParams) {
   waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
     cy.getBySel('prdSpecSection').click()
   })
-  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+  waitForPaginatedTab('**/catalog/productSpecification?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Validated').click()
   })
   cy.getBySel('prodSpecTable').should('be.visible')

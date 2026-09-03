@@ -4,6 +4,7 @@ import {
   updateOffering,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
+  waitForPaginatedTab,
 } from '../../support/form-helpers'
 import { confirmOrderAction } from '../../support/global-state-flows'
 
@@ -12,7 +13,7 @@ function verifySharedCatalogAndProductSpec(catalogName: string, productSpecName:
   waitForInitialPaginatedList('**/catalog/catalog?*', () => {
     cy.getBySel('catalogSection').click()
   })
-  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+  waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Published').click()
   })
   clickLoadMoreUntilGone(10, '[data-cy="catalogRow"]')
@@ -21,7 +22,7 @@ function verifySharedCatalogAndProductSpec(catalogName: string, productSpecName:
   waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
     cy.getBySel('prdSpecSection').click()
   })
-  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+  waitForPaginatedTab('**/catalog/productSpecification?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Validated').click()
   })
   clickLoadMoreUntilGone(10, '[data-cy="prodSpecRow"]')

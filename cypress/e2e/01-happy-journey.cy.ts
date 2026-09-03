@@ -12,7 +12,8 @@ import {
   updateResourceSpecStatus,
   updateServiceSpecStatus,
   createUsageSpec,
-  waitForInitialPaginatedList
+  waitForInitialPaginatedList,
+  waitForPaginatedTab
 } from '../support/form-helpers'
 
 describe('Happy Journey E2E', {
@@ -117,7 +118,9 @@ describe('Happy Journey E2E', {
       cy.visit('/my-offerings')
       cy.getBySel('catalogSection').click()
     })
-    cy.contains('button', 'Published').click()
+    waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Published').click()
+    })
     cy.getBySel('catalogTable').should('be.visible')
     cy.getBySel('catalogTable').contains(catalogName).parents('[data-cy="catalogRow"]').should('contain.text', 'Published')
 
@@ -125,7 +128,9 @@ describe('Happy Journey E2E', {
     waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
       cy.getBySel('prdSpecSection').click()
     })
-    cy.contains('button', 'Validated').click()
+    waitForPaginatedTab('**/catalog/productSpecification?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Validated').click()
+    })
     cy.getBySel('prodSpecTable').should('be.visible')
     cy.getBySel('prodSpecTable').contains(productSpecName).parents('[data-cy="prodSpecRow"]').should('contain.text', 'Validated')
 
@@ -133,7 +138,9 @@ describe('Happy Journey E2E', {
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
       cy.getBySel('offerSection').click()
     })
-    cy.contains('button', 'Published').click()
+    waitForPaginatedTab('**/catalog/productOffering?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Published').click()
+    })
     cy.getBySel('offers').should('be.visible')
     cy.getBySel('offers').contains(offeringName).parents('[data-cy="offerRow"]').should('contain.text', 'Published')
 

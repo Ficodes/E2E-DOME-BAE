@@ -30,6 +30,7 @@ export interface UpdateProductSpecStatusParams {
 export interface PricePlan {
   name: string
   description?: string
+  forbiddenCharacteristics?: string[]
 }
 
 export interface PriceComponent {
@@ -400,9 +401,36 @@ export function createOffering({
     cy.getBySel('paidName').type(pricePlan.name)
     cy.getBySel('paidDescription').find('textarea').type(pricePlan.description || 'E2E price plan')
 
+    const forbiddenCharacteristics = pricePlan.forbiddenCharacteristics || []
+    if (forbiddenCharacteristics.length > 0) {
+      cy.getBySel('choosePricePlanCharacteristics').click()
+      forbiddenCharacteristics.forEach((characteristicName) => {
+        cy.getBySel('pricePlanCharacteristicsModal')
+          .contains('p', characteristicName)
+          .should('be.visible')
+          .parent()
+          .siblings('div')
+          .find('button[role="switch"]')
+          .should('have.attr', 'aria-checked', 'true')
+          .click()
+          .should('have.attr', 'aria-checked', 'false')
+      })
+      cy.getBySel('savePricePlanCharacteristics').click()
+    }
+
+    const assertForbiddenCharacteristicsAreUnavailable = () => {
+      forbiddenCharacteristics.forEach((characteristicName) => {
+        cy.getBySel('pcConfigOption').find('option').should(($options) => {
+          const optionLabels = Array.from($options, (option) => option.textContent?.trim())
+          expect(optionLabels).not.to.include(characteristicName)
+        })
+      })
+    }
+
     const components = priceComponents || (priceComponent ? [priceComponent] : [])
     components.forEach((pc) => {
       cy.getBySel('addPriceComponent').click()
+      assertForbiddenCharacteristicsAreUnavailable()
       cy.getBySel('pcName').type(pc.name)
       cy.getBySel('pcDescription').type(pc.description)
       cy.getBySel('pcBasePrice').type(String(pc.price))
@@ -439,6 +467,15 @@ export function createOffering({
 
       cy.getBySel('pcSave').should('be.enabled').click()
     })
+
+    if (forbiddenCharacteristics.length > 0 && components.length > 0) {
+      cy.contains('td', components[0].name).parents('tr').first().within(() => {
+        cy.get('button').click()
+      })
+      cy.contains('button', 'Edit').should('be.visible').click()
+      assertForbiddenCharacteristicsAreUnavailable()
+      cy.getBySel('pcSave').should('be.enabled').click()
+    }
 
     cy.getBySel('ppSave').should('be.enabled').click()
   } else {

@@ -75,7 +75,8 @@ describe('Happy Journey E2E', {
       brand: HAPPY_JOURNEY.productSpec.brand,
       productNumber: HAPPY_JOURNEY.productSpec.productNumber,
       serviceSpecName: HAPPY_JOURNEY.serviceSpec.name,
-      resourceSpecName: HAPPY_JOURNEY.resourceSpec.name
+      resourceSpecName: HAPPY_JOURNEY.resourceSpec.name,
+      characteristics: HAPPY_JOURNEY.productSpec.characteristics
     })
 
     // ============================================
@@ -93,7 +94,11 @@ describe('Happy Journey E2E', {
       catalogName: catalogName,
       detailedDescription: HAPPY_JOURNEY.offering.detailedDescription,
       mode: "paid",
-      pricePlan: {name: HAPPY_JOURNEY.pricePlan.name, description: "descr"},
+      pricePlan: {
+        name: HAPPY_JOURNEY.pricePlan.name,
+        description: "descr",
+        forbiddenCharacteristics: HAPPY_JOURNEY.pricePlan.forbiddenCharacteristics
+      },
       priceComponent: {name: HAPPY_JOURNEY.priceComponent.name, description: "descr", price: HAPPY_JOURNEY.priceComponent.price, type: HAPPY_JOURNEY.priceComponent.type},
       procurement: "automatic"
     })
@@ -152,8 +157,19 @@ describe('Happy Journey E2E', {
     cy.wait('@cartItem')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
+    cy.intercept('GET', '**/catalog/productOfferingPrice/*').as('getRelatedPrice')
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).should('be.visible').within(() => {
       cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
+      cy.wait('@getRelatedPrice').then(({ response }) => {
+        expect(response?.statusCode).to.eq(200)
+        expect(response?.body?.priceType).to.eq('constraint')
+        expect(response?.body?.prodSpecCharValueUse?.map(({ name }: { name: string }) => name)).to.include.members(
+          HAPPY_JOURNEY.pricePlan.forbiddenCharacteristics
+        )
+      })
+      HAPPY_JOURNEY.pricePlan.forbiddenCharacteristics.forEach((characteristicName) => {
+        cy.root().should('not.contain.text', characteristicName)
+      })
       cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible
       cy.getBySel('addToCart').click()
     })

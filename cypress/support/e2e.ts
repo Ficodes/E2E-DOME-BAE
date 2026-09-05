@@ -15,14 +15,15 @@ function addVideoClock(win: Cypress.AUTWindow): void {
     clock.setAttribute('aria-hidden', 'true')
     Object.assign(clock.style, {
       position: 'fixed',
-      top: '8px',
-      left: '8px',
+      top: '24px',
+      left: '24px',
       zIndex: '2147483647',
-      padding: '4px 8px',
-      borderRadius: '4px',
-      background: 'rgba(0, 0, 0, 0.75)',
+      padding: '12px 24px',
+      borderRadius: '12px',
+      background: 'rgba(0, 0, 0, 0.9)',
       color: '#fff',
-      font: '12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+      font: '700 36px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+      boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.85)',
       pointerEvents: 'none',
     })
     win.document.body.appendChild(clock)

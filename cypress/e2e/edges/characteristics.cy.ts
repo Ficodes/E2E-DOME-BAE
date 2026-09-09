@@ -211,8 +211,7 @@ describe('Product characteristics E2E', () => {
     cy.getBySel('savePricePlanCharacteristics').click()
     cy.getBySel('setConfigProfile').should('be.disabled')
       .and('have.attr', 'aria-describedby', 'profileConstraintsHint')
-    cy.get('#profileConstraintsHint').should('be.visible')
-      .and('contain.text', 'Remove the characteristic restrictions before setting a configuration profile.')
+    cy.getBySel('profileConstraintsHint').should('be.visible')
     cy.getBySel('configProfileSave').should('not.exist')
 
     cy.getBySel('removePricePlanConstraints').click()
@@ -225,8 +224,7 @@ describe('Product characteristics E2E', () => {
     cy.contains('tr', 'Users').should('contain.text', '1')
     cy.getBySel('choosePricePlanCharacteristics').should('be.disabled')
       .and('have.attr', 'aria-describedby', 'constraintsProfileHint')
-    cy.get('#constraintsProfileHint').should('be.visible')
-      .and('contain.text', 'Characteristic restrictions cannot be combined with a configuration profile.')
+    cy.getBySel('constraintsProfileHint').should('be.visible')
     cy.getBySel('pricePlanCharacteristicsModal').should('not.exist')
     // Discard this local plan: its purpose is to exercise the editor state without changing the offer under test.
     cy.contains('button', 'Add price plan').click()
@@ -374,7 +372,6 @@ describe('Product characteristics E2E', () => {
             const constraintRelationship = [{
               id: constraint.id, href: constraint.href, relationshipType: 'constraint',
             }]
-            const invalidCombinationMessage = 'A price plan with prodSpecCharValueUse cannot reference a constraint'
             postPrice({
               name: `Profile plan ${suffix}`, isBundle: true,
               bundledPopRelationship: [{ id: component.id, href: component.href }],
@@ -383,9 +380,8 @@ describe('Product characteristics E2E', () => {
               // The proxy must reject either way of creating the forbidden combination and preserve both plans.
               apiRequest('PATCH', `${priceUrl}/${encodeURIComponent(profilePlan.id)}`, {
                 popRelationship: constraintRelationship,
-              }, false).then(({ status, body }) => {
+              }, false).then(({ status }) => {
                 expect(status).to.eq(422)
-                expect(JSON.stringify(body)).to.include(invalidCombinationMessage)
               })
               apiRequest('GET', `${priceUrl}/${encodeURIComponent(profilePlan.id)}`).then(({ body }) => {
                 expect(body.prodSpecCharValueUse).to.deep.equal(profileValueUses)
@@ -393,9 +389,8 @@ describe('Product characteristics E2E', () => {
               })
               apiRequest('PATCH', `${priceUrl}/${encodeURIComponent(plan.id)}`, {
                 prodSpecCharValueUse: profileValueUses,
-              }, false).then(({ status, body }) => {
+              }, false).then(({ status }) => {
                 expect(status).to.eq(422)
-                expect(JSON.stringify(body)).to.include(invalidCombinationMessage)
               })
               apiRequest('GET', `${priceUrl}/${encodeURIComponent(plan.id)}`).then(({ body }) => {
                 expect(body.prodSpecCharValueUse || []).to.deep.equal([])

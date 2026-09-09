@@ -487,7 +487,7 @@ export function createOffering({
   selectProcurementMode(procurement)
 
   // Finish
-  waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+  waitForInitialPaginatedList(['**/catalog/productOffering?*', '**/catalog/productOfferingPrice/**'], () => {
     cy.getBySel('offerFinish').should('be.enabled').click()
   })
 
@@ -606,9 +606,30 @@ export function createRequestTracker(apiPattern: string | string[], idleMs = 300
   }
 }
 
+function clickLoadMoreAndWaitForItems(
+  loadMore: HTMLElement,
+  itemSelector: string,
+  previousItemCount: number,
+): void {
+  const loadNextPage = () => cy.wrap(loadMore).scrollIntoView().click()
+  if (itemSelector === '[data-cy="offerRow"]') {
+    // Wait for the page and its price requests before reading the next rows.
+    waitForPaginatedTab(['**/catalog/productOffering?*', '**/catalog/productOfferingPrice/**'], loadNextPage)
+  } else {
+    loadNextPage()
+  }
+  cy.get('body').should($updatedBody => {
+    expect(
+      $updatedBody.find(itemSelector).length,
+      `${itemSelector} item count after Load more`,
+    ).to.be.greaterThan(previousItemCount)
+  })
+  cy.getBySel('loadMoreLoading').should('not.exist')
+}
+
 /**
- * Click "Load More" button repeatedly until all items are loaded.
- * Waits for the loadMoreLoading spinner to appear then disappear after each click.
+ * Click "Load More" repeatedly until all items are loaded.
+ * Each click must add items and finish loading before the button is checked again.
  * Optionally waits for itemSelector to be visible before starting.
  */
 export function clickLoadMoreUntilGone(maxClicks = 10, itemSelector?: string): void {
@@ -624,18 +645,11 @@ export function clickLoadMoreUntilGone(maxClicks = 10, itemSelector?: string): v
       if (!loadMore) return
 
       const previousItemCount = itemSelector ? $body.find(itemSelector).length : 0
-      cy.wrap(loadMore).click()
 
       if (itemSelector) {
-        cy.get('body').should($updatedBody => {
-          const nextItemCount = $updatedBody.find(itemSelector).length
-          const stillHasLoadMore = $updatedBody.find('[data-cy="loadMore"]:visible').length > 0
-          expect(
-            nextItemCount > previousItemCount || !stillHasLoadMore,
-            `${itemSelector} grows or Load more disappears`,
-          ).to.eq(true)
-        })
+        clickLoadMoreAndWaitForItems(loadMore, itemSelector, previousItemCount)
       } else {
+        cy.wrap(loadMore).click()
         cy.getBySel('loadMoreLoading').should('not.exist')
       }
 
@@ -664,18 +678,7 @@ export function clickLoadMoreUntilFound(targetText: string, itemSelector: string
       const loadMore = $body.find('[data-cy="loadMore"]:visible')[0] as HTMLElement
       const previousItemCount = $body.find(itemSelector).length
 
-      cy.wrap(loadMore).scrollIntoView().click()
-      cy.get('body').should($updatedBody => {
-        const nextItemCount = $updatedBody.find(itemSelector).length
-        const nextHasTarget = [...$updatedBody.find(itemSelector)]
-          .some(item => item.textContent?.includes(targetText))
-        const stillHasLoadMore = $updatedBody.find('[data-cy="loadMore"]:visible').length > 0
-        expect(
-          nextHasTarget || nextItemCount > previousItemCount || !stillHasLoadMore,
-          `${itemSelector} grows, ${targetText} appears, or Load more disappears`,
-        ).to.eq(true)
-      })
-
+      clickLoadMoreAndWaitForItems(loadMore, itemSelector, previousItemCount)
       findOrLoad(remaining - 1)
     })
   }

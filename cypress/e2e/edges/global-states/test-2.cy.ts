@@ -5,6 +5,7 @@ import {
   confirmOrderAction,
 } from '../../../support/global-state-flows'
 import {
+  addToCartAndWait,
   clickLoadMoreUntilFound,
   createRequestTracker,
 } from '../../../support/form-helpers'
@@ -82,7 +83,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringAutoName} to cart`).within(() => {
         cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
         cy.getBySel('acceptTermsCheckbox').click()
-        cy.getBySel('addToCart').click()
+        addToCartAndWait()
       })
       cy.wait('@postOrder')
       cy.wait('@postCart')
@@ -92,7 +93,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringSemiName} to cart`).within(() => {
         cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
         cy.getBySel('acceptTermsCheckbox').click()
-        cy.getBySel('addToCart').click()
+        addToCartAndWait()
       })
       cy.wait('@postOrder')
       cy.wait('@postCart')
@@ -102,7 +103,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringManualName} to cart`).within(() => {
         cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
         cy.getBySel('acceptTermsCheckbox').click()
-        cy.getBySel('addToCart').click()
+        addToCartAndWait()
       })
       cy.wait('@postOrder')
       cy.wait('@postCart')

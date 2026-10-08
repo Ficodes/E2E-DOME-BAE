@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createProductSpec,
   updateProductSpecStatus,
   createOffering,
@@ -165,7 +166,7 @@ describe('Product Modification Order E2E', {
       cy.getBySel('previewPrices').should('have.length.greaterThan', 0)
 
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     // Go to cart and purchase

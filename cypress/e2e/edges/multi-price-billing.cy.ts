@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   updateOffering,
   clickLoadMoreUntilGone,
   createOffering,
@@ -109,7 +110,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains('Multi-Price Plan').click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     // Go to cart and purchase
@@ -217,7 +218,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains('One-Time Prepaid Plan').click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()
@@ -310,7 +311,7 @@ describe('Multi-Price Component Billing Edge Cases', {
       cy.getBySel('offerMetric').within(()=>{
         cy.get('input').type('1')
       })
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()

@@ -13,7 +13,7 @@ export default defineConfig({
     requestTimeout: 200000,
     responseTimeout: 200000,
     env: {
-      PAYMENT_METHOD: process.env.BAE_CB_PAYMENT_METHOD || 'redsys',
+      PAYMENT_METHOD: process.env.BAE_CB_PAYMENT_METHOD || 'dpas',
       REDSYS_ORIGIN: process.env.BAE_CB_REDSYS_ORIGIN || 'https://sis-t.redsys.es:25443',
       REDSYS_AUTH_ORIGIN: process.env.BAE_CB_REDSYS_AUTH_ORIGIN || 'https://sis-d.redsys.es'
     }

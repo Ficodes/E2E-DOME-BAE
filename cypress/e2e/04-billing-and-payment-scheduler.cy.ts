@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
@@ -198,7 +199,7 @@ describe('Billing Scheduler Period Coverage', {
       cy.getBySel('previewPrices').filter(':contains("week")').should('contain.text', '6.05').and('contain.text', 'EUR')
 
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()

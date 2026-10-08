@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
@@ -116,7 +117,7 @@ describe('Manual Offering E2E', {
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${manualOfferingName} to cart`).within(() => {
       cy.contains('Manual Price Plan').click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()
@@ -296,7 +297,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains('Auto Pay Manual Proc Plan').click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()

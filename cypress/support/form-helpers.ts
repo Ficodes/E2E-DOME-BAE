@@ -71,6 +71,15 @@ export interface UpdateOfferingParams {
   status: string
 }
 
+/** Add the selected offering and wait for the cart refresh and drawer close. */
+export function addToCartAndWait(): void {
+  cy.getBySel('addToCart').should('be.enabled').click()
+  cy.getBySel('addToCart')
+    .closest('[data-cy="toCartDrawer"]')
+    .should('have.class', 'translate-x-full')
+    .and('not.have.class', 'translate-x-0')
+}
+
 export function selectProcurementMode(procurement: string): void {
   cy.wait('@getPaymentInfo')
   cy.getBySel('procurement').click()
@@ -489,6 +498,7 @@ export function createOffering({
   // Finish
   waitForInitialPaginatedList(['**/catalog/productOffering?*', '**/catalog/productOfferingPrice/**'], () => {
     cy.getBySel('offerFinish').should('be.enabled').click()
+    cy.getBySel('confirmPublish').should('be.visible').and('be.enabled').click()
   })
 
   // Close feedback modal if it appears
@@ -510,13 +520,21 @@ export function updateOffering({ name, status }: UpdateOfferingParams): void {
 
   clickLoadMoreUntilFound(name, '[data-cy="offerRow"]')
 
-  cy.intercept('PATCH', '**/catalog/productOffering/**').as('publishOffering')
+  const publishAlias = Cypress._.uniqueId('publishOffering')
+  cy.intercept('PATCH', '**/catalog/productOffering/**').as(publishAlias)
 
   cy.getBySel('offers').contains(name).parents('[data-cy="offerRow"]').within(() => {
     cy.getBySel('offerActions').find('button').first().click()
     cy.contains('button', 'Publish').should('be.visible').and('not.be.disabled').click()
   })
-  cy.wait('@publishOffering').its('response.statusCode').should('be.oneOf', [200, 204])
+  cy.wait(`@${publishAlias}`).then(({ request, response }) => {
+    expect(request.body.lifecycleStatus).to.eq('Launched')
+    expect(response?.statusCode).to.be.oneOf([200, 204])
+    if (response?.statusCode === 200) {
+      expect(response.body.name).to.eq(name)
+      expect(response.body.lifecycleStatus).to.eq('Launched')
+    }
+  })
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -615,6 +633,9 @@ function clickLoadMoreAndWaitForItems(
   if (itemSelector === '[data-cy="offerRow"]') {
     // Wait for the page and its price requests before reading the next rows.
     waitForPaginatedTab(['**/catalog/productOffering?*', '**/catalog/productOfferingPrice/**'], loadNextPage)
+  } else if (itemSelector === '[data-cy="prodSpecRow"]') {
+    // Rows are appended before the next-page request updates the Load more button.
+    waitForPaginatedTab('**/catalog/productSpecification?*', loadNextPage)
   } else {
     loadNextPage()
   }
@@ -1007,6 +1028,7 @@ export function createDspOffering({
   // Step 7: Summary
   waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
     cy.getBySel('offerFinish').should('be.enabled').click()
+    cy.getBySel('confirmPublish').should('be.visible').and('be.enabled').click()
   })
 
   cy.closeFeedbackModalIfVisible()

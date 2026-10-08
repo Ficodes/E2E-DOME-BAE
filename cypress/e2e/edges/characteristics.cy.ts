@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createProductSpec, createOffering, updateOffering,
   clickLoadMoreUntilFound, waitForInitialPaginatedList,
 } from '../../support/form-helpers'
@@ -246,6 +247,7 @@ describe('Product characteristics E2E', () => {
     cy.intercept('PATCH', '**/catalog/productOffering/*').as('saveOffer')
     cy.contains('span', 'Procurement mode').click()
     cy.getBySel('offerFinish').should('be.enabled').click()
+    cy.getBySel('confirmPublish').should('be.visible').and('be.enabled').click()
     cy.wait('@saveOffer').its('response.statusCode').should('be.oneOf', [200, 204])
     cy.get('@saveConstraint.all').then((calls: any) => {
       const constraint = calls.find((call: any) => call.request.body.priceType === 'constraint')
@@ -296,7 +298,7 @@ describe('Product characteristics E2E', () => {
       })
       cy.intercept('POST', '**/shoppingCart/item/').as('addCharacteristicsToCart')
       cy.getBySel('acceptTermsCheckbox').check()
-      cy.getBySel('addToCart').should('be.enabled').click()
+      addToCartAndWait()
     })
     cy.wait('@addCharacteristicsToCart').then(({ request, response }) => {
       expect(response?.statusCode).to.eq(201)

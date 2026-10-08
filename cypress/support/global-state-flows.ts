@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from './happy-journey-constants'
 import {
+  addToCartAndWait,
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
@@ -160,7 +161,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringAutoName} to cart`).within(() => {
     cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
     cy.getBySel('acceptTermsCheckbox').click()
-    cy.getBySel('addToCart').click()
+    addToCartAndWait()
   })
   cy.wait('@postOrder')
   cy.wait('@postCart')
@@ -171,7 +172,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringSemiName} to cart`).within(() => {
     cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
     cy.getBySel('acceptTermsCheckbox').click()
-    cy.getBySel('addToCart').click()
+    addToCartAndWait()
   })
   cy.wait('@postOrder')
   cy.wait('@postCart')
@@ -188,7 +189,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringManualName} to cart`).within(() => {
       cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
   })
   cy.wait('@postOrder')

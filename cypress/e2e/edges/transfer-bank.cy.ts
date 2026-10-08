@@ -1,9 +1,11 @@
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
+  waitForPaginatedTab,
 } from '../../support/form-helpers'
 
 /**
@@ -70,6 +72,18 @@ describeForDpas('Manual Bill Settle Edge Case', {
     clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
 
+    // Publishing moves the offering from Draft to Published. Re-enter the
+    // section and wait for both tab loads before continuing as the buyer.
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.visit('/my-offerings')
+      cy.getBySel('offerSection').click()
+    })
+    waitForPaginatedTab('**/catalog/productOffering?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Published').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
+    cy.contains('[data-cy="offerRow"]', offeringName).should('contain.text', 'Published')
+
     // ============================================
     // Step 4: Switch to BUYER ORG
     // ============================================
@@ -108,7 +122,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains(pricePlanName).click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()

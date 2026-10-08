@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createCatalog,
   updateCatalogStatus,
   createProductSpec,
@@ -12,6 +13,7 @@ import {
   updateResourceSpecStatus,
   updateServiceSpecStatus,
   createUsageSpec,
+  clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
   waitForPaginatedTab
 } from '../support/form-helpers'
@@ -45,6 +47,28 @@ describe('Happy Journey E2E', {
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
 
     createUsageSpec(HAPPY_JOURNEY.metric)
+
+    // Leave the shared usage specification ready for usage-based offering prices.
+    waitForInitialPaginatedList('**/usage/usageSpecification?*', () => {
+      cy.visit('/my-offerings')
+      cy.getBySel('usageSpecSection').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="usageSpecRow"]')
+
+    cy.intercept('PATCH', '**/usage/usageSpecification/*').as('validateHappyUsageSpec')
+    cy.contains('[data-cy="usageSpecRow"]', HAPPY_JOURNEY.metric.name).within(() => {
+      cy.getBySel('usageSpecActions').should('be.visible').click()
+      cy.contains('button', 'Validate').should('be.visible').click()
+    })
+    cy.wait('@validateHappyUsageSpec').then(({ request, response }) => {
+      expect(response?.statusCode).to.be.oneOf([200, 204])
+      expect(request.body.lifecycleStatus).to.eq('Launched')
+    })
+    waitForPaginatedTab('**/usage/usageSpecification?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Validated').should('be.enabled').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="usageSpecRow"]')
+    cy.contains('[data-cy="usageSpecRow"]', HAPPY_JOURNEY.metric.name).should('contain.text', 'Validated')
 
     // ============================================
     // Step 1: Create Catalog
@@ -178,7 +202,7 @@ describe('Happy Journey E2E', {
         cy.root().should('not.contain.text', characteristicName)
       })
       cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()

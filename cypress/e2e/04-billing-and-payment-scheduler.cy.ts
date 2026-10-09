@@ -28,6 +28,8 @@ const TMF_URL = 'http://localhost:8633'
 const SCORPIO_URL = 'http://localhost:1026'
 const BILLING_SERVER_URL = 'http://localhost:4201'
 const IS_REDSYS = Cypress.env('PAYMENT_METHOD') === 'redsys'
+// DPAS recurring payments use the external scheduler; this spec covers Redsys.
+const describeBilling = IS_REDSYS ? describe : describe.skip
 
 const runPaymentScheduler = () => {
   cy.request({ url: `${CHARGING_URL}/charging/api/test/paymentScheduler`, method: 'POST' }).then((res) => {
@@ -104,7 +106,7 @@ const expectRecurringPaymentToRetry = (
   })
 }
 
-describe('Billing Scheduler Period Coverage', {
+describeBilling('Billing Scheduler Period Coverage', {
   viewportHeight: 1080,
   viewportWidth: 1920,
 }, () => {

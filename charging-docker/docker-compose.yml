@@ -59,7 +59,7 @@ services:
         - BAE_LP_OAUTH2_CUSTOMER_ROLE=customer
         - BAE_LP_OAUTH2_ORG_ADMIN_ROLE=orgAdmin
         # Payment Configuration
-        - BAE_CB_PAYMENT_METHOD=dpas
+        - BAE_CB_PAYMENT_METHOD=${BAE_CB_PAYMENT_METHOD:-dpas}
         - BAE_CB_REDSYS_MERCHANT_CODE=263100000
         - BAE_CB_REDSYS_TERMINAL=005
         - BAE_CB_REDSYS_SECRET_KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7

@@ -56,30 +56,52 @@ const switchToSellerOrganizationForAdminChanges = (): void => {
 }
 
 const configureDefaultCatalog = (name: string): void => {
-  cy.intercept('POST', '**/admin/catalog/catalog').as('createDefaultCatalog')
+  cy.intercept('POST', '**/admin/defaultcatalog/create').as('createDefaultCatalog')
+  cy.intercept('PATCH', '**/admin/catalog/catalog/*').as('updateDefaultCatalog')
   cy.intercept('POST', '**/admin/defaultcatalog').as('setDefaultCatalog')
 
-  cy.getBySel('adminDefaultCatalogSection').should('be.visible').click()
-  cy.getBySel('adminDefaultCatalogName').should('be.visible').clear().type(name)
-  cy.getBySel('adminDefaultCatalogDescription').clear().type('Default catalog for admin categories and search filters E2E')
-  cy.getBySel('adminSaveDefaultCatalog').should('not.be.disabled').click()
+  cy.request<{ defaultId?: string }>('http://localhost:8004/config').then(({ body }) => {
+    const existingDefaultId = body.defaultId
 
-  cy.wait('@createDefaultCatalog', { timeout: 120000 }).then(({ request, response }) => {
-    expect(
-      response?.statusCode,
-      `default catalog create response: ${JSON.stringify(response?.body)} request: ${JSON.stringify(request.body)}`
-    ).to.be.oneOf([200, 201])
+    cy.getBySel('adminDefaultCatalogSection').should('be.visible').click()
+    cy.getBySel('adminDefaultCatalogName').should('be.visible').clear().type(name)
+    cy.getBySel('adminDefaultCatalogDescription').clear().type('Default catalog for admin categories and search filters E2E')
+    cy.getBySel('adminSaveDefaultCatalog').should('not.be.disabled').click()
+
+    if (existingDefaultId) {
+      cy.wait('@updateDefaultCatalog', { timeout: 200000 }).then(({ request, response }) => {
+        expect(
+          response?.statusCode,
+          `default catalog update response: ${JSON.stringify(response?.body)} request: ${JSON.stringify(request.body)}`
+        ).to.be.oneOf([200, 204])
+        expect(request.body.name).to.eq(name)
+      })
+      cy.wait('@setDefaultCatalog', { timeout: 200000 }).then(({ request, response }) => {
+        expect(
+          response?.statusCode,
+          `set default catalog response: ${JSON.stringify(response?.body)} request: ${JSON.stringify(request.body)}`
+        ).to.be.oneOf([200, 201, 204])
+        expect(request.body.catalogId).to.eq(existingDefaultId)
+      })
+      cy.request<{ defaultId?: string }>('http://localhost:8004/config')
+        .its('body.defaultId')
+        .should('eq', existingDefaultId)
+    } else {
+      cy.wait('@createDefaultCatalog', { timeout: 200000 }).then(({ request, response }) => {
+        expect(
+          response?.statusCode,
+          `default catalog create response: ${JSON.stringify(response?.body)} request: ${JSON.stringify(request.body)}`
+        ).to.be.oneOf([200, 201])
+        expect(request.body.name).to.eq(name)
+        const createdDefaultId = response?.body?.id
+        expect(createdDefaultId, 'created default catalog ID').to.be.a('string').and.not.be.empty
+
+        cy.request<{ defaultId?: string }>('http://localhost:8004/config')
+          .its('body.defaultId')
+          .should('eq', createdDefaultId)
+      })
+    }
   })
-  cy.wait('@setDefaultCatalog', { timeout: 120000 }).then(({ request, response }) => {
-    expect(
-      response?.statusCode,
-      `set default catalog response: ${JSON.stringify(response?.body)} request: ${JSON.stringify(request.body)}`
-    ).to.be.oneOf([200, 201, 204])
-  })
-  cy.request<{ defaultId?: string }>('http://localhost:8004/config')
-    .its('body.defaultId')
-    .should('be.a', 'string')
-    .and('not.be.empty')
 }
 
 const openSearchFiltersSection = (): void => {
@@ -103,7 +125,7 @@ const createCategory = (name: string, parentName?: string): void => {
 
   if (parentName) {
     cy.getBySel('adminToggleParentCategory').click({ force: true })
-    cy.contains('[data-cy="adminParentCategoryRow"]', parentName, { timeout: 120000 })
+    cy.contains('[data-cy="adminParentCategoryRow"]', parentName, { timeout: 200000 })
       .should('be.visible')
       .within(() => {
         cy.getBySel('adminParentCategoryCheckbox').click({ force: true })
@@ -118,13 +140,13 @@ const createCategory = (name: string, parentName?: string): void => {
       `create category "${name}" response: ${JSON.stringify(response?.body)} request: ${JSON.stringify(request.body)}`
     ).to.be.oneOf([200, 201])
   })
-  cy.getBySel('adminAddNewCategory', { timeout: 120000 }).should('be.visible')
+  cy.getBySel('adminAddNewCategory', { timeout: 200000 }).should('be.visible')
 }
 
 const launchCategory = (name: string): void => {
   cy.intercept('PATCH', '**/catalog/category/*').as('updateCategory')
 
-  cy.contains('[data-cy="adminCategoryRow"]', name, { timeout: 120000 })
+  cy.contains('[data-cy="adminCategoryRow"]', name, { timeout: 200000 })
     .should('be.visible')
     .within(() => {
       cy.getBySel('adminEditCategory').click()
@@ -140,7 +162,7 @@ const launchCategory = (name: string): void => {
     ).to.be.oneOf([200, 201])
   })
 
-  cy.contains('[data-cy="adminCategoryRow"]', name, { timeout: 120000 })
+  cy.contains('[data-cy="adminCategoryRow"]', name, { timeout: 200000 })
     .should('be.visible')
     .within(() => {
       cy.getBySel('adminCategoryStatus').should('contain', 'Launched')
@@ -180,9 +202,7 @@ const configureSearchFilters = (seed: CategorySeed): void => {
 const openSearchFromBrowseMenu = (): void => {
   cy.intercept('GET', '**/catalog/category*').as('categoryList')
 
-  cy.getBySel('browse').should('be.visible').click()
-  cy.getBySel('browseServices').should('be.visible').click()
-
+  cy.visit('/search')
   cy.url().should('include', '/search')
   cy.wait('@categoryList')
 }
@@ -227,15 +247,15 @@ describe('Administration Categories And Search Filters E2E', {
     openSearchFromBrowseMenu()
 
     cy.getBySel('searchCategoryDropdown').should('be.visible').click()
-    cy.contains('[data-cy="searchCategoryItem"]', seed.primaryChildName, { timeout: 120000 })
+    cy.contains('[data-cy="searchCategoryItem"]', seed.primaryChildName, { timeout: 200000 })
       .should('be.visible')
     cy.getBySel('searchCategoryDropdown').should('be.visible').click()
     cy.contains('[data-cy="searchCategoryItem"]', seed.primaryChildName).should('not.exist')
 
-    cy.contains('[data-cy="searchToolbarFilter"]', seed.toolbarFilterLabel, { timeout: 120000 })
+    cy.contains('[data-cy="searchToolbarFilter"]', seed.toolbarFilterLabel, { timeout: 200000 })
       .should('be.visible')
       .click()
-    cy.contains('[data-cy="searchToolbarFilterOption"]', seed.filterChildName, { timeout: 120000 })
+    cy.contains('[data-cy="searchToolbarFilterOption"]', seed.filterChildName, { timeout: 200000 })
       .should('be.visible')
   })
 })

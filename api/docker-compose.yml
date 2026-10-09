@@ -1,7 +1,7 @@
 services:
   tmforum-apis:
-    image: quay.io/fiware/tmforum-all-in-one:${TM_VERSION}
-    platform: ${PLATFORM:-linux/amd64}    
+    image: quay.io/fiware/tmforum-all-in-one:${TM_VERSION:-1.15.1}
+    platform: ${PLATFORM:-linux/arm64}    
     ports:
       - 8633:8080
     networks:

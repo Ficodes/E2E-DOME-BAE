@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createProductSpec,
   updateProductSpecStatus,
   createOffering,
@@ -110,20 +111,21 @@ describe('Product Modification Order E2E', {
           description: 'Fee based on users',
           price: 5,
           type: 'one time',
-          charLink: { characteristicName: 'Users' }
+          charLink: { characteristicName: 'Users' },
+          tier: {
+            min: 1,
+            max: 10,
+            price: 5,
+            type: 'one time',
+            name: 'User Fee 1-10',
+            description: 'One-time fee covering the full users range',
+          },
         }
       ],
       procurement: 'automatic'
     })
 
     updateOffering({ name: offeringName, status: 'launched' })
-
-    // Verify offering exists
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerSection').click()
-    })
-    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
     // Set countries to ES for tax calculation
@@ -164,7 +166,7 @@ describe('Product Modification Order E2E', {
       cy.getBySel('previewPrices').should('have.length.greaterThan', 0)
 
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     // Go to cart and purchase

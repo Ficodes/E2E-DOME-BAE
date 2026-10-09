@@ -30,6 +30,13 @@ env:
 jobs:
   run-system-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        payment_method: [dpas, redsys]
+    env:
+      BAE_CB_PAYMENT_METHOD: ${{ matrix.payment_method }}
+      CYPRESS_specPattern: ${{ matrix.payment_method == 'redsys' && 'cypress/e2e/{01-happy-journey,04-billing-and-payment-scheduler}.cy.ts' || 'cypress/e2e/**/*.cy.ts' }}
 
     steps:
       - name: Checkout PR code
@@ -55,7 +62,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: docker-logs
+          name: docker-logs-${{ matrix.payment_method }}
           path: docker-logs
           retention-days: 7
 
@@ -63,7 +70,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-${{ matrix.payment_method }}
           path: cypress/screenshots
           retention-days: 7
 
@@ -71,6 +78,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-videos
+          name: cypress-videos-${{ matrix.payment_method }}
           path: cypress/videos
           retention-days: 1

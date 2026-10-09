@@ -529,7 +529,7 @@ if [ "$RUN_TEST" = true ]; then
         npx cypress open --e2e
     else
         echo -e "\033[35mrunning Cypress in headless mode\033[0m"
-        npx cypress run --e2e --headless defaultCommandTimeout=90000 || {
+        npx cypress run --e2e --headless || {
             echo -e "\033[31mSaving docker logs to docker-logs/...\033[0m"
             docker logs --timestamps proxy-docker-proxy-1 > docker-logs/proxy.log 2>&1 || true
             docker logs --timestamps charging-docker-charging-1 > docker-logs/charging.log 2>&1 || true

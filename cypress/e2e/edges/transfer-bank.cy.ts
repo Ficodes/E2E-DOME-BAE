@@ -1,8 +1,11 @@
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
+  addToCartAndWait,
+  createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
+  waitForPaginatedTab,
 } from '../../support/form-helpers'
 
 /**
@@ -44,62 +47,24 @@ describeForDpas('Manual Bill Settle Edge Case', {
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
 
     // ============================================
-    // Step 1: Verify catalog and product spec exist (from happy journey)
+    // Step 1: Create Offering with one-time price component
     // ============================================
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
-    cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
-
-    cy.getBySel('prdSpecSection').click()
-    cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
-
-    // ============================================
-    // Step 2: Create Offering with one-time price component
-    // ============================================
-    cy.visit('/my-offerings')
-    cy.getBySel('offerSection').click()
-    cy.getBySel('newOffering').click()
-
-    cy.getBySel('offerName').should('be.visible').type(offeringName)
-    cy.getBySel('textArea').type('Offering for manual bill settlement test')
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('prodSpecs').contains(productSpecName).click()
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('catalogList').contains(catalogName).click()
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('offerNext').click() // Skip category
-
-    cy.getBySel('textArea').type('Test offering for manual bill settlement via API')
-    cy.getBySel('offerNext').click()
-
-    // One-time price component
-    cy.getBySel('pricePlanType').select('paid')
-    cy.getBySel('newPricePlan').click()
-    cy.getBySel('pricePlanName').type(pricePlanName)
-    cy.getBySel('textArea').type('One-time payment plan')
-
-    cy.getBySel('newPriceComponent').click()
-    cy.getBySel('priceComponentName').type('One-Time Fee')
-    cy.getBySel('priceComponentDescription').find('[data-cy="textArea"]').type('One-time charge')
-    cy.getBySel('price').type('50.00')
-    cy.getBySel('priceType').select('one time')
-    cy.getBySel('savePriceComponent').click()
-
-    cy.getBySel('savePricePlan').click()
-    cy.getBySel('offerNext').click()
-
-    cy.getBySel('procurement').select('automatic')
-    cy.getBySel('offerNext').click()
-
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerFinish').click()
+    createOffering({
+      name: offeringName,
+      description: 'Offering for manual bill settlement test',
+      productSpecName,
+      catalogName,
+      detailedDescription: 'Test offering for manual bill settlement via API',
+      mode: 'paid',
+      pricePlan: { name: pricePlanName, description: 'One-time payment plan' },
+      priceComponent: {
+        name: 'One-Time Fee',
+        description: 'One-time charge',
+        price: 50,
+        type: 'one time',
+      },
+      procurement: 'automatic',
     })
-    cy.closeFeedbackModalIfVisible()
 
     // ============================================
     // Step 3: Launch offering
@@ -107,11 +72,17 @@ describeForDpas('Manual Bill Settle Edge Case', {
     clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
     updateOffering({ name: offeringName, status: 'launched' })
 
+    // Publishing moves the offering from Draft to Published. Re-enter the
+    // section and wait for both tab loads before continuing as the buyer.
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.visit('/my-offerings')
       cy.getBySel('offerSection').click()
     })
+    waitForPaginatedTab('**/catalog/productOffering?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Published').click()
+    })
     clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
+    cy.contains('[data-cy="offerRow"]', offeringName).should('contain.text', 'Published')
 
     // ============================================
     // Step 4: Switch to BUYER ORG
@@ -151,7 +122,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains(pricePlanName).click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()

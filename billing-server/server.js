@@ -28,6 +28,7 @@ app.post('/clear', (req, res) => {
   console.log('clearing cache')
   successURLStack = []
   cancelURLStack = []
+  pendingNext = false
   res.json('OK')
 })
 

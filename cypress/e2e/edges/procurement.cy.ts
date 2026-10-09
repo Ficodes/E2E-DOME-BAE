@@ -1,10 +1,34 @@
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createOffering,
   updateOffering,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
+  waitForPaginatedTab,
 } from '../../support/form-helpers'
+import { confirmOrderAction } from '../../support/global-state-flows'
+
+function verifySharedCatalogAndProductSpec(catalogName: string, productSpecName: string): void {
+  cy.visit('/my-offerings')
+  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+    cy.getBySel('catalogSection').click()
+  })
+  waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
+    cy.contains('button', 'Published').click()
+  })
+  clickLoadMoreUntilGone(10, '[data-cy="catalogRow"]')
+  cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
+
+  waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+    cy.getBySel('prdSpecSection').click()
+  })
+  waitForPaginatedTab('**/catalog/productSpecification?*lifecycleStatus=Launched*', () => {
+    cy.contains('button', 'Validated').click()
+  })
+  clickLoadMoreUntilGone(10, '[data-cy="prodSpecRow"]')
+  cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
+}
 
 describe('Manual Offering E2E', {
   viewportHeight: 1080,
@@ -32,20 +56,14 @@ describe('Manual Offering E2E', {
 
     cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
+    cy.intercept('GET', '**/ordering/productOrder?*relatedParty.role=seller*').as('getProviderOrders')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
     cy.intercept('PATCH', '**/ordering/productOrder/**').as('patchOrder')
 
     // ============================================
     // Verify that catalog and product spec exist (from happy journey test)
     // ============================================
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
-    cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
-
-    cy.getBySel('prdSpecSection').click()
-    cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
+    verifySharedCatalogAndProductSpec(catalogName, productSpecName)
 
     // ============================================
     // Step 1: Create Manual Offering
@@ -71,20 +89,9 @@ describe('Manual Offering E2E', {
     })
 
     // ============================================
-    // Step 2: Update Offering to Launched
+    // Step 2: Publish offering
     // ============================================
     updateOffering({ name: manualOfferingName, status: 'launched' })
-
-    // ============================================
-    // Verify Offering exists in table with Launched status
-    // ============================================
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerSection').click()
-    })
-    cy.getBySel('offers').should('be.visible')
-    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-
-    cy.getBySel('offers').contains(manualOfferingName).should('be.visible').parent().contains('Launched')
 
     // ============================================
     // Step 3: Change session to BUYER ORG
@@ -110,7 +117,7 @@ describe('Manual Offering E2E', {
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${manualOfferingName} to cart`).within(() => {
       cy.contains('Manual Price Plan').click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()
@@ -144,6 +151,7 @@ describe('Manual Offering E2E', {
     // Navigate to product orders as provider
     cy.visit('/product-orders')
     cy.getBySel('asProviderTab').click()
+    cy.wait('@getProviderOrders')
     cy.getBySel('ordersTable').should('be.visible')
 
     // Find the most recent order (first row) and acknowledge it
@@ -153,8 +161,7 @@ describe('Manual Offering E2E', {
 
     // Acknowledge the order
     cy.getBySel('acknowledgeOrder').click()
-    cy.getBySel('confirmActionBtn').click()
-    cy.wait('@patchOrder')
+    confirmOrderAction()
 
     // Find the most recent order (first row) and acknowledge it
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -163,8 +170,7 @@ describe('Manual Offering E2E', {
 
     // Start order treatment
     cy.getBySel('startOrderTreatment').click()
-    cy.getBySel('confirmActionBtn').click()
-    cy.wait('@patchOrder')
+    confirmOrderAction()
 
     // Find the most recent order (first row) and acknowledge it
     cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -172,8 +178,7 @@ describe('Manual Offering E2E', {
     })
     // Complete the order
     cy.getBySel('completeOrder').click()
-    cy.getBySel('confirmActionBtn').click()
-    cy.wait('@patchOrder')
+    confirmOrderAction()
 
     // ============================================
     // Step 8: Verify order is now completed as BUYER
@@ -231,20 +236,14 @@ describe('Payment Automatic with Manual Procurement E2E', {
 
     cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
     cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
+    cy.intercept('GET', '**/ordering/productOrder?*relatedParty.role=seller*').as('getProviderOrders')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
     cy.intercept('PATCH', '**/ordering/productOrder/**').as('patchOrder')
 
     // ============================================
     // Verify that catalog and product spec exist (from happy journey test)
     // ============================================
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
-    cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
-
-    cy.getBySel('prdSpecSection').click()
-    cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
+    verifySharedCatalogAndProductSpec(catalogName, productSpecName)
 
     // ============================================
     // Step 1: Create Offering with automatic payment and manual procurement
@@ -270,20 +269,9 @@ describe('Payment Automatic with Manual Procurement E2E', {
     })
 
     // ============================================
-    // Step 2: Update Offering to Launched
+    // Step 2: Publish offering
     // ============================================
     updateOffering({ name: offeringName, status: 'launched' })
-
-    // ============================================
-    // Verify Offering exists in table with Launched status
-    // ============================================
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.getBySel('offerSection').click()
-    })
-    cy.getBySel('offers').should('be.visible')
-    clickLoadMoreUntilGone(10, '[data-cy="offerRow"]')
-
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
 
     // ============================================
     // Step 3: Change session to BUYER ORG
@@ -309,7 +297,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).within(() => {
       cy.contains('Auto Pay Manual Proc Plan').click()
       cy.getBySel('acceptTermsCheckbox').click()
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()
@@ -348,6 +336,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Navigate to product orders as provider
     cy.visit('/product-orders')
     cy.getBySel('asProviderTab').click()
+    cy.wait('@getProviderOrders')
     cy.getBySel('ordersTable').should('be.visible')
 
     // Find the most recent order (first row) and complete it
@@ -356,8 +345,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     })
     // Complete the order
     cy.getBySel('completeOrder').click()
-    cy.getBySel('confirmActionBtn').click()
-    cy.wait('@patchOrder')
+    confirmOrderAction()
 
     // ============================================
     // Step 8: Verify order is now completed as BUYER

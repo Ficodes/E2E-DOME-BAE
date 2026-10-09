@@ -12,7 +12,15 @@ export const HAPPY_JOURNEY = {
     description: 'E2E Test Product Specification for Happy Journey',
     version: '0.1',
     brand: 'E2E Test Brand',
-    productNumber: '12345'
+    productNumber: '12345',
+    characteristics: [
+      {
+        name: 'E2E Blocked Characteristic',
+        description: 'Characteristic excluded from the happy journey price plan',
+        type: 'string',
+        values: ['Blocked value']
+      }
+    ] as Characteristic[]
   },
   serviceSpec: {
       name: `E2E Service Spec Shared`,
@@ -61,7 +69,8 @@ export const HAPPY_JOURNEY = {
     version: '0.1'
   },
   pricePlan : {
-    name: "pp1"
+    name: "pp1",
+    forbiddenCharacteristics: ['E2E Blocked Characteristic']
   },
   priceComponent: {
     name: "pc1",

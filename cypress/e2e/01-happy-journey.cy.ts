@@ -1,5 +1,6 @@
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 import {
+  addToCartAndWait,
   createCatalog,
   updateCatalogStatus,
   createProductSpec,
@@ -11,7 +12,10 @@ import {
   createServiceSpec,
   updateResourceSpecStatus,
   updateServiceSpecStatus,
-  createUsageSpec
+  createUsageSpec,
+  clickLoadMoreUntilGone,
+  waitForInitialPaginatedList,
+  waitForPaginatedTab
 } from '../support/form-helpers'
 
 describe('Happy Journey E2E', {
@@ -44,6 +48,28 @@ describe('Happy Journey E2E', {
 
     createUsageSpec(HAPPY_JOURNEY.metric)
 
+    // Leave the shared usage specification ready for usage-based offering prices.
+    waitForInitialPaginatedList('**/usage/usageSpecification?*', () => {
+      cy.visit('/my-offerings')
+      cy.getBySel('usageSpecSection').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="usageSpecRow"]')
+
+    cy.intercept('PATCH', '**/usage/usageSpecification/*').as('validateHappyUsageSpec')
+    cy.contains('[data-cy="usageSpecRow"]', HAPPY_JOURNEY.metric.name).within(() => {
+      cy.getBySel('usageSpecActions').should('be.visible').click()
+      cy.contains('button', 'Validate').should('be.visible').click()
+    })
+    cy.wait('@validateHappyUsageSpec').then(({ request, response }) => {
+      expect(response?.statusCode).to.be.oneOf([200, 204])
+      expect(request.body.lifecycleStatus).to.eq('Launched')
+    })
+    waitForPaginatedTab('**/usage/usageSpecification?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Validated').should('be.enabled').click()
+    })
+    clickLoadMoreUntilGone(10, '[data-cy="usageSpecRow"]')
+    cy.contains('[data-cy="usageSpecRow"]', HAPPY_JOURNEY.metric.name).should('contain.text', 'Validated')
+
     // ============================================
     // Step 1: Create Catalog
     // ============================================
@@ -69,10 +95,13 @@ describe('Happy Journey E2E', {
 
     createProductSpec({
       name: productSpecName,
+      description: HAPPY_JOURNEY.productSpec.description,
+      howItWorks: HAPPY_JOURNEY.productSpec.description,
       brand: HAPPY_JOURNEY.productSpec.brand,
       productNumber: HAPPY_JOURNEY.productSpec.productNumber,
       serviceSpecName: HAPPY_JOURNEY.serviceSpec.name,
-      resourceSpecName: HAPPY_JOURNEY.resourceSpec.name
+      resourceSpecName: HAPPY_JOURNEY.resourceSpec.name,
+      characteristics: HAPPY_JOURNEY.productSpec.characteristics
     })
 
     // ============================================
@@ -90,7 +119,11 @@ describe('Happy Journey E2E', {
       catalogName: catalogName,
       detailedDescription: HAPPY_JOURNEY.offering.detailedDescription,
       mode: "paid",
-      pricePlan: {name: HAPPY_JOURNEY.pricePlan.name, description: "descr"},
+      pricePlan: {
+        name: HAPPY_JOURNEY.pricePlan.name,
+        description: "descr",
+        forbiddenCharacteristics: HAPPY_JOURNEY.pricePlan.forbiddenCharacteristics
+      },
       priceComponent: {name: HAPPY_JOURNEY.priceComponent.name, description: "descr", price: HAPPY_JOURNEY.priceComponent.price, type: HAPPY_JOURNEY.priceComponent.type},
       procurement: "automatic"
     })
@@ -105,20 +138,35 @@ describe('Happy Journey E2E', {
     // ============================================
 
     // Verify Catalog exists in table
-    cy.visit('/my-offerings')
-    cy.getBySel('catalogSection').click()
+    waitForInitialPaginatedList('**/catalog/catalog?*', () => {
+      cy.visit('/my-offerings')
+      cy.getBySel('catalogSection').click()
+    })
+    waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Published').click()
+    })
     cy.getBySel('catalogTable').should('be.visible')
-    cy.getBySel('catalogTable').contains(catalogName).should('be.visible')
+    cy.getBySel('catalogTable').contains(catalogName).parents('[data-cy="catalogRow"]').should('contain.text', 'Published')
 
     // Verify Product Spec exists in table
-    cy.getBySel('prdSpecSection').click()
+    waitForInitialPaginatedList('**/catalog/productSpecification?*', () => {
+      cy.getBySel('prdSpecSection').click()
+    })
+    waitForPaginatedTab('**/catalog/productSpecification?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Validated').click()
+    })
     cy.getBySel('prodSpecTable').should('be.visible')
-    cy.getBySel('prodSpecTable').contains(productSpecName).should('be.visible')
+    cy.getBySel('prodSpecTable').contains(productSpecName).parents('[data-cy="prodSpecRow"]').should('contain.text', 'Validated')
 
     // Verify Offering exists in table
-    cy.getBySel('offerSection').click()
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
+      cy.getBySel('offerSection').click()
+    })
+    waitForPaginatedTab('**/catalog/productOffering?*lifecycleStatus=Launched*', () => {
+      cy.contains('button', 'Published').click()
+    })
     cy.getBySel('offers').should('be.visible')
-    cy.getBySel('offers').contains(offeringName).should('be.visible').parent().contains('Launched')
+    cy.getBySel('offers').contains(offeringName).parents('[data-cy="offerRow"]').should('contain.text', 'Published')
 
     // ============================================
     // Step 7: Set SELLER's country and Change session to BUYER ORG
@@ -140,10 +188,21 @@ describe('Happy Journey E2E', {
     cy.wait('@cartItem')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
+    cy.intercept('GET', '**/catalog/productOfferingPrice/*').as('getRelatedPrice')
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offeringName} to cart`).should('be.visible').within(() => {
       cy.contains(HAPPY_JOURNEY.pricePlan.name).click()
+      cy.wait('@getRelatedPrice').then(({ response }) => {
+        expect(response?.statusCode).to.eq(200)
+        expect(response?.body?.priceType).to.eq('constraint')
+        expect(response?.body?.prodSpecCharValueUse?.map(({ name }: { name: string }) => name)).to.include.members(
+          HAPPY_JOURNEY.pricePlan.forbiddenCharacteristics
+        )
+      })
+      HAPPY_JOURNEY.pricePlan.forbiddenCharacteristics.forEach((characteristicName) => {
+        cy.root().should('not.contain.text', characteristicName)
+      })
       cy.getBySel('acceptTermsCheckbox').click() // make sure terms and conditions are legible
-      cy.getBySel('addToCart').click()
+      addToCartAndWait()
     })
 
     cy.getBySel('shoppingCart').click()

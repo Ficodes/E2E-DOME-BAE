@@ -1,6 +1,52 @@
 // Import commands
 import './commands'
 
+const videoClockStartedAt = Date.now()
+const videoClockId = 'cypress-video-clock'
+
+function addVideoClock(win: Cypress.AUTWindow): void {
+  try {
+    const baseUrl = Cypress.config('baseUrl')
+    if (!baseUrl || win.location.origin !== new URL(baseUrl).origin) return
+    if (win.document.getElementById(videoClockId)) return
+
+    const clock = win.document.createElement('div')
+    clock.id = videoClockId
+    clock.setAttribute('aria-hidden', 'true')
+    Object.assign(clock.style, {
+      position: 'fixed',
+      top: '24px',
+      left: '24px',
+      zIndex: '2147483647',
+      padding: '12px 24px',
+      borderRadius: '12px',
+      background: 'rgba(0, 0, 0, 0.9)',
+      color: '#fff',
+      font: '700 36px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+      boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.85)',
+      pointerEvents: 'none',
+    })
+    win.document.body.appendChild(clock)
+
+    const updateClock = () => {
+      const now = Date.now()
+      const elapsedSeconds = ((now - videoClockStartedAt) / 1000).toFixed(3)
+      clock.textContent = `${new Date(now).toISOString()} | +${elapsedSeconds}s`
+    }
+
+    updateClock()
+    const intervalId = win.setInterval(updateClock, 100)
+    win.addEventListener('beforeunload', () => win.clearInterval(intervalId), { once: true })
+  } catch {
+    // Cross-origin pages cannot be annotated from the Cypress support context.
+  }
+}
+
+// The overlay is recorded in run-mode videos/screenshots but stays out of interactive open mode.
+if (!Cypress.config('isInteractive')) {
+  Cypress.on('window:load', addVideoClock)
+}
+
 afterEach(() => {
   if (Cypress.env('PAYMENT_METHOD') === 'redsys') {
     cy.visit('/')

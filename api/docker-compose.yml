@@ -1,28 +1,166 @@
+# PRD runs separate TMF APIs; the gateway preserves the shared E2E endpoint.
+x-tmf-api: &tmf-api
+  platform: ${PLATFORM:-linux/arm64}
+  networks:
+    - main
+  environment: &tmf-environment
+    ENDPOINTS_ALL_PORT: 9090
+    MICRONAUT_SERVER_PORT: 8080
+    MICRONAUT_METRICS_ENABLED: true
+    ENDPOINTS_HEALTH_ENABLED: true
+    LOGGER_LEVELS_ROOT: DEBUG
+    MICRONAUT_CACHES_ENTITIES_MAXIMUM_SIZE: 1000
+    MICRONAUT_CACHES_ENTITIES_EXPIRE_AFTER_WRITE: 2s
+    MICRONAUT_CACHES_ENTITIES_EXPIRE_AFTER_ACCESS: 2s
+    MICRONAUT_HTTP_SERVICES_READ_TIMEOUT: 30s
+    MICRONAUT_HTTP_SERVICES_NGSI_PATH: ngsi-ld/v1
+    MICRONAUT_HTTP_SERVICES_NGSI_URL: http://scorpio:9090
+    GENERAL_SERVERHOST: http://tmforum-apis:8080
+    GENERAL_CONTEXT_URL: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld
+    GENERAL_NGSILDORQUERYVALUE: ","
+    GENERAL_NGSILDORQUERYKEY: ","
+    GENERAL_ENCLOSEQUERY: false
+    API_EXTENSION_ENABLED: true
+    API_EXTENSION_PUT_ENABLED: false
+
 services:
   tmforum-apis:
-    image: quay.io/fiware/tmforum-all-in-one:${TM_VERSION:-1.15.1}
-    platform: ${PLATFORM:-linux/arm64}    
+    image: nginx:1.28-alpine
     ports:
       - 8633:8080
     networks:
       - main
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - party-catalog
+      - customer-bill-management
+      - customer-management
+      - product-catalog
+      - product-inventory
+      - product-ordering-management
+      - resource-catalog
+      - resource-function-activation
+      - resource-inventory
+      - service-catalog
+      - service-inventory
+      - account
+      - agreement
+      - usage-management
+      - quote
+      - document-management
+
+  party-catalog:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-party-catalog:${TM_VERSION:-sbx_1.8.4}
     environment:
-      ENDPOINTS_ALL_PORT: 9090
-      MICRONAUT_SERVER_PORT: 8080
-      MICRONAUT_METRICS_ENABLED: true
-      ENDPOINTS_HEALTH_ENABLED: true
-      LOGGER_LEVELS_ROOT: DEBUG
-      MICRONAUT_CACHES_ENTITIES_MAXIMUM_SIZE: 1000
-      MICRONAUT_CACHES_ENTITIES_EXPIRE_AFTER_WRITE: 2s
-      MICRONAUT_CACHES_ENTITIES_EXPIRE_AFTER_ACCESS: 2s
-      MICRONAUT_HTTP_SERVICES_READ_TIMEOUT: 30s
-      MICRONAUT_HTTP_SERVICES_NGSI_PATH: ngsi-ld/v1
-      MICRONAUT_HTTP_SERVICES_NGSI_URL: http://scorpio:9090
-      GENERAL_SERVERHOST: http://tmforum-apis:8080
-      GENERAL_NGSILDORQUERYVALUE: ","
-      GENERAL_NGSILDORQUERYKEY: ","
-      GENERAL_ENCLOSEQUERY: false
-      API_EXTENSION_ENABLED: true
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/party/v4
+
+  customer-bill-management:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-customer-bill-management:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/customerBillManagement/v4
+
+  customer-management:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-customer-management:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/customerManagement/v4
+
+  product-catalog:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-product-catalog:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/productCatalogManagement/v4
+
+  product-inventory:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-product-inventory:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/productInventory/v4
+
+  product-ordering-management:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-product-ordering-management:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/productOrderingManagement/v4
+
+  resource-catalog:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-resource-catalog:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/resourceCatalog/v4
+
+  resource-function-activation:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-resource-function-activation:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/resourceFunctionActivation/v4
+
+  resource-inventory:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-resource-inventory:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/resourceInventoryManagement/v4
+
+  service-catalog:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-service-catalog:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/serviceCatalogManagement/v4
+
+  service-inventory:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-service-inventory:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/serviceInventory/v4
+
+  account:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-account:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/accountManagement/v4
+
+  agreement:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-agreement:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/agreementManagement/v4
+
+  usage-management:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-usage-management:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/usageManagement/v4
+
+  quote:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-quote:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/quoteManagement/v4
+
+  document-management:
+    <<: *tmf-api
+    image: docker.io/drllbl18/tmforum-document-management:${TM_VERSION:-sbx_1.8.4}
+    environment:
+      <<: *tmf-environment
+      GENERAL_BASEPATH: /tmf-api/document/v4
 
 networks:
   main:

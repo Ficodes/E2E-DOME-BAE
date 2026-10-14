@@ -14,7 +14,7 @@ services:
       POSTGRES_DB: ngb
 
   scorpio:
-    image: scorpiobroker/all-in-one-runner:java-4.1.10
+    image: scorpiobroker/all-in-one-runner:java-5.0.3
     platform: linux/amd64
     networks:
       - main

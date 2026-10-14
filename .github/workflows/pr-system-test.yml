@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       tm_version:
-        description: "TMForum API version (leave empty to use the default)"
+        description: "TMForum API version (defaults to PRD sbx_1.8.4)"
         required: false
 
 env:
@@ -25,7 +25,7 @@ env:
   CHARGING_BRANCH: master
   FRONTEND_REPO: Ficodes/BAE-Frontend
   FRONTEND_BRANCH: main
-  TM_VERSION: ${{ github.event.inputs.tm_version || '1.15.1' }}
+  TM_VERSION: ${{ github.event.inputs.tm_version || 'sbx_1.8.4' }}
 
 jobs:
   run-system-tests:

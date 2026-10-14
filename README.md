@@ -1,6 +1,10 @@
 # E2E-DOME-BAE
 
-**Important:** If you are using macOS, you may experience significantly longer test execution times. This is due to a performance bottleneck in the TMForum API container, which is not optimized for native ARM architecture.
+This branch uses the images configured in DOME GitOps PRD: Scorpio `scorpiobroker/all-in-one-runner:java-5.0.3` and the 16 separate `docker.io/drllbl18/tmforum-*` APIs at `sbx_1.8.4`. An Nginx gateway keeps the shared endpoint at `http://localhost:8633` (`http://tmforum-apis:8080` inside Docker).
+
+The gateway also maps the existing `/tmf-api/quote/v4` route to PRD's `/tmf-api/quoteManagement/v4`. Document attachment storage is not provisioned by this test stack; binary document uploads need a separate S3 service.
+
+**Important:** Scorpio uses an AMD64 image, so it runs under emulation on Apple Silicon. Running the separate TMF services also uses more memory than the previous all-in-one container.
 
 ## Table of Contents
 
@@ -60,17 +64,17 @@ To deploy the complete system and run the tests:
 
 Headless mode (default):
 ```bash
-./testing-local.sh master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
+./testing-local.sh master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend sbx_1.8.4
 ```
 
 With GUI (headed mode):
 ```bash
-./testing-local.sh --headed master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
+./testing-local.sh --headed master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend sbx_1.8.4
 ```
 
 Only build and deploy (skip tests):
 ```bash
-./testing-local.sh --noTest master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
+./testing-local.sh --noTest master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend sbx_1.8.4
 ```
 
 This command:
@@ -104,22 +108,24 @@ npx cypress open --e2e
 
 If nothing is deployed yet, use the `--headed` flag when running the testing script:
 ```bash
-./testing-local.sh --headed master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend 1.3.18
+./testing-local.sh --headed master FIWARE-TMForum/business-ecosystem-logic-proxy master FIWARE-TMForum/business-ecosystem-charging-backend main Ficodes/BAE-Frontend sbx_1.8.4
 ```
 
 ### You can integrate the tests in your CI/CD
+The `PR System Test` workflow runs for pull requests targeting `master`, or manually through `workflow_dispatch` after pushing this branch. A push alone does not trigger it. Both workflows default to `sbx_1.8.4` when no TMF version is supplied; an explicit version overrides that default and must exist for the separate `drllbl18/tmforum-*` images.
+
 From your forked BAE-Frontend you can send a PR to the original repo (Ficodes/BAE-Frontend) with the following data
 This is the minimal text you need to trigger the system testing workflow
 ```txt
 SYSTEM_TESTING: ACTIVATE
-TM_VERSION: 1.3.18
+TM_VERSION: sbx_1.8.4
 ```
 And this is for custom testing
 ```txt
 SYSTEM_TESTING: ACTIVATE [needed to activate the workflow]
 PROXY: https://github.com/FIWARE-TMForum/business-ecosystem-logic-proxy/tree/develop [This line is optional; default it will take master branch]
 CHARGING: https://github.com/FIWARE-TMForum/business-ecosystem-charging-backend/tree/develop [This line is optional; default it will take master branch]
-TM_VERSION: 1.3.18
+TM_VERSION: sbx_1.8.4
 ```
 SYSTEM_TESTING: [needed to activate the workflow]
 PROXY: [This line is optional; default it will take master branch]

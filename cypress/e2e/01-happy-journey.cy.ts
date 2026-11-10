@@ -1,4 +1,6 @@
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
+import { assertInventoryProductStatus, getInventoryProduct, openInventory, openInventoryProduct, openProductInventory } from '../support/inventory'
+import { openAccountPage, openSearch } from '../support/navigation'
 import {
   addToCartAndWait,
   createCatalog,
@@ -26,6 +28,7 @@ describe('Happy Journey E2E', {
   beforeEach(() => {
     cy.clearBilling()
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
     cy.on('uncaught:exception', (err) => {
       // Log all errors to help debug
       console.error('Uncaught exception:', err.message)
@@ -49,10 +52,6 @@ describe('Happy Journey E2E', {
     createUsageSpec(HAPPY_JOURNEY.metric)
 
     // Leave the shared usage specification ready for usage-based offering prices.
-    waitForInitialPaginatedList('**/usage/usageSpecification?*', () => {
-      cy.visit('/my-offerings')
-      cy.getBySel('usageSpecSection').click()
-    })
     clickLoadMoreUntilGone(10, '[data-cy="usageSpecRow"]')
 
     cy.intercept('PATCH', '**/usage/usageSpecification/*').as('validateHappyUsageSpec')
@@ -139,7 +138,7 @@ describe('Happy Journey E2E', {
 
     // Verify Catalog exists in table
     waitForInitialPaginatedList('**/catalog/catalog?*', () => {
-      cy.visit('/my-offerings')
+      openAccountPage('offerings')
       cy.getBySel('catalogSection').click()
     })
     waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
@@ -171,12 +170,12 @@ describe('Happy Journey E2E', {
     // ============================================
     // Step 7: Set SELLER's country and Change session to BUYER ORG
     // ============================================
-    cy.visit('/profile')
+    openAccountPage('profile')
     cy.getBySel('orgCountry').select('ES')
     cy.getBySel('orgUpdate').click()
 
     cy.changeSessionTo('BUYER ORG')
-    cy.visit('/profile')
+    openAccountPage('profile')
     cy.getBySel('orgCountry').select('ES')
     cy.getBySel('orgUpdate').click()
 
@@ -184,7 +183,7 @@ describe('Happy Journey E2E', {
     // Step 8: Add offer to cart
     // ============================================
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
-    cy.visit('/search')
+    openSearch()
     cy.wait('@cartItem')
 
     cy.openAddToCartDrawerFromSearch(offeringName)
@@ -227,14 +226,12 @@ describe('Happy Journey E2E', {
     cy.wait('@getBilling')
     // Wait for the billing address to be processed and selected
     cy.wait(2000)
-    cy.deferPaymentRedirect()
+    cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
     cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
     cy.wait('@createOrder')
-    cy.waitForOrdersBeforePayment()
-    cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
-    cy.completePayment()
+    cy.completePayment({ followRedirect: true })
     cy.wait('@checkin')
-    cy.waitForOrdersAfterPayment()
+    cy.wait('@getOrders')
     cy.wait('@getBilling')
 
     // ============================================
@@ -254,28 +251,27 @@ describe('Happy Journey E2E', {
     // Step 11: Verify Product Inventory
     // ============================================
 
-    cy.visit('/product-inventory')
-    cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
+    openProductInventory('active')
+    for (const view of ['Grid', 'List']) {
+      cy.getBySel(`inventory${view}View`).click().should('have.attr', 'aria-pressed', 'true')
+      getInventoryProduct(offeringName).should('have.attr', 'data-view-mode', view.toLowerCase())
+      assertInventoryProductStatus(offeringName, 'active')
+    }
+    openInventoryProduct(offeringName)
 
     // ============================================
     // Step 12: Verify service Inventory
     // ============================================
-    cy.intercept('GET', '**/serviceInventory/service?*').as('getServiceInventory')
-    cy.getBySel('inventoryServices').click()
-
-    // Verify service spec appears
-    cy.wait('@getServiceInventory')
-    cy.contains(HAPPY_JOURNEY.serviceSpec.name).should('be.visible')
+    openInventory('services', 'reserved')
+    clickLoadMoreUntilGone(30, '[data-cy="inventoryRow"]')
+    cy.contains('[data-cy="inventoryRow"]', HAPPY_JOURNEY.serviceSpec.name).should('be.visible')
 
     // ============================================
     // Step 13: Verify resources Inventory
     // ============================================
-    cy.intercept('GET', '**/resourceInventory/resource?*').as('getResourceInventory')
-    cy.getBySel('inventoryResources').click()
-
-    // Verify resource spec appears
-    cy.wait('@getResourceInventory')
-    cy.contains(HAPPY_JOURNEY.resourceSpec.name).should('be.visible')
+    openInventory('resources', 'reserved')
+    clickLoadMoreUntilGone(30, '[data-cy="inventoryRow"]')
+    cy.contains('[data-cy="inventoryRow"]', HAPPY_JOURNEY.resourceSpec.name).should('be.visible')
 
   })
 })

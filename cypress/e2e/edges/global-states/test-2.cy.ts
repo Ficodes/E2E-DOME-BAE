@@ -1,19 +1,20 @@
+import { openAccountPage, openMarketplace, openSearch } from '../../../support/navigation'
+import { api } from '../../../support/api'
 
 import { HAPPY_JOURNEY } from '../../../support/happy-journey-constants'
 import {
   setupGlobalStateBefore,
   confirmOrderAction,
+  waitForOrderList,
 } from '../../../support/global-state-flows'
 import {
   addToCartAndWait,
   clickLoadMoreUntilFound,
-  createRequestTracker,
 } from '../../../support/form-helpers'
 
 describe('Check order global states - Reverse test (auto and semi failed, iterate manual)',  {
   viewportHeight: 1080,
   viewportWidth: 1920,
-  defaultCommandTimeout: 200000
 }, () => {
     const autoName = 'Auto Payment'
     const semiName = 'Semi Proc'
@@ -65,14 +66,13 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
         }
       })
 
-      cy.visit('/dashboard')
+      openMarketplace()
       cy.changeSessionTo('BUYER ORG')
+      api('POST', '/shoppingCart/empty/', {}).its('status').should('eq', 204)
       cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
 
-      const catalogTracker = createRequestTracker('**/catalog/productOffering?*')
       const openOfferingDrawer = (offeringName: string) => {
-        catalogTracker.waitForAction(() => cy.visit('/search'))
-        cy.wait('@cartItem')
+        openSearch()
         clickLoadMoreUntilFound(offeringName, '[data-cy="baeCard"]')
         cy.openAddToCartDrawerFromSearch(offeringName)
       }
@@ -117,19 +117,21 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
 
       cy.wait('@getBilling')
       cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
-      cy.wait('@createOrder')
+      cy.wait('@createOrder').then(({ response }) => {
+        expect(response?.statusCode).to.eq(201)
+        expect(response!.body.productOrderItem).to.have.length(3)
+      })
       cy.waitForOrdersBeforePayment()
 
       // Fail the auto and semi offering
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
       cy.cancelPayment()
       cy.wait('@checkin')
-      cy.visit('/')
-      cy.changeSessionTo('SELLER ORG')
+      openAccountPage('orders')
+      waitForOrderList(() => cy.changeSessionTo('SELLER ORG'))
       // Navigate to product orders as provider
-      cy.visit('/product-orders')
-      cy.getBySel('asProviderTab').should('be.visible').click()
-      cy.wait('@getProviderOrders')
+      openAccountPage('orders')
+      waitForOrderList(() => cy.getBySel('asProviderTab').should('be.visible').click())
       cy.getBySel('ordersTable').should('be.visible')
 
       // Find the most recent order and set auto and semi to failed

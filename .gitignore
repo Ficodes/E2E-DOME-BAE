@@ -22,4 +22,8 @@ node_modules/
 idm-docker/vol-mysql/
 cypress/screenshots
 cypress/videos
+cypress/downloads/
+cypress/.plugins/
+__pycache__/
+.local/
 venv

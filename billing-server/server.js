@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const app = express();
 const PORT = 4201;
+const PUBLIC_URL = process.env.BAE_TEST_BILLING_PUBLIC_URL || 'http://localhost:4201';
 const jwtResponse = require('./jwtResponse')
 const PROCESSED = 'PROCESSED'
 const PENDING= 'PENDING'
@@ -66,7 +67,7 @@ app.post('/api/payment-start', (req, res) => {
   successURLStack.push({url: body.processSuccessUrl, jwt: jwtResponse.generatePaymentJWT(paymentItems, state, { productOrderId: body.baseAttributes.externalId, ...(recurring ? {} : { preAuthId: null }) })})
   cancelURLStack.push(body.processErrorUrl)
   pendingNext = false
-  res.json({redirectUrl: 'http://localhost:4201/checkin'})
+  res.json({redirectUrl: `${PUBLIC_URL}/checkin`})
 })
 
 app.get('/checkin', (req, res) => {

@@ -1,3 +1,4 @@
+import { openAccountPage, openMarketplace, openSearch } from '../../support/navigation'
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
   addToCartAndWait,
@@ -27,6 +28,7 @@ describe('Multi-Price Component Billing Edge Cases', {
   beforeEach(() => {
     cy.clearBilling()
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
       if (err.message.includes("Unexpected token '<'")) {
@@ -94,10 +96,10 @@ describe('Multi-Price Component Billing Edge Cases', {
     // ============================================
     // Step 4: Add offering to cart and purchase
     // ============================================
-    // cy.visit('/dashboard')
+    // openMarketplace()
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/search')
+      openSearch()
     })
     cy.wait('@cartItem')
 
@@ -204,10 +206,10 @@ describe('Multi-Price Component Billing Edge Cases', {
     // Switch to BUYER and purchase
     cy.changeSessionTo('BUYER ORG')
 
-    // cy.visit('/dashboard')
+    // openMarketplace()
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/search')
+      openSearch()
     })
     cy.wait('@cartItem')
 
@@ -283,7 +285,7 @@ describe('Multi-Price Component Billing Edge Cases', {
     cy.changeSessionTo('BUYER ORG')
 
     // Count the number of invoices BEFORE purchase
-    cy.visit('/product-orders')
+    openAccountPage('orders')
     waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
@@ -294,10 +296,10 @@ describe('Multi-Price Component Billing Edge Cases', {
       cy.wrap(initialCount).as('initialInvoiceCount')
     })
 
-    // cy.visit('/dashboard')
+    // openMarketplace()
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/search')
+      openSearch()
     })
     cy.wait('@cartItem')
 

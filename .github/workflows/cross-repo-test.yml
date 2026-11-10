@@ -7,14 +7,15 @@ on:
 
 jobs:
   run-system-tests:
+    name: E2E (${{ matrix.suite }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        payment_method: [dpas, redsys]
+        suite: ${{ fromJSON(github.event.client_payload.suite == 'dpas' && '["dpas"]' || github.event.client_payload.suite == 'redsys' && '["redsys"]' || github.event.client_payload.suite == 'plugins' && '["plugins"]' || '["dpas","redsys","plugins"]') }}
     env:
-      BAE_CB_PAYMENT_METHOD: ${{ matrix.payment_method }}
-      CYPRESS_specPattern: ${{ matrix.payment_method == 'redsys' && 'cypress/e2e/{01-happy-journey,04-billing-and-payment-scheduler}.cy.ts' || 'cypress/e2e/**/*.cy.ts' }}
+      E2E_SUITE: ${{ matrix.suite }}
+      BAE_CB_PAYMENT_METHOD: ${{ matrix.suite == 'redsys' && 'redsys' || 'dpas' }}
       GH_TOKEN: ${{ github.event.client_payload.from == 'charging' && secrets.FIWARE_ADMIN || secrets.ADMIN }}
 
     steps:
@@ -51,7 +52,7 @@ jobs:
               \"state\": \"pending\",
               \"target_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
               \"description\": \"E2E system tests running...\",
-              \"context\": \"E2E System Tests (${{ matrix.payment_method }})\"
+              \"context\": \"E2E System Tests (${{ matrix.suite }})\"
             }"
 
       - name: System testing (build + execution)
@@ -89,7 +90,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: docker-logs-${{ matrix.payment_method }}
+          name: docker-logs-${{ matrix.suite }}
           path: docker-logs
           retention-days: 7
 
@@ -97,7 +98,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-screenshots-${{ matrix.payment_method }}
+          name: cypress-screenshots-${{ matrix.suite }}
           path: cypress/screenshots
           retention-days: 7
 
@@ -105,7 +106,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-videos-${{ matrix.payment_method }}
+          name: cypress-videos-${{ matrix.suite }}
           path: cypress/videos
           retention-days: 1
 
@@ -130,7 +131,7 @@ jobs:
               \"state\": \"success\",
               \"target_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
               \"description\": \"E2E system tests passed\",
-              \"context\": \"E2E System Tests (${{ matrix.payment_method }})\"
+              \"context\": \"E2E System Tests (${{ matrix.suite }})\"
             }"
 
       - name: Create commit status - failure
@@ -154,5 +155,5 @@ jobs:
               \"state\": \"failure\",
               \"target_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
               \"description\": \"E2E system tests failed\",
-              \"context\": \"E2E System Tests (${{ matrix.payment_method }})\"
+              \"context\": \"E2E System Tests (${{ matrix.suite }})\"
             }"

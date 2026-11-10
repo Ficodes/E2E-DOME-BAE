@@ -22,14 +22,12 @@ describe('Deploy Validation (Public Access)', {
 
   it('should display categories and offerings in dashboard without login', () => {
 
-    cy.visit('/dashboard')
+    cy.visit('/')
 
     cy.getBySel('categoryItem').should('have.length.greaterThan', 0)
 
-    cy.intercept('GET', '**catalog/category?*').as('categoryList')
     cy.getBySel('browse').click()
     cy.getBySel('browseServices').click()
-    cy.wait('@categoryList')
 
     cy.url().should('include', '/search')
     cy.contains('h1', 'All Categories').should('be.visible')

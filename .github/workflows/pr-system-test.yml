@@ -14,6 +14,11 @@ on:
       - master
   workflow_dispatch:
     inputs:
+      suite:
+        description: "E2E suite to run"
+        type: choice
+        options: [all, dpas, redsys, plugins]
+        default: all
       tm_version:
         description: "TMForum API version (leave empty to use the default)"
         required: false
@@ -29,14 +34,15 @@ env:
 
 jobs:
   run-system-tests:
+    name: E2E (${{ matrix.suite }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        payment_method: [dpas, redsys]
+        suite: ${{ fromJSON(github.event.inputs.suite == 'dpas' && '["dpas"]' || github.event.inputs.suite == 'redsys' && '["redsys"]' || github.event.inputs.suite == 'plugins' && '["plugins"]' || '["dpas","redsys","plugins"]') }}
     env:
-      BAE_CB_PAYMENT_METHOD: ${{ matrix.payment_method }}
-      CYPRESS_specPattern: ${{ matrix.payment_method == 'redsys' && 'cypress/e2e/{01-happy-journey,04-billing-and-payment-scheduler}.cy.ts' || 'cypress/e2e/**/*.cy.ts' }}
+      E2E_SUITE: ${{ matrix.suite }}
+      BAE_CB_PAYMENT_METHOD: ${{ matrix.suite == 'redsys' && 'redsys' || 'dpas' }}
 
     steps:
       - name: Checkout PR code
@@ -62,7 +68,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: docker-logs-${{ matrix.payment_method }}
+          name: docker-logs-${{ matrix.suite }}
           path: docker-logs
           retention-days: 7
 
@@ -70,7 +76,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-screenshots-${{ matrix.payment_method }}
+          name: cypress-screenshots-${{ matrix.suite }}
           path: cypress/screenshots
           retention-days: 7
 
@@ -78,6 +84,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-videos-${{ matrix.payment_method }}
+          name: cypress-videos-${{ matrix.suite }}
           path: cypress/videos
           retention-days: 1

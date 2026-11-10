@@ -1,3 +1,5 @@
+import { openAccountPage, openSearch } from '../support/navigation'
+import { BILLING_SERVER_URL } from '../support/endpoints'
 import { DSP_JOURNEY } from '../support/dsp-constants'
 import {
   createDspProductSpec,
@@ -6,6 +8,7 @@ import {
   updateOffering,
   waitForInitialPaginatedList,
   waitForPaginatedTab,
+  clickLoadMoreUntilFound,
 } from '../support/form-helpers'
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 
@@ -15,10 +18,11 @@ describe('DSP Journey E2E', {
 }, () => {
 
   beforeEach(() => {
-    cy.request({ url: 'http://localhost:4201/clear', method: 'POST' }).then((response) => {
+    cy.request({ url: `${BILLING_SERVER_URL}/clear`, method: 'POST' }).then((response) => {
       expect(response.status).to.eq(200)
     })
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
       if (err.message.includes("Unexpected token '<'")) {
@@ -29,8 +33,9 @@ describe('DSP Journey E2E', {
 
   it('should create a DSP-compatible product spec and offering with contract definition', () => {
     const catalogName = HAPPY_JOURNEY.catalog.name
-    const productSpecName = DSP_JOURNEY.productSpec.name
-    const offeringName = DSP_JOURNEY.offering.name
+    const suffix = Date.now()
+    const productSpecName = `${DSP_JOURNEY.productSpec.name} ${suffix}`
+    const offeringName = `${DSP_JOURNEY.offering.name} ${suffix}`
 
 
     // ============================================
@@ -84,7 +89,7 @@ describe('DSP Journey E2E', {
     // ============================================
     // Step 4: Verify all entities exist with their published/validated status
     // ============================================
-    cy.visit('/my-offerings')
+    openAccountPage('offerings')
     waitForInitialPaginatedList('**/catalog/catalog?*', () => {
       cy.getBySel('catalogSection').click()
     })
@@ -99,6 +104,7 @@ describe('DSP Journey E2E', {
     waitForPaginatedTab('**/catalog/productSpecification?*lifecycleStatus=Launched*', () => {
       cy.contains('button', 'Validated').click()
     })
+    clickLoadMoreUntilFound(productSpecName, '[data-cy="prodSpecRow"]')
     cy.getBySel('prodSpecTable').contains(productSpecName).parents('[data-cy="prodSpecRow"]').contains('Validated')
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
@@ -107,13 +113,15 @@ describe('DSP Journey E2E', {
     waitForPaginatedTab('**/catalog/productOffering?*lifecycleStatus=Launched*', () => {
       cy.contains('button', 'Published').click()
     })
+    clickLoadMoreUntilFound(offeringName, '[data-cy="offerRow"]')
     cy.getBySel('offers').contains(offeringName).parents('[data-cy="offerRow"]').contains('Published')
 
     // ============================================
     // Step 5: Verify DSP offering appears in search
     // ============================================
-    cy.visit('/search')
+    openSearch()
     cy.getBySel('baeCard').should('be.visible')
+    clickLoadMoreUntilFound(offeringName, '[data-cy="baeCard"]')
     cy.contains(offeringName).should('be.visible')
   })
 })

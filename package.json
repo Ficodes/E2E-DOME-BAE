@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "test:e2e": "cypress run --e2e",
+    "test:e2e:plugins": "E2E_SUITE=plugins cypress run --e2e",
+    "test:e2e:core": "E2E_SUITE=core cypress run --e2e",
+    "typecheck": "tsc --noEmit"
+  },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "cypress": "^15.5.0",

@@ -47,12 +47,6 @@ if (!Cypress.config('isInteractive')) {
   Cypress.on('window:load', addVideoClock)
 }
 
-afterEach(() => {
-  if (Cypress.env('PAYMENT_METHOD') === 'redsys') {
-    cy.visit('/')
-  }
-})
-
 // Extend Cypress namespace with custom commands
 declare global {
   namespace Cypress {
@@ -112,9 +106,10 @@ declare global {
       /**
        * Complete the pending checkout, redirecting back to the order's success url
        * @param options - Set recurring for Redsys payments that require 3DS authentication
+       * Set followRedirect to follow the application's checkout redirect without test navigation.
        * @example cy.completePayment({ recurring: true })
        */
-      completePayment(options?: { recurring?: boolean }): Chainable<void>
+      completePayment(options?: { recurring?: boolean; followRedirect?: boolean }): Chainable<void>
 
       /**
        * Cancel the pending checkout, redirecting back to the order's cancel url

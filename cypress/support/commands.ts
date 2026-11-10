@@ -7,7 +7,8 @@ Cypress.Commands.add('loginAsAdmin', () => {
 
     cy.getBySel('login').click()
 
-    cy.origin('http://idm.docker:3000', { args: { email: ADMIN_USER.email, password: ADMIN_USER.password } }, ({ email, password }) => {
+    const idmOrigin = Cypress.env('IDM_ORIGIN') || 'http://idm.docker:3000'
+    cy.origin(idmOrigin, { args: { email: ADMIN_USER.email, password: ADMIN_USER.password, idmOrigin } }, ({ email, password, idmOrigin }) => {
       cy.get('input[name="email"]', { timeout: 10000 }).should('be.visible')
       cy.get('input[name="email"]').type(email)
       cy.get('input[name="password"]').type(password)
@@ -15,7 +16,7 @@ Cypress.Commands.add('loginAsAdmin', () => {
 
       cy.wait(500)
       cy.location('origin').then((origin) => {
-        if (origin === 'http://idm.docker:3000') {
+        if (origin === idmOrigin) {
           cy.get('body').then($body => {
             if ($body.text().includes('Authorize')) {
               cy.contains('button', 'Authorize').click()
@@ -27,16 +28,16 @@ Cypress.Commands.add('loginAsAdmin', () => {
       })
     })
 
-    cy.url().should('include', 'localhost:4200', { timeout: 10000 })
+    cy.url().should('include', new URL(Cypress.config('baseUrl')!).origin, { timeout: 10000 })
     cy.getBySel('loggedAcc').should('exist')
   }, {
     validate: () => {
-      cy.visit('/dashboard')
+      cy.visit('/')
       cy.getBySel('loggedAcc').should('exist')
     }
   })
 
-  cy.visit('/dashboard')
+  cy.visit('/')
 })
 
 // Close feedback modal if it appears
@@ -58,7 +59,7 @@ Cypress.Commands.add('closeFeedbackModalIfVisible', () => {
   })
 })
 
-const BILLING_SERVER_URL = 'http://localhost:4201'
+const BILLING_SERVER_URL = Cypress.env('BILLING_SERVER_URL') || 'http://localhost:4201'
 const PAYMENT_METHOD = Cypress.env('PAYMENT_METHOD')
 const IS_REDSYS = PAYMENT_METHOD === 'redsys'
 const REDSYS_ORIGIN = Cypress.env('REDSYS_ORIGIN')
@@ -85,7 +86,7 @@ Cypress.Commands.add('clearBilling', () => {
 Cypress.Commands.add('deferPaymentRedirect', () => {
   deferredPaymentUrl = undefined
 
-  cy.intercept('POST', '**/ordering/productOrder', (request) => {
+  cy.intercept({ method: 'POST', url: '**/ordering/productOrder', times: 1 }, (request) => {
     request.continue((response) => {
       const redirectHeader = Object.keys(response.headers).find(
         (header) => header.toLowerCase() === 'x-redirect-url'
@@ -125,8 +126,8 @@ Cypress.Commands.add('waitForOrdersAfterPayment', () => {
 })
 
 // Complete the pending checkout, redirecting back to the order's success url
-Cypress.Commands.add('completePayment', (options: { recurring?: boolean } = {}) => {
-  const paymentUrl = takeDeferredPaymentUrl()
+Cypress.Commands.add('completePayment', (options: { recurring?: boolean; followRedirect?: boolean } = {}) => {
+  const paymentUrl = options.followRedirect ? undefined : takeDeferredPaymentUrl()
 
   if (IS_REDSYS) {
     if (options.recurring) {
@@ -167,7 +168,7 @@ Cypress.Commands.add('completePayment', (options: { recurring?: boolean } = {}) 
     })
   }
 
-  cy.visit(paymentUrl || `${BILLING_SERVER_URL}${PAYMENT_PREFIX}/checkin`)
+  if (!options.followRedirect) cy.visit(paymentUrl || `${BILLING_SERVER_URL}${PAYMENT_PREFIX}/checkin`)
 })
 
 // Cancel the pending checkout, redirecting back to the order's cancel url
@@ -201,17 +202,25 @@ Cypress.Commands.add('setPaymentPending', () => {
 
 // Change session to a specific organization
 Cypress.Commands.add('changeSessionTo', (organizationName: string) => {
-  // Open user dropdown
-  cy.getBySel('loggedAcc').click()
+  cy.window({ log: false }).then(win => {
+    const session = JSON.parse(win.localStorage.getItem('login_items') || '{}')
+    const target = organizationName === session.user ? session.id
+      : session.organizations?.find((organization: any) => organization.name === organizationName)?.id
+    expect(target, `session identity for ${organizationName}`).to.be.a('string').and.not.be.empty
+    // The active organization is intentionally absent from the switcher.
+    if (session.logged_as === target) return
 
-  // Click on "Change session" button
-  cy.getBySel('changeSession').should('be.visible').click()
-
-  // Wait for organizations dropdown to appear and select organization by name
-  cy.getBySel('orgsDropdown').should('be.visible').contains('button', organizationName).click()
-
-  // Wait for session change to complete
-  cy.wait(1000)
+    cy.getBySel('userDropdown').then($menu => {
+      if (!$menu.is(':visible')) cy.getBySel('loggedAcc').filter(':visible').click()
+    })
+    cy.getBySel('changeSession').should('be.visible').click()
+    cy.getBySel('orgsDropdown').should('be.visible').contains('button', organizationName).click()
+    cy.window({ log: false }).should(currentWindow => {
+      const current = JSON.parse(currentWindow.localStorage.getItem('login_items') || '{}')
+      expect(current.logged_as, 'selected session').to.eq(target)
+    })
+    cy.wait(1000)
+  })
 })
 
 // Open the add-to-cart drawer from the new search card flow.

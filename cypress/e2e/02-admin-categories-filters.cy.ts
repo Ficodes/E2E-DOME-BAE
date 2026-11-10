@@ -1,3 +1,5 @@
+import { openSearch } from '../support/navigation'
+import { PROXY_URL } from '../support/endpoints'
 import { ORGS } from '../support/constants'
 
 type CategorySeed = {
@@ -41,7 +43,6 @@ const ensurePersonalAdminSession = (): void => {
     expect(loginInfo.logged_as, 'logged_as after session change').to.eq(loginInfo.id)
   })
 
-  cy.visit('/dashboard')
   cy.getBySel('loggedAcc').should('be.visible')
 }
 
@@ -60,7 +61,7 @@ const configureDefaultCatalog = (name: string): void => {
   cy.intercept('PATCH', '**/admin/catalog/catalog/*').as('updateDefaultCatalog')
   cy.intercept('POST', '**/admin/defaultcatalog').as('setDefaultCatalog')
 
-  cy.request<{ defaultId?: string }>('http://localhost:8004/config').then(({ body }) => {
+  cy.request<{ defaultId?: string }>(`${PROXY_URL}/config`).then(({ body }) => {
     const existingDefaultId = body.defaultId
 
     cy.getBySel('adminDefaultCatalogSection').should('be.visible').click()
@@ -83,7 +84,7 @@ const configureDefaultCatalog = (name: string): void => {
         ).to.be.oneOf([200, 201, 204])
         expect(request.body.catalogId).to.eq(existingDefaultId)
       })
-      cy.request<{ defaultId?: string }>('http://localhost:8004/config')
+      cy.request<{ defaultId?: string }>(`${PROXY_URL}/config`)
         .its('body.defaultId')
         .should('eq', existingDefaultId)
     } else {
@@ -96,7 +97,7 @@ const configureDefaultCatalog = (name: string): void => {
         const createdDefaultId = response?.body?.id
         expect(createdDefaultId, 'created default catalog ID').to.be.a('string').and.not.be.empty
 
-        cy.request<{ defaultId?: string }>('http://localhost:8004/config')
+        cy.request<{ defaultId?: string }>(`${PROXY_URL}/config`)
           .its('body.defaultId')
           .should('eq', createdDefaultId)
       })
@@ -202,7 +203,7 @@ const configureSearchFilters = (seed: CategorySeed): void => {
 const openSearchFromBrowseMenu = (): void => {
   cy.intercept('GET', '**/catalog/category*').as('categoryList')
 
-  cy.visit('/search')
+  openSearch()
   cy.url().should('include', '/search')
   cy.wait('@categoryList')
 }

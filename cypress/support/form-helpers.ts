@@ -1,4 +1,5 @@
 // Helper functions for filling forms in the application
+import { openAccountPage } from './navigation'
 
 export interface CatalogParams {
   name: string
@@ -74,10 +75,13 @@ export interface UpdateOfferingParams {
 /** Add the selected offering and wait for the cart refresh and drawer close. */
 export function addToCartAndWait(): void {
   cy.getBySel('addToCart').should('be.enabled').click()
-  cy.getBySel('addToCart')
-    .closest('[data-cy="toCartDrawer"]')
-    .should('have.class', 'translate-x-full')
-    .and('not.have.class', 'translate-x-0')
+  // Angular may remove the closed drawer, including its Add button. Query the
+  // document rather than retrying a descendant inside the old within() scope.
+  cy.document().should(document => {
+    const openDrawers = Array.from(document.querySelectorAll('[data-cy="toCartDrawer"]'))
+      .filter(drawer => drawer.classList.contains('translate-x-0'))
+    expect(openDrawers, 'add-to-cart drawers remaining open').to.have.length(0)
+  })
 }
 
 export function selectProcurementMode(procurement: string): void {
@@ -205,7 +209,7 @@ export interface DspOfferingParams {
  * Create a new catalog
  */
 export function createCatalog({ name, description }: CatalogParams): void {
-  cy.visit('/my-offerings')
+  openAccountPage('offerings')
   cy.getBySel('catalogSection').click()
   cy.getBySel('newCatalog').click()
 
@@ -264,7 +268,7 @@ export function createProductSpec({
   resourceSpecName = null,
   characteristics = [],
 }: ProductSpecParams): void {
-  cy.visit('/my-offerings')
+  openAccountPage('offerings')
   cy.getBySel('prdSpecSection').click()
   cy.getBySel('createProdSpec').click()
 
@@ -314,19 +318,19 @@ export function createProductSpec({
 
   if (serviceSpecName) {
     cy.contains('span', 'Service specifications').click({ force: true })
-    cy.contains('h2', 'Service specifications').parent().find('input[type="text"]').click()
-    cy.contains('label', serviceSpecName).should('be.visible').find('input[type="checkbox"]').check()
+    cy.getBySel('prodSpecServiceSearch').click()
+    cy.contains('label', serviceSpecName).should('be.visible').find('[data-cy="prodSpecServiceOption"]').check()
   }
 
   if (resourceSpecName) {
     cy.contains('span', 'Resource specifications').click({ force: true })
-    cy.contains('h2', 'Resource specification').parent().find('input[type="text"]').click()
-    cy.contains('label', resourceSpecName).should('be.visible').find('input[type="checkbox"]').check()
+    cy.getBySel('prodSpecResourceSearch').click()
+    cy.contains('label', resourceSpecName).should('be.visible').find('[data-cy="prodSpecResourceOption"]').check()
   }
 
   cy.contains('span', 'Compliance profile').click({ force: true })
   cy.getBySel('prodSpecFinish').should('be.enabled').click()
-  cy.contains('button', 'Save as draft').should('be.enabled').click()
+  cy.getBySel('prodSpecSaveDraft').should('be.enabled').click()
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -377,7 +381,7 @@ export function createOffering({
   procurement
 }: OfferingParams): void {
   cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
-  cy.visit('/my-offerings')
+  openAccountPage('offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
 
@@ -728,7 +732,7 @@ export function createCheckoutBilling({title, country, city, state, zip, street,
  * Create a new service specification
  */
 export function createServiceSpec({ name, description, characteristics = [] }: ServiceSpecParams): void {
-  cy.visit('/my-offerings')
+  openAccountPage('offerings')
   cy.getBySel('servSpecSection').click()
   cy.getBySel('createServSpec').click()
 
@@ -775,7 +779,7 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
 
   // Finish and save as draft
   cy.getBySel('servSpecFinish').should('be.enabled').click()
-  cy.contains('button', 'Save as draft').should('be.enabled').click()
+  cy.getBySel('servSpecSaveDraft').should('be.enabled').click()
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -788,7 +792,7 @@ export function createServiceSpec({ name, description, characteristics = [] }: S
  * Create a new resource specification
  */
 export function createResourceSpec({ name, description, characteristics = [] }: ResourceSpecParams): void {
-  cy.visit('/my-offerings')
+  openAccountPage('offerings')
   cy.getBySel('resSpecSection').click()
   cy.getBySel('createResSpec').click()
 
@@ -835,7 +839,7 @@ export function createResourceSpec({ name, description, characteristics = [] }: 
 
   // Finish and save as draft
   cy.getBySel('resSpecFinish').should('be.enabled').click()
-  cy.contains('button', 'Save as draft').should('be.enabled').click()
+  cy.getBySel('resSpecSaveDraft').should('be.enabled').click()
 
   // Close feedback modal if it appears
   cy.closeFeedbackModalIfVisible()
@@ -898,7 +902,7 @@ export function updateServiceSpecStatus({ name, status }: UpdateServiceSpecStatu
  * Steps: General → Compliance → Characteristics → DSP Config → Resource → Service → Attachments → Relationships → Summary
  */
 export function createDspProductSpec({ name, version = '0.1', brand, productNumber, dspConfig }: DspProductSpecParams): void {
-  cy.visit('/my-offerings')
+  openAccountPage('offerings')
   cy.getBySel('prdSpecSection').click()
   cy.getBySel('createProdSpec').click()
 
@@ -934,7 +938,7 @@ export function createDspProductSpec({ name, version = '0.1', brand, productNumb
 
   cy.contains('span', 'Compliance profile').click({ force: true })
   cy.getBySel('prodSpecFinish').should('be.enabled').click()
-  cy.contains('button', 'Save as draft').should('be.enabled').click()
+  cy.getBySel('prodSpecSaveDraft').should('be.enabled').click()
   cy.closeFeedbackModalIfVisible()
 
   cy.getBySel('prodSpecTable').should('be.visible')
@@ -968,7 +972,7 @@ export function createDspOffering({
   contractDefinition
 }: DspOfferingParams): void {
   cy.intercept('GET', '**/paymentInfo').as('getPaymentInfo')
-  cy.visit('/my-offerings')
+  openAccountPage('offerings')
   cy.getBySel('offerSection').click()
   cy.getBySel('newOffering').click()
 
@@ -1026,9 +1030,13 @@ export function createDspOffering({
   selectProcurementMode(procurement)
 
   // Step 7: Summary
+  cy.intercept('POST', '**/productOffering').as('saveDspOffering')
   waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
     cy.getBySel('offerFinish').should('be.enabled').click()
     cy.getBySel('confirmPublish').should('be.visible').and('be.enabled').click()
+    cy.wait('@saveDspOffering').then(({ response }) => {
+      expect(response?.statusCode, JSON.stringify(response?.body)).to.eq(201)
+    })
   })
 
   cy.closeFeedbackModalIfVisible()
@@ -1041,7 +1049,8 @@ export function createDspOffering({
  * Create a new usage specification
  */
 export function createUsageSpec({ name, description, metrics = [] }: UsageSpecParams): void {
-  cy.visit('/usage-spec')
+  openAccountPage('offerings')
+  cy.getBySel('usageSpecSection').click()
   cy.getBySel('createUsageSpec').click()
 
   // Step 1: General info

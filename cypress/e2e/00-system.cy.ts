@@ -1,3 +1,4 @@
+import { IDM_URL, PROXY_URL, TMF_URL } from '../support/endpoints'
 describe('DOME System E2E Tests', {
   viewportHeight: 1080,
   viewportWidth: 1920,
@@ -5,43 +6,43 @@ describe('DOME System E2E Tests', {
 
   it('should load frontend successfully', () => {
     cy.visit('/')
-    cy.url().should('include', 'localhost:4200')
+    cy.location('origin').should('eq', new URL(Cypress.config('baseUrl')!).origin)
   })
 
   it('should verify proxy backend is running', () => {
-    cy.request('http://localhost:8004/version').then((response) => {
+    cy.request(`${PROXY_URL}/version`).then((response) => {
       expect(response.status).to.eq(200)
     })
   })
 
   it('should verify charging backend is running', () => {
-    cy.request('http://localhost:8004/service').then((response) => {
+    cy.request(`${PROXY_URL}/service`).then((response) => {
       expect(response.status).to.eq(200)
     })
   })
 
   it('should verify IDM is running', () => {
-    cy.request('http://localhost:3000/version').then((response) => {
+    cy.request(`${IDM_URL}/version`).then((response) => {
       expect(response.status).to.eq(200)
     })
   })
 
   it('should verify TMForum APIs are running', () => {
-    cy.request('http://localhost:8633/tmf-api/resourceCatalog/v4/resourceCatalog').then((response) => {
+    cy.request(`${TMF_URL}/tmf-api/resourceCatalog/v4/resourceCatalog`).then((response) => {
       expect(response.status).to.eq(200)
     })
 
-    cy.request('http://localhost:8633/tmf-api/serviceCatalogManagement/v4/serviceCatalog').then((response) => {
+    cy.request(`${TMF_URL}/tmf-api/serviceCatalogManagement/v4/serviceCatalog`).then((response) => {
       expect(response.status).to.eq(200)
     })
 
-    cy.request('http://localhost:8633/tmf-api/productCatalogManagement/v4/productSpecification').then((response) => {
+    cy.request(`${TMF_URL}/tmf-api/productCatalogManagement/v4/productSpecification`).then((response) => {
       expect(response.status).to.eq(200)
     })
   })
 
   it('should fetch config from proxy', () => {
-    cy.request('http://localhost:8004/config').then((response) => {
+    cy.request(`${PROXY_URL}/config`).then((response) => {
       expect(response.status).to.eq(200)
       expect(response.body).to.have.property('siop')
     })
@@ -49,7 +50,7 @@ describe('DOME System E2E Tests', {
 
   it('should fetch stats from proxy', () => {
     cy.request({
-      url: 'http://localhost:8004/stats',
+      url: `${PROXY_URL}/stats`,
       failOnStatusCode: false
     }).then((response) => {
       expect([200, 404]).to.include(response.status)
@@ -58,7 +59,7 @@ describe('DOME System E2E Tests', {
 
   it('should access catalog endpoints through proxy', () => {
     cy.request({
-      url: 'http://localhost:8004/catalog/catalog',
+      url: `${PROXY_URL}/catalog/catalog`,
       failOnStatusCode: false
     }).then((response) => {
       expect([200, 401, 404]).to.include(response.status)
@@ -67,7 +68,7 @@ describe('DOME System E2E Tests', {
 
   it('should access product offerings through proxy', () => {
     cy.request({
-      url: 'http://localhost:8004/catalog/productOffering',
+      url: `${PROXY_URL}/catalog/productOffering`,
       failOnStatusCode: false
     }).then((response) => {
       expect([200, 401, 404]).to.include(response.status)

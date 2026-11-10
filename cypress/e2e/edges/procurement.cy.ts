@@ -1,4 +1,6 @@
+import { openAccountPage, openMarketplace, openSearch } from '../../support/navigation'
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
+import { assertInventoryProductStatus, openProductInventory } from '../../support/inventory'
 import {
   addToCartAndWait,
   createOffering,
@@ -10,10 +12,8 @@ import {
 import { confirmOrderAction } from '../../support/global-state-flows'
 
 function verifySharedCatalogAndProductSpec(catalogName: string, productSpecName: string): void {
-  cy.visit('/my-offerings')
-  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
-    cy.getBySel('catalogSection').click()
-  })
+  openAccountPage('offerings')
+  cy.getBySel('catalogSection').click()
   waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Published').click()
   })
@@ -38,6 +38,7 @@ describe('Manual Offering E2E', {
   beforeEach(() => {
     cy.clearBilling()
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
     cy.on('uncaught:exception', (err) => {
       // Log all errors to help debug
       console.error('Uncaught exception:', err.message)
@@ -101,11 +102,11 @@ describe('Manual Offering E2E', {
     // ============================================
     // Step 4: Add manual offer to cart
     // ============================================
-    // cy.visit('/dashboard')
+    // openMarketplace()
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/search')
+      openSearch()
     })
     cy.wait('@cartItem')
 
@@ -134,7 +135,7 @@ describe('Manual Offering E2E', {
     // ============================================
     // Step 6: Verify order is in unchecked state (waiting for manual approval)
     // ============================================
-    cy.visit('http://localhost:4200/product-orders')
+    openAccountPage('orders')
     cy.getBySel('ordersTable').should('be.visible')
 
     // For manual procurement, get the most recent order (first row in tbody)
@@ -149,7 +150,7 @@ describe('Manual Offering E2E', {
     cy.changeSessionTo('SELLER ORG')
 
     // Navigate to product orders as provider
-    cy.visit('/product-orders')
+    openAccountPage('orders')
     cy.getBySel('asProviderTab').click()
     cy.wait('@getProviderOrders')
     cy.getBySel('ordersTable').should('be.visible')
@@ -184,7 +185,8 @@ describe('Manual Offering E2E', {
     // Step 8: Verify order is now completed as BUYER
     // ============================================
     cy.changeSessionTo('BUYER ORG')
-    cy.visit('http://localhost:4200/product-orders')
+    openAccountPage('orders')
+    waitForPaginatedTab('**/ordering/productOrder?*', () => cy.getBySel('asCustomerTab').click())
     cy.getBySel('ordersTable').should('be.visible')
 
     // Verify the most recent order (first row) is now completed
@@ -201,13 +203,8 @@ describe('Manual Offering E2E', {
     cy.getBySel('invoiceDetail').contains('INITIAL PAYMENT')
 
     // Verify product is in inventory with active status
-    waitForInitialPaginatedList('**/inventory/product?*', () => {
-      cy.visit('/product-inventory')
-    })
-
-    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
-
-    cy.getBySel('productInventory').contains('[data-cy="productInventory"]', manualOfferingName).contains('active')
+    openProductInventory('active')
+    assertInventoryProductStatus(manualOfferingName, 'active')
   })
 })
 
@@ -218,6 +215,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
 
   beforeEach(() => {
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
     cy.on('uncaught:exception', (err) => {
       // Log all errors to help debug
       console.error('Uncaught exception:', err.message)
@@ -281,11 +279,11 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // ============================================
     // Step 4: Add offer to cart and checkout
     // ============================================
-    // cy.visit('/dashboard')
+    // openMarketplace()
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     //cy.getBySel('offFeatured').contains(catalogName).parent().find('[data-cy="viewService"]').click()
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/search')
+      openSearch()
     })
     cy.wait('@cartItem')
 
@@ -334,7 +332,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.changeSessionTo('SELLER ORG')
 
     // Navigate to product orders as provider
-    cy.visit('/product-orders')
+    openAccountPage('orders')
     cy.getBySel('asProviderTab').click()
     cy.wait('@getProviderOrders')
     cy.getBySel('ordersTable').should('be.visible')
@@ -351,7 +349,8 @@ describe('Payment Automatic with Manual Procurement E2E', {
     // Step 8: Verify order is now completed as BUYER
     // ============================================
     cy.changeSessionTo('BUYER ORG')
-    cy.visit('http://localhost:4200/product-orders')
+    openAccountPage('orders')
+    waitForPaginatedTab('**/ordering/productOrder?*', () => cy.getBySel('asCustomerTab').click())
     cy.getBySel('ordersTable').should('be.visible')
 
     // Verify the most recent order (first row) is now completed
@@ -368,12 +367,7 @@ describe('Payment Automatic with Manual Procurement E2E', {
     cy.getBySel('invoiceDetail').contains('INITIAL PAYMENT')
 
     // Verify product is in inventory with active status
-    waitForInitialPaginatedList('**/inventory/product?*', () => {
-      cy.visit('/product-inventory')
-    })
-
-    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
-
-    cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
+    openProductInventory('active')
+    assertInventoryProductStatus(offeringName, 'active')
   })
 })

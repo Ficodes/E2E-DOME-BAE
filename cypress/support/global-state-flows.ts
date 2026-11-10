@@ -1,3 +1,5 @@
+import { openAccountPage, openMarketplace, openSearch } from './navigation'
+import { api } from './api'
 import { HAPPY_JOURNEY } from './happy-journey-constants'
 import {
   addToCartAndWait,
@@ -17,10 +19,21 @@ export const completed = 'completed'
 export const cancelled = 'cancelled'
 export const failed = 'failed'
 
+/** Include the billing/offering requests that enrich every order before rendering. */
+export function waitForOrderList(action: () => void): void {
+  createRequestTracker([
+    '**/ordering/productOrder?*', '**/account/billingAccount/**',
+    '**/catalog/productOffering/**', '**/catalog/productSpecification/**',
+    '**/catalog/productOfferingPrice/**',
+  ], 500, Number.POSITIVE_INFINITY).waitForAction(action)
+  cy.getBySel('ordersTable').should('be.visible')
+}
+
 export function confirmOrderAction(): void {
   cy.getBySel('confirmActionBtn').click()
-  cy.wait('@patchOrder')
-  cy.wait('@patchOrder')
+  cy.wait('@patchOrder').its('response.statusCode').should('eq', 200)
+  cy.wait('@patchOrder').its('response.statusCode').should('eq', 200)
+  cy.getBySel('confirmActionBtn').should('not.be.visible')
 }
 
 interface GlobalStateSetupParams {
@@ -40,6 +53,7 @@ export function setupGlobalStateBefore(params: GlobalStateSetupParams) {
 
   cy.clearBilling()
   cy.loginAsAdmin()
+  cy.changeSessionTo('SELLER ORG')
   cy.on('uncaught:exception', (err) => {
     // Log all errors to help debug
     console.error('Uncaught exception:', err.message)
@@ -49,10 +63,10 @@ export function setupGlobalStateBefore(params: GlobalStateSetupParams) {
     }
   })
   // Verify that catalog and product spec exist (from happy journey test)
-  cy.visit('/my-offerings')
-  waitForInitialPaginatedList('**/catalog/catalog?*', () => {
-    cy.getBySel('catalogSection').click()
-  })
+  openAccountPage('offerings')
+  // The default Draft view may already be loaded and can be empty. Select the
+  // Published tab before requiring the table containing the shared catalogue.
+  cy.getBySel('catalogSection').click()
   waitForPaginatedTab('**/catalog/catalog?*lifecycleStatus=Launched*', () => {
     cy.contains('button', 'Published').click()
   })
@@ -143,14 +157,13 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
     }
   })
 
-  cy.visit('/dashboard')
+  openMarketplace()
   cy.changeSessionTo('BUYER ORG')
+  api('POST', '/shoppingCart/empty/', {}).its('status').should('eq', 204)
   cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
 
-  const catalogTracker = createRequestTracker('**/catalog/productOffering?*')
   const openOfferingDrawer = (offeringName: string) => {
-    catalogTracker.waitForAction(() => cy.visit('/search'))
-    cy.wait('@cartItem')
+    openSearch()
     clickLoadMoreUntilFound(offeringName, '[data-cy="baeCard"]')
     cy.openAddToCartDrawerFromSearch(offeringName)
   }
@@ -202,19 +215,16 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
 
   cy.wait('@getBilling')
   cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
-  cy.wait('@createOrder')
+  cy.wait('@createOrder').then(({ response }) => {
+    expect(response?.statusCode).to.eq(201)
+    expect(response!.body.productOrderItem).to.have.length(3)
+  })
   cy.waitForOrdersBeforePayment()
 
-  cy.changeSessionTo('SELLER ORG')
-  // Navigate to product orders as provider
-  cy.visit('/product-orders')
-
-  cy.wait('@getOrders')
-  cy.getBySel('ordersTable').should('be.visible')
-  cy.getBySel('asProviderTab').should('be.visible').click()
-  cy.wait('@getProviderOrders')
-  cy.wait(2000)
-  cy.getBySel('ordersTable').should('be.visible')
+  waitForOrderList(() => cy.changeSessionTo('SELLER ORG'))
+  // Navigate to product orders as provider after the organization reload settles.
+  openAccountPage('orders')
+  waitForOrderList(() => cy.getBySel('asProviderTab').should('be.visible').click())
 
   // Find the most recent order (first row) and acknowledge it
   cy.getBySel('ordersTable').find('tbody tr').first().within(() => {

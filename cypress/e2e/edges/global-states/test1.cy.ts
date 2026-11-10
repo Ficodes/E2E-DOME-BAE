@@ -1,14 +1,15 @@
+import { openAccountPage } from '../../../support/navigation'
 
 import { HAPPY_JOURNEY } from '../../../support/happy-journey-constants'
 import {
   setupGlobalStateBefore,
   setupGlobalStateBeforeEach,
   confirmOrderAction,
+  waitForOrderList,
 } from '../../../support/global-state-flows'
 describe('Check order global states',  {
   viewportHeight: 1080,
   viewportWidth: 1920,
-  defaultCommandTimeout: 200000
 }, () => {
     const autoName = 'Auto Payment'
     const semiName = 'Semi Proc'
@@ -48,7 +49,7 @@ describe('Check order global states',  {
 
     // At the moment I have done this test, orders are ordered by the most recent first.
     it('should give the correct global state: test 1 - Google Sheet', () => {
-      cy.visit('/')
+      openAccountPage('orders')
       cy.changeSessionTo('BUYER ORG')
       // complete auto offering
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
@@ -57,12 +58,11 @@ describe('Check order global states',  {
       cy.wait('@checkin')
       cy.waitForOrdersAfterPayment()
 
-      cy.changeSessionTo('SELLER ORG')
-      cy.visit('/product-orders')
+      waitForOrderList(() => cy.changeSessionTo('SELLER ORG'))
+      openAccountPage('orders')
       cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
-      cy.getBySel('asProviderTab').should('be.visible').click()
-      cy.wait('@getProviderOrders')
+      waitForOrderList(() => cy.getBySel('asProviderTab').should('be.visible').click())
       cy.getBySel('ordersTable').should('be.visible')
       // check global state
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {
@@ -109,7 +109,7 @@ describe('Check order global states',  {
       cy.getBySel('orderItems').contains('tr', manualName).contains( /unchecked/i)
 
       // complete auto offering
-      cy.visit('/')
+      openAccountPage('orders')
       cy.changeSessionTo('BUYER ORG')
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')
       cy.completePayment()
@@ -117,12 +117,11 @@ describe('Check order global states',  {
       cy.wait('@checkin')
       cy.waitForOrdersAfterPayment()
 
-      cy.changeSessionTo('SELLER ORG')
-      cy.visit('/product-orders')
+      waitForOrderList(() => cy.changeSessionTo('SELLER ORG'))
+      openAccountPage('orders')
       cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
-      cy.getBySel('asProviderTab').should('be.visible').click()
-      cy.wait('@getProviderOrders')
+      waitForOrderList(() => cy.getBySel('asProviderTab').should('be.visible').click())
       cy.getBySel('ordersTable').should('be.visible')
       // check global state
       cy.getBySel('ordersTable').find('tbody tr').first().within(() => {

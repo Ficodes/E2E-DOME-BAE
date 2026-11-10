@@ -1,0 +1,6 @@
+export const PROXY_URL = Cypress.env('PROXY_URL') || 'http://localhost:8004'
+export const CHARGING_URL = Cypress.env('CHARGING_URL') || 'http://localhost:8006'
+export const TMF_URL = Cypress.env('TMF_URL') || 'http://localhost:8633'
+export const SCORPIO_URL = Cypress.env('SCORPIO_URL') || 'http://localhost:1026'
+export const IDM_URL = Cypress.env('IDM_ORIGIN') || 'http://localhost:3000'
+export const BILLING_SERVER_URL = Cypress.env('BILLING_SERVER_URL') || 'http://localhost:4201'

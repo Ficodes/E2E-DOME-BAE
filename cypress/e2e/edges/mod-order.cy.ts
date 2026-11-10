@@ -1,4 +1,6 @@
+import { openAccountPage, openSearch } from '../../support/navigation'
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
+import { assertInventoryProductStatus, getInventoryProduct, openProductInventory } from '../../support/inventory'
 import {
   addToCartAndWait,
   createProductSpec,
@@ -26,6 +28,7 @@ describe('Product Modification Order E2E', {
   beforeEach(() => {
     cy.clearBilling()
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
       if (err.message.includes("Unexpected token '<'")) {
@@ -130,7 +133,7 @@ describe('Product Modification Order E2E', {
     // ============================================
     // Set countries to ES for tax calculation
     // ============================================
-    cy.visit('/profile')
+    openAccountPage('profile')
     cy.getBySel('orgCountry').select('ES')
     cy.getBySel('orgUpdate').click()
 
@@ -138,12 +141,12 @@ describe('Product Modification Order E2E', {
     // BUYER SIDE: Purchase the offering
     // ============================================
     cy.changeSessionTo('BUYER ORG')
-    cy.visit('/profile')
+    openAccountPage('profile')
     cy.getBySel('orgCountry').select('ES')
     cy.getBySel('orgUpdate').click()
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/search')
+      openSearch()
     })
     cy.wait('@cartItem')
     cy.getBySel('baeCard').should('be.visible')
@@ -235,16 +238,13 @@ describe('Product Modification Order E2E', {
     // ============================================
     // Verify product in inventory as active
     // ============================================
-    waitForInitialPaginatedList('**/inventory/product?*', () => {
-      cy.visit('/product-inventory')
-    })
-    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
-    cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
+    openProductInventory('active')
+    assertInventoryProductStatus(offeringName, 'active')
 
     // ============================================
     // MODIFICATION: Open modify drawer from inventory
     // ============================================
-    cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName)
+    getInventoryProduct(offeringName)
       .find('[data-cy="modifyInvProduct"]').click()
 
     // The modify drawer opens with existing characteristics as read-only
@@ -271,11 +271,11 @@ describe('Product Modification Order E2E', {
     cy.wait('@getBilling')
 
     // Click on the first billing address to select it
-    cy.get('.backdrop-blur-sm').should('be.visible').within(() => {
+    cy.getBySel('inventoryBillingModal').should('be.visible').within(() => {
       cy.get('app-billing-address').first().click()
       // Click confirm modify button
       cy.deferPaymentRedirect()
-      cy.get('button').contains(/confirm|Confirm/i).click()
+      cy.getBySel('confirmInventoryBilling').should('be.enabled').click()
     })
     cy.wait('@createOrder')
 
@@ -286,7 +286,7 @@ describe('Product Modification Order E2E', {
     cy.completePayment({ recurring: true })
     cy.wait('@checkinModify')
 
-    cy.visit('/product-orders')
+    openAccountPage('orders')
     cy.getBySel('ordersTable').should('be.visible')
     cy.getBySel('ordersTable').contains('completed')
 

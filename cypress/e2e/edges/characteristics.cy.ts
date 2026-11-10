@@ -1,3 +1,4 @@
+import { openAccountPage, openSearch } from '../../support/navigation'
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
 import {
   addToCartAndWait,
@@ -10,6 +11,7 @@ import {
 describe('Product characteristics E2E', () => {
   beforeEach(() => {
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
   })
 
   it('enforces characteristics in the editor, buyer price simulator and cart', () => {
@@ -19,10 +21,16 @@ describe('Product characteristics E2E', () => {
     const planName = 'Restricted plan'
     const unrestrictedPlanName = 'Unrestricted plan'
     const openOffers = () => {
-      waitForInitialPaginatedList(['**/catalog/productOffering?*', '**/catalog/productOfferingPrice/**'], () => {
-        cy.visit('/my-offerings')
-        cy.getBySel('offerSection').click()
+      cy.get('body').then($body => {
+        if ($body.find('[data-cy="offerSteps"]').length) {
+          cy.getBySel('offerSteps').find('button').first().click()
+          cy.contains('app-offer-form button', /^\s*Cancel\s*$/).click()
+          cy.getBySel('offerSteps').should('not.exist')
+        }
       })
+      openAccountPage('offerings')
+      cy.getBySel('offerSection').click()
+      cy.getBySel('offers').should('be.visible')
       clickLoadMoreUntilFound(offerName, '[data-cy="offerRow"]', 20)
     }
     const assertPrice = (response: any, amount: number) => {
@@ -270,7 +278,7 @@ describe('Product characteristics E2E', () => {
       })
     })
     cy.closeFeedbackModalIfVisible()
-    // Reopen from a fresh page to check persistence rather than local form state.
+    // Leave and reopen the editor to check the saved configuration.
     openOffers()
     editPlan()
     cy.getBySel('pricePlanCharacteristicValue-1-0').should('not.be.checked')
@@ -282,7 +290,7 @@ describe('Product characteristics E2E', () => {
     openOffers()
     updateOffering({ name: offerName, status: 'launched' })
     cy.changeSessionTo('BUYER ORG')
-    waitForInitialPaginatedList('**/catalog/productOffering?*', () => cy.visit('/search'))
+    waitForInitialPaginatedList('**/catalog/productOffering?*', () => openSearch())
     clickLoadMoreUntilFound(offerName, '[data-cy="baeCard"]')
     cy.openAddToCartDrawerFromSearch(offerName)
     cy.contains('[data-cy="toCartDrawer"]', `Adding ${offerName} to cart`).within(() => {

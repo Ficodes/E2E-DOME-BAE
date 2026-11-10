@@ -1,4 +1,7 @@
+import { openAccountPage, openSearch } from '../../support/navigation'
+import { TMF_URL } from '../../support/endpoints'
 import { HAPPY_JOURNEY } from '../../support/happy-journey-constants'
+import { assertInventoryProductStatus, openInventoryProduct, openProductInventory } from '../../support/inventory'
 import {
   addToCartAndWait,
   createOffering,
@@ -27,6 +30,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
   beforeEach(() => {
     cy.clearBilling()
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
       if (err.message.includes("Unexpected token '<'")) {
@@ -75,7 +79,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
     // Publishing moves the offering from Draft to Published. Re-enter the
     // section and wait for both tab loads before continuing as the buyer.
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/my-offerings')
+      openAccountPage('offerings')
       cy.getBySel('offerSection').click()
     })
     waitForPaginatedTab('**/catalog/productOffering?*lifecycleStatus=Launched*', () => {
@@ -92,7 +96,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 5: Count existing invoices before purchase
     // ============================================
-    cy.visit('/product-orders')
+    openAccountPage('orders')
     waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
@@ -112,7 +116,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
     // Step 7: Add offering to cart and purchase
     // ============================================
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/search')
+      openSearch()
     })
     cy.wait('@cartItem')
     clickLoadMoreUntilGone(10, '[data-cy="baeCard"]')
@@ -153,7 +157,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
     // ============================================
     cy.request({
       method: 'GET',
-      url: 'http://localhost:8633/tmf-api/customerBillManagement/v4/customerBill?state=sent',
+      url: `${TMF_URL}/tmf-api/customerBillManagement/v4/customerBill?state=sent`,
     }).then((response) => {
       expect(response.status).to.eq(200)
       const bills = response.body
@@ -165,7 +169,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
 
       cy.request({
         method: 'PATCH',
-        url: `http://localhost:8633/tmf-api/customerBillManagement/v4/customerBill/${billId}`,
+        url: `${TMF_URL}/tmf-api/customerBillManagement/v4/customerBill/${billId}`,
         body: { state: 'settled' },
       }).then((patchResponse) => {
         expect(patchResponse.status).to.eq(200)
@@ -178,7 +182,10 @@ describeForDpas('Manual Bill Settle Edge Case', {
     // ============================================
     cy.wait(5000)
 
-    cy.visit('/product-orders')
+    openAccountPage('orders')
+    waitForPaginatedTab('**/ordering/productOrder?*', () => {
+      cy.getBySel('asCustomerTab').click()
+    })
     cy.getBySel('ordersTable').should('be.visible')
 
     // Find the first (most recent) order row, verify it shows completed, then open details
@@ -199,7 +206,7 @@ describeForDpas('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 11: Verify customer bill count increased by 1 and last bill is settled
     // ============================================
-    cy.visit('/product-orders')
+    openAccountPage('orders')
     waitForInitialPaginatedList('**/billing/customerBill?*', () => {
       cy.getBySel('invoices').click()
     })
@@ -216,21 +223,15 @@ describeForDpas('Manual Bill Settle Edge Case', {
     // ============================================
     // Step 12: Verify product appears in inventory and capture product ID
     // ============================================
-    waitForInitialPaginatedList('**/inventory/product?*', () => {
-      cy.visit('/product-inventory')
-    })
-    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
-    cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
-    cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
-
-    cy.url().then((url) => {
-      const productId = url.split('/product-inventory/')[1]
+    openProductInventory('active')
+    assertInventoryProductStatus(offeringName, 'active')
+    openInventoryProduct(offeringName).then(productId => {
       cy.log(`Product ID: ${productId}`)
 
       // ============================================
       // Step 13: Go to invoices and verify the invoice detail contains the product ID
       // ============================================
-      cy.visit('/product-orders')
+      openAccountPage('orders')
       waitForInitialPaginatedList('**/billing/customerBill?*', () => {
         cy.getBySel('invoices').click()
       })

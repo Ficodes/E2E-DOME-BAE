@@ -15,7 +15,7 @@
 
 ## Testing Strategy: Configuration-Driven Shared State
 
-This project uses an optimized End-to-End (E2E) testing strategy with Playwright, designed to minimize execution time and avoid redundant data creation.
+This project uses an optimized End-to-End (E2E) testing strategy with Cypress, designed to minimize execution time and avoid redundant data creation.
 
 Because the marketplace flow has heavy sequential dependencies (Catalog $\rightarrow$ Specs $\rightarrow$ Offering), creating fresh foundational data for every single test is highly inefficient.
 
@@ -136,3 +136,171 @@ It is going to test your current Pull requested front repo@branch with the repo@
 - Git
 
 **Note:** The script automatically detects if you're on macOS or Linux and adjusts dependency installation accordingly.
+
+## Independent plugin suite
+
+### Run from committed local feature repositories
+
+Use the isolated local stack when the repositories already exist on this machine:
+
+```bash
+python3 scripts/plugin-stack.py prepare \
+  --frontend /path/to/BAE-Frontend \
+  --proxy /path/to/business-ecosystem-logic-proxy \
+  --charging /path/to/business-ecosystem-charging-backend
+python3 scripts/plugin-stack.py up
+python3 scripts/plugin-stack.py run
+python3 scripts/plugin-stack.py run --suite core
+python3 scripts/plugin-stack.py run --suite all
+```
+
+Preparation uses `git archive HEAD` for each repository. **Uncommitted changes
+and untracked files are excluded**, including charging work in progress. The
+original working copies and branches remain untouched. Source paths, branches,
+exact commit SHAs and ports are recorded in
+`.local/plugin-stack/provenance.json`. Test configuration overlays are applied
+only to the copied frontend environment files. Its development server forwards
+`/api` to the isolated proxy, keeping browser requests on one origin without
+patching the backend's committed CORS/login implementation.
+
+This stack has its own Docker network, named volumes, identity application and
+test organizations. It uses frontend port 4300, proxy 8104, charging 8106, IDM
+3100, billing mock 4301, TMForum 8733 and Scorpio 11026, preserving an existing development
+stack on the usual ports. The frontend is compiled from its committed snapshot;
+matching installed dependencies can be copied from the source checkout.
+
+Run only administration, or stop the isolated instance while retaining its data:
+
+```bash
+python3 scripts/plugin-stack.py run -- --spec cypress/e2e/plugins/administration.cy.ts
+CYPRESS_PLUGIN_SCENARIO=files python3 scripts/plugin-stack.py run -- --spec cypress/e2e/plugins/journey.cy.ts
+python3 scripts/plugin-stack.py down
+```
+
+The helper requires Python 3.12+, Docker Compose, Node/npm and the existing local
+hostname mapping `127.0.0.1 idm.docker`. Deployment and frontend logs can be saved
+under `.local/plugin-stack/`; that directory is ignored by Git. The default
+TMForum image is 1.15.1 (`prepare --tm-version` selects another version).
+The isolated helper and plugin case use the default DPAS setup for purchases.
+
+### Run against an existing test stack
+
+Run against a deployed test stack whose frontend, proxy and charging backend all
+include the service/resource plugin feature:
+
+```bash
+npm run test:e2e:plugins
+npm run test:e2e:core
+```
+
+`plugins` selects only `cypress/e2e/plugins/**/*.cy.ts`. `core` excludes that
+directory. `npm run test:e2e` runs both. To select one plugin spec:
+
+```bash
+npm run test:e2e:plugins -- --spec cypress/e2e/plugins/administration.cy.ts
+```
+
+The deployment script also respects suite selection:
+
+```bash
+E2E_SUITE=plugins ./testing-local.sh <proxy_branch> <proxy_repo> <charging_branch> <charging_repo> <frontend_branch> <frontend_repo> <tm_version>
+```
+
+The PR and cross-repository workflows have three peer cases in a single flat
+list:
+
+| Case | Specs |
+| --- | --- |
+| `dpas` | Existing full suite, excluding plugin specs |
+| `redsys` | Existing happy-journey and billing/payment-scheduler specs |
+| `plugins` | Plugin administration and specification-to-purchase journeys |
+
+Each case runs once on its own runner and stack, with its own status and
+artifacts. There is no suite/payment-method cross-product. With no selection,
+all three run in parallel. Manual workflow dispatch accepts `suite: all`,
+`dpas`, `redsys`, or `plugins`; repository dispatch accepts the same optional
+`suite` field in `client_payload`. Selecting one runs only that case.
+
+For an already configured stack, `E2E_SUITE=dpas` or `E2E_SUITE=redsys` selects
+the corresponding specs with `npm run test:e2e`. The existing `core` local
+command remains a compatibility alias for non-plugin specs.
+
+Do not run these jobs concurrently against one shared stack: plugin management,
+the payment mock, and termination recovery have global state. Parallelize using
+separate runners/stacks, rather than concurrent Cypress processes against the
+same deployment.
+
+### Plugin coverage
+
+Plugin flows navigate through the account and Browse menus, workspace Back
+buttons, inventory sections, and inventory rows. Checkout follows the
+application's payment redirect. `cy.visit('/')` opens the application when
+establishing or restoring the login session; subsequent view changes use the UI.
+
+- Administration separately tests service/resource installation, immediate editor
+  availability, upgrades with stable category IDs, equal/older version conflicts,
+  malformed uploads, deletion confirmation/cancellation, removal and anonymous
+  access rejection.
+- Each journey creates its own service/resource specifications, catalog, product,
+  offering and purchase, and ensures a real billing address exists. No core happy-journey data or
+  administration-test execution is required.
+- Journey variants cover file/form plugins, restored and edited configuration,
+  mandatory fields and explicit boolean `false`, backend validation of tampered
+  payloads, pre-hook rejection followed by correction, tolerated post-hook
+  failure, blocked activation, manual/payment-automatic procurement, and
+  termination with cleanup failure and recovery.
+- Assertions inspect real callback arguments and inventory state. File journeys
+  click Download as the purchaser in both service and resource inventory and
+  verify that the downloaded file matches the uploaded contents. No callback or
+  catalog response is stubbed. Bundles and unwired lifecycle hooks are excluded.
+
+The tests use the frontend's account-menu, dynamic plugin-field, managed-file,
+save/discard, confirmation-dialog and inventory entity-ID hooks. In frontend
+commit `8c90f4c3`, these controls still need dedicated hooks; the tests currently
+use their visible text or scoped HTML structure. Paths below are relative to
+`BAE-Frontend/src/app/`:
+
+| Proposed `data-cy` | Control | Frontend template |
+| --- | --- | --- |
+| `inventoryProductOpen` | Product title button | `pages/product-inventory/inventory-items/inventory-products/inventory-products.component.html:69` |
+| `inventoryCardStatus` | Product status badge | `pages/product-inventory/inventory-items/inventory-products/inventory-products.component.html:58` |
+| `closeInvoiceDetails` | Invoice detail Close button | `pages/product-orders/sections/invoices-info/invoices-info.component.html:167` |
+| `offerCancel` | Cancel on the first offering-editor step | `shared/forms/offer/offer.component.html:724` |
+
+### Fixtures and prerequisites
+
+The suite uses the IDM administrator and `SELLER ORG` / `BUYER ORG` created by
+`testing-local.sh`, the normal billing mock, Python 3 on the test runner, and
+Docker access to charging. Optional environment settings:
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `BAE_E2E_CHARGING_CONTAINER` | `charging-docker-charging-1` | Charging container used by fixture/recovery tasks |
+| `BAE_E2E_PYTHON` | `python3` | Python executable used to generate fixture ZIPs |
+| `BAE_E2E_CHARGING_PYTHON` | `python3.9` | Python executable with Django inside charging |
+| `CYPRESS_PROXY_URL` | `http://localhost:8004` | Proxy URL for authenticated assertion requests |
+| `CYPRESS_CHARGING_URL` | `http://localhost:8006` | Charging API used by core scheduler checks |
+| `CYPRESS_TMF_URL` | `http://localhost:8633` | TMForum APIs used by core checks |
+| `CYPRESS_SCORPIO_URL` | `http://localhost:1026` | Context broker used by core billing checks |
+| `CYPRESS_IDM_ORIGIN` | `http://idm.docker:3000` | Browser origin for IDM login |
+| `CYPRESS_BILLING_SERVER_URL` | `http://localhost:4201` | Billing mock URL used by Cypress |
+
+`cypress/plugins/fixture.py` builds self-contained service/resource packages with
+the current manifest and hook interfaces. Each invocation of Cypress uses unique
+plugin IDs and entity names. ZIPs are generated under ignored
+`cypress/.plugins/<run-id>/`; no packages from another repository are copied or
+required. Journey setup installs fixtures through charging's real `loadplugin`
+command. The administration test instead exercises installation through the UI
+using separate plugin IDs.
+
+Callbacks append JSON records under `/tmp/bae-e2e-plugins-<run-id>.jsonl` inside
+charging, protected by file locks across workers. A separate run-scoped failure
+file enables deliberate hook rejection and is reset after every journey. This
+requires one charging container with a shared local filesystem. Recovery uses
+the existing `retry_pending_terminations` command and verifies pending-task state.
+
+Administration removes its unused packages. Journeys retire their own catalog
+entities after each case so later scenarios do not depend on growing selector
+lists. Specifications and purchased inventory retain their plugin references;
+tear down the disposable stack using the normal cleanup procedure. Names isolate
+repeat runs, but do not replace stack isolation.

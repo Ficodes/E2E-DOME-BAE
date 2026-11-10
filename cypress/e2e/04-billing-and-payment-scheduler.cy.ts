@@ -1,4 +1,7 @@
+import { openAccountPage, openSearch } from '../support/navigation'
+import { BILLING_SERVER_URL, CHARGING_URL, SCORPIO_URL, TMF_URL } from '../support/endpoints'
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
+import { assertInventoryProductStatus, openInventoryProduct, openProductInventory } from '../support/inventory'
 import {
   addToCartAndWait,
   createOffering,
@@ -23,10 +26,6 @@ import {
  *
  * Requires BAE_CB_BILLING_HTTP_ENABLED=true in the charging container.
  */
-const CHARGING_URL = 'http://localhost:8006'
-const TMF_URL = 'http://localhost:8633'
-const SCORPIO_URL = 'http://localhost:1026'
-const BILLING_SERVER_URL = 'http://localhost:4201'
 const IS_REDSYS = Cypress.env('PAYMENT_METHOD') === 'redsys'
 // DPAS recurring payments use the external scheduler; this spec covers Redsys.
 const describeBilling = IS_REDSYS ? describe : describe.skip
@@ -114,6 +113,7 @@ describeBilling('Billing Scheduler Period Coverage', {
   beforeEach(() => {
     cy.clearBilling()
     cy.loginAsAdmin()
+    cy.changeSessionTo('SELLER ORG')
     cy.on('uncaught:exception', (err) => {
       console.error('Uncaught exception:', err.message)
       if (err.message.includes("Unexpected token '<'")) {
@@ -185,7 +185,7 @@ describeBilling('Billing Scheduler Period Coverage', {
     cy.changeSessionTo('BUYER ORG')
 
     waitForInitialPaginatedList('**/catalog/productOffering?*', () => {
-      cy.visit('/search')
+      openSearch()
     })
     cy.wait('@cartItem')
     clickLoadMoreUntilGone(10, '[data-cy="baeCard"]')
@@ -230,18 +230,12 @@ describeBilling('Billing Scheduler Period Coverage', {
     // ============================================
     // Step 5: Get product from inventory to capture startDate
     // ============================================
-    waitForInitialPaginatedList('**/inventory/product?*', () => {
-      cy.visit('/product-inventory')
-    })
-    clickLoadMoreUntilGone(10, '[data-cy="productInventory"]')
-    cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
-    cy.contains('[data-cy="productInventory"]', offeringName).contains(offeringName).click()
-
-    cy.url().then((url) => {
-      const productId = url.split('/product-inventory/')[1]
+    openProductInventory('active')
+    assertInventoryProductStatus(offeringName, 'active')
+    openInventoryProduct(offeringName).then(productId => {
 
       cy.request({
-        url: `http://localhost:8633/tmf-api/productInventory/v4/product/${productId}`,
+        url: `${TMF_URL}/tmf-api/productInventory/v4/product/${productId}`,
         method: 'GET',
       }).then((inventoryResponse) => {
         const startDate: string = inventoryResponse.body.startDate
@@ -268,7 +262,7 @@ describeBilling('Billing Scheduler Period Coverage', {
         // Fetch usage specification ID for usage record submission
         // ============================================
         cy.request({
-          url: 'http://localhost:8633/tmf-api/usageManagement/v4/usageSpecification',
+          url: `${TMF_URL}/tmf-api/usageManagement/v4/usageSpecification`,
           method: 'GET',
         }).then((specResponse) => {
           const usageSpecId = specResponse.body[0].id
@@ -281,7 +275,7 @@ describeBilling('Billing Scheduler Period Coverage', {
           // ============================================
           const usageDateM1 = new Date(startTime.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString()
           cy.request({
-            url: 'http://localhost:8633/tmf-api/usageManagement/v4/usage',
+            url: `${TMF_URL}/tmf-api/usageManagement/v4/usage`,
             method: 'POST',
             body: {
               usageDate: usageDateM1,
@@ -297,7 +291,7 @@ describeBilling('Billing Scheduler Period Coverage', {
 
           const usageDateM2 = new Date(monthlyEnd.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString()
           cy.request({
-            url: 'http://localhost:8633/tmf-api/usageManagement/v4/usage',
+            url: `${TMF_URL}/tmf-api/usageManagement/v4/usage`,
             method: 'POST',
             body: {
               usageDate: usageDateM2,
@@ -320,7 +314,7 @@ describeBilling('Billing Scheduler Period Coverage', {
           // Step 7: Trigger billing scheduler
           // ============================================
           cy.request({
-            url: 'http://localhost:8006/charging/api/test/billingScheduler',
+            url: `${CHARGING_URL}/charging/api/test/billingScheduler`,
             method: 'POST',
             body: { date: triggerDateStr },
           }).then((schedResponse) => {
@@ -331,7 +325,7 @@ describeBilling('Billing Scheduler Period Coverage', {
           // ============================================
           // Step 8: Navigate to invoices and open the CustomerBill
           // ============================================
-          cy.visit('/product-orders')
+          openAccountPage('orders')
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
@@ -414,9 +408,9 @@ describeBilling('Billing Scheduler Period Coverage', {
 
           // — Week 2 —
           cy.intercept('GET', '**/billing/appliedCustomerBillingRate**').as('getWeek2Acbrs')
-          cy.request({ url: 'http://localhost:8006/charging/api/test/billingScheduler', method: 'POST', body: { date: triggerDateStr } })
+          cy.request({ url: `${CHARGING_URL}/charging/api/test/billingScheduler`, method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
-          cy.visit('/product-orders')
+          openAccountPage('orders')
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
@@ -441,9 +435,9 @@ describeBilling('Billing Scheduler Period Coverage', {
 
           // — Week 3 —
           cy.intercept('GET', '**/billing/appliedCustomerBillingRate**').as('getWeek3Acbrs')
-          cy.request({ url: 'http://localhost:8006/charging/api/test/billingScheduler', method: 'POST', body: { date: triggerDateStr } })
+          cy.request({ url: `${CHARGING_URL}/charging/api/test/billingScheduler`, method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
-          cy.visit('/product-orders')
+          openAccountPage('orders')
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
@@ -464,9 +458,9 @@ describeBilling('Billing Scheduler Period Coverage', {
 
           // — Week 4 —
           cy.intercept('GET', '**/billing/appliedCustomerBillingRate**').as('getWeek4Acbrs')
-          cy.request({ url: 'http://localhost:8006/charging/api/test/billingScheduler', method: 'POST', body: { date: triggerDateStr } })
+          cy.request({ url: `${CHARGING_URL}/charging/api/test/billingScheduler`, method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
-          cy.visit('/product-orders')
+          openAccountPage('orders')
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })
@@ -503,7 +497,7 @@ describeBilling('Billing Scheduler Period Coverage', {
           const week5End = new Date(startTime.getTime() + 5 * 7 * 24 * 60 * 60 * 1000)
 
           cy.request({
-            url: 'http://localhost:8006/charging/api/test/billingScheduler',
+            url: `${CHARGING_URL}/charging/api/test/billingScheduler`,
             method: 'POST',
             body: { date: triggerDate2Str },
           }).then((res) => { expect(res.status).to.eq(200) })
@@ -521,7 +515,7 @@ describeBilling('Billing Scheduler Period Coverage', {
             month2BillId = month2Bill.id
           })
 
-          cy.visit('/product-orders')
+          openAccountPage('orders')
           waitForInitialPaginatedList('**/billing/customerBill?*', () => {
             cy.getBySel('invoices').click()
           })

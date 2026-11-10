@@ -128,6 +128,96 @@ TM_VERSION: Mandatory to se the tmforum api version
 
 It is going to test your current Pull requested front repo@branch with the repo@branch of proxy and charging (optional) and tmforum api that you previously chose
 
+### Select the E2E workflow branch
+
+Use `workflow_dispatch` on `cross-repo-test.yml` to select **both the workflow
+definition and the test code** from an E2E branch. Set the request's top-level
+`ref` to that branch (or a tag). Checkout is pinned to `github.sha`, the commit
+GitHub resolved for that ref when the run was triggered. The backend/frontend
+branches are separate inputs; they do not select the E2E workflow.
+
+Create a JSON request file, for example `dispatch.json`:
+
+```json
+{
+  "ref": "fix/recover-plugins",
+  "inputs": {
+    "repository_A": "FIWARE-TMForum/business-ecosystem-logic-proxy",
+    "branch_A": "feat/plugin-recover",
+    "repository_B": "FIWARE-TMForum/business-ecosystem-charging-backend",
+    "branch_B": "fix/recover-plugins",
+    "repository_frontend": "Ficodes/BAE-Frontend",
+    "branch_frontend": "feat/plugin-recover",
+    "tm_version": "1.15.1",
+    "pull_request_url": "https://github.com/FIWARE-TMForum/business-ecosystem-charging-backend/pull/123",
+    "from": "charging"
+  }
+}
+```
+
+Replace the example branches and PR URL with existing ones, then send:
+
+```bash
+curl --fail-with-body --request POST \
+  --header "Accept: application/vnd.github+json" \
+  --header "Authorization: Bearer $GH_TOKEN" \
+  --header "X-GitHub-Api-Version: 2022-11-28" \
+  --header "Content-Type: application/json" \
+  --data-binary @dispatch.json \
+  https://api.github.com/repos/Ficodes/E2E-DOME-BAE/actions/workflows/cross-repo-test.yml/dispatches
+```
+
+| Input | Required | Meaning / default |
+| --- | --- | --- |
+| `repository_A` | Yes | Proxy repository, `owner/repo` |
+| `branch_A` | No | Proxy branch; `master` |
+| `repository_B` | Yes | Charging repository, `owner/repo` |
+| `branch_B` | No | Charging branch; `master` |
+| `repository_frontend` | Yes | Frontend repository, `owner/repo` |
+| `branch_frontend` | No | Frontend branch; `master` (set `main` explicitly when needed) |
+| `tm_version` | Yes | TMForum API image version |
+| `pull_request_url` | No | Source PR whose head commit receives pending/success/failure statuses; omitted means no status reporting |
+| `from` | No | `charging` selects the existing `FIWARE_ADMIN` status token; other values or omission select `ADMIN` |
+
+There is no `cypress_branch` input for manual dispatch: the E2E selection belongs
+in top-level `ref`. The selected branch supplies the job matrix and test suite
+selection, as well as the scripts and tests. All needed files must be committed
+and pushed to that branch; local untracked files are unavailable to GitHub.
+
+**Existing integrations:** callers using
+`POST /repos/Ficodes/E2E-DOME-BAE/dispatches` with
+`event_type: cross-repo-test` and `client_payload` remain supported unchanged.
+That legacy event uses the default branch's workflow definition; its optional
+`client_payload.cypress_branch` selects only the test code. To test workflow
+changes too, change the caller to the workflow-specific endpoint above, move
+the dependency/status fields from `client_payload` to `inputs`, move
+`cypress_branch` (for example, the parsed `E2E_BRANCH` PR field) to top-level
+`ref`, and remove `event_type`. When no E2E branch is supplied, the caller must
+set `ref` explicitly to the E2E repository's default branch (`master`). This
+change must be made in each calling frontend/charging integration; updating only
+this repository cannot change the event those callers send.
+
+The dispatching credential needs access to the E2E repository and **Actions:
+write** for a fine-grained token (or `repo` scope for a classic PAT). Existing
+tokens used for repository dispatch may need that permission added. The
+`ADMIN`/`FIWARE_ADMIN` secrets used inside the E2E run still need permission to
+read the source PR and write commit statuses in its repository; those are
+separate from permission to dispatch the workflow. API clients should accept
+the endpoint's successful 2xx response rather than assume the legacy endpoint's
+204 response is the only success code.
+
+**One-time default-branch setup:** register/enable
+`.github/workflows/cross-repo-test.yml` with `workflow_dispatch` on the E2E
+repository's default branch, retaining `repository_dispatch` for old callers.
+Also include `workflow_dispatch` and its inputs in each target branch's copy of
+that workflow. Thereafter pipeline changes can stay on a feature branch and be
+tested via `ref` before merging them into `master`. This setup does not require
+merging each feature branch's pipeline changes first. GitHub Actions must be
+enabled and the referenced branches/tags must exist in the E2E repository.
+
+See GitHub's [workflow dispatch API](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event)
+and [dispatch event behavior](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).
+
 ## Requirements
 
 - Docker and Docker Compose

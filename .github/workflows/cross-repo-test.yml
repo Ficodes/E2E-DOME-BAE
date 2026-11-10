@@ -1,6 +1,43 @@
 name: Cross-Repo System Test
 
 on:
+  # The API's top-level ref selects both this workflow and the test code.
+  workflow_dispatch:
+    inputs:
+      repository_A:
+        description: "Proxy repository (owner/repo)"
+        type: string
+        required: true
+      branch_A:
+        description: "Proxy branch"
+        type: string
+        default: master
+      repository_B:
+        description: "Charging repository (owner/repo)"
+        type: string
+        required: true
+      branch_B:
+        description: "Charging branch"
+        type: string
+        default: master
+      repository_frontend:
+        description: "Frontend repository (owner/repo)"
+        type: string
+        required: true
+      branch_frontend:
+        description: "Frontend branch"
+        type: string
+        default: master
+      tm_version:
+        description: "TMForum API image version"
+        type: string
+        required: true
+      pull_request_url:
+        description: "Optional source PR URL for commit status reporting"
+        type: string
+      from:
+        description: "Source integration (charging selects the FIWARE_ADMIN status token)"
+        type: string
   repository_dispatch:
     types:
       - cross-repo-test
@@ -15,25 +52,28 @@ jobs:
     env:
       BAE_CB_PAYMENT_METHOD: ${{ matrix.payment_method }}
       CYPRESS_specPattern: ${{ matrix.payment_method == 'redsys' && 'cypress/e2e/{01-happy-journey,04-billing-and-payment-scheduler}.cy.ts' || 'cypress/e2e/**/*.cy.ts' }}
-      GH_TOKEN: ${{ github.event.client_payload.from == 'charging' && secrets.FIWARE_ADMIN || secrets.ADMIN }}
+      GH_TOKEN: ${{ (inputs.from || github.event.client_payload.from) == 'charging' && secrets.FIWARE_ADMIN || secrets.ADMIN }}
+      PROXY_REPO: ${{ inputs.repository_A || github.event.client_payload.repository_A }}
+      BRANCH_A: ${{ inputs.branch_A || github.event.client_payload.branch_A || 'master' }}
+      CHARGING_REPO: ${{ inputs.repository_B || github.event.client_payload.repository_B }}
+      BRANCH_B: ${{ inputs.branch_B || github.event.client_payload.branch_B || 'master' }}
+      FRONTEND_REPO: ${{ inputs.repository_frontend || github.event.client_payload.repository_frontend }}
+      BRANCH_FRONTEND: ${{ inputs.branch_frontend || github.event.client_payload.branch_frontend || 'master' }}
+      TM_VERSION: ${{ inputs.tm_version || github.event.client_payload.tm_version }}
+      PR_URL: ${{ inputs.pull_request_url || github.event.client_payload.pull_request_url }}
 
     steps:
       - name: Checkout Testing Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Switch to cypress branch if specified
-        if: github.event.client_payload.cypress_branch != ''  && github.event.client_payload.cypress_branch != null
-        run: |
-          CYPRESS_BRANCH="${{ github.event.client_payload.cypress_branch }}"
-          echo "Switching to cypress branch: $CYPRESS_BRANCH"
-          git checkout $CYPRESS_BRANCH
+          # Pin manual runs to the commit selected by the dispatch ref.
+          # Legacy dispatch can still select test code only via cypress_branch.
+          ref: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.cypress_branch || github.sha }}
 
       - name: Create commit status - pending
-        if: github.event.client_payload.pull_request_url
+        if: env.PR_URL != ''
         run: |
-          PR_URL="${{ github.event.client_payload.pull_request_url }}"
           REPO=$(echo "$PR_URL" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/.*|\1|')
           PR_NUMBER=$(echo "$PR_URL" | sed -E 's|.*/pull/([0-9]+).*|\1|')
 
@@ -60,30 +100,11 @@ jobs:
         run: |
           chmod +x testing-local.sh
           echo "starting system testing"
-          BRANCH_A=${{ github.event.client_payload.branch_A }}
-          BRANCH_B=${{ github.event.client_payload.branch_B }}
-          BRANCH_FRONTEND=${{ github.event.client_payload.branch_frontend }}
-          echo "evaluating branches..."
-          echo "Proxy branch: $BRANCH_A"
-          echo "Charging branch: $BRANCH_B"
-          echo "Frontend branch: $BRANCH_FRONTEND"
-
-          # Set defaults if not provided
-          if [[ -z $BRANCH_A ]]; then
-            BRANCH_A=master
-          fi
-          if [[ -z $BRANCH_B ]]; then
-            BRANCH_B=master
-          fi
-          if [[ -z $BRANCH_FRONTEND ]]; then
-            BRANCH_FRONTEND=master
-          fi
-
           echo "final proxy branch: $BRANCH_A"
           echo "final charging branch: $BRANCH_B"
           echo "final frontend branch: $BRANCH_FRONTEND"
 
-          ./testing-local.sh $BRANCH_A ${{ github.event.client_payload.repository_A }} $BRANCH_B ${{ github.event.client_payload.repository_B }} $BRANCH_FRONTEND ${{ github.event.client_payload.repository_frontend }} ${{ github.event.client_payload.tm_version }}
+          ./testing-local.sh "$BRANCH_A" "$PROXY_REPO" "$BRANCH_B" "$CHARGING_REPO" "$BRANCH_FRONTEND" "$FRONTEND_REPO" "$TM_VERSION"
 
       - name: Upload Docker Logs
         if: failure()
@@ -110,9 +131,8 @@ jobs:
           retention-days: 1
 
       - name: Create commit status - success
-        if: success() && github.event.client_payload.pull_request_url
+        if: success() && env.PR_URL != ''
         run: |
-          PR_URL="${{ github.event.client_payload.pull_request_url }}"
           REPO=$(echo "$PR_URL" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/.*|\1|')
           PR_NUMBER=$(echo "$PR_URL" | sed -E 's|.*/pull/([0-9]+).*|\1|')
 
@@ -134,9 +154,8 @@ jobs:
             }"
 
       - name: Create commit status - failure
-        if: failure() && github.event.client_payload.pull_request_url
+        if: failure() && env.PR_URL != ''
         run: |
-          PR_URL="${{ github.event.client_payload.pull_request_url }}"
           REPO=$(echo "$PR_URL" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/.*|\1|')
           PR_NUMBER=$(echo "$PR_URL" | sed -E 's|.*/pull/([0-9]+).*|\1|')
 

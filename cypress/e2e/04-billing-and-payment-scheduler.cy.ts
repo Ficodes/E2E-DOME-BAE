@@ -1,10 +1,11 @@
-import { openAccountPage, openSearch } from '../support/navigation'
+import { openSearch } from '../support/navigation'
 import { BILLING_SERVER_URL, CHARGING_URL, SCORPIO_URL, TMF_URL } from '../support/endpoints'
 import { HAPPY_JOURNEY } from '../support/happy-journey-constants'
 import { assertInventoryProductStatus, openInventoryProduct, openProductInventory } from '../support/inventory'
 import {
   addToCartAndWait,
   createOffering,
+  openInvoices,
   updateOffering,
   clickLoadMoreUntilGone,
   waitForInitialPaginatedList,
@@ -325,10 +326,7 @@ describeBilling('Billing Scheduler Period Coverage', {
           // ============================================
           // Step 8: Navigate to invoices and open the CustomerBill
           // ============================================
-          openAccountPage('orders')
-          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
-            cy.getBySel('invoices').click()
-          })
+          openInvoices()
           clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
 
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
@@ -410,10 +408,7 @@ describeBilling('Billing Scheduler Period Coverage', {
           cy.intercept('GET', '**/billing/appliedCustomerBillingRate**').as('getWeek2Acbrs')
           cy.request({ url: `${CHARGING_URL}/charging/api/test/billingScheduler`, method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
-          openAccountPage('orders')
-          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
-            cy.getBySel('invoices').click()
-          })
+          openInvoices()
           clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
@@ -437,10 +432,7 @@ describeBilling('Billing Scheduler Period Coverage', {
           cy.intercept('GET', '**/billing/appliedCustomerBillingRate**').as('getWeek3Acbrs')
           cy.request({ url: `${CHARGING_URL}/charging/api/test/billingScheduler`, method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
-          openAccountPage('orders')
-          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
-            cy.getBySel('invoices').click()
-          })
+          openInvoices()
           clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
@@ -460,10 +452,7 @@ describeBilling('Billing Scheduler Period Coverage', {
           cy.intercept('GET', '**/billing/appliedCustomerBillingRate**').as('getWeek4Acbrs')
           cy.request({ url: `${CHARGING_URL}/charging/api/test/billingScheduler`, method: 'POST', body: { date: triggerDateStr } })
             .then((res) => { expect(res.status).to.eq(200) })
-          openAccountPage('orders')
-          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
-            cy.getBySel('invoices').click()
-          })
+          openInvoices()
           clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
           cy.getBySel('invoiceRow').should('have.length.greaterThan', 0).last().within(() => {
             cy.getBySel('invoiceDetails').click()
@@ -515,10 +504,7 @@ describeBilling('Billing Scheduler Period Coverage', {
             month2BillId = month2Bill.id
           })
 
-          openAccountPage('orders')
-          waitForInitialPaginatedList('**/billing/customerBill?*', () => {
-            cy.getBySel('invoices').click()
-          })
+          openInvoices()
           clickLoadMoreUntilGone(10, '[data-cy="invoiceRow"]')
 
           cy.intercept('GET', '**/billing/appliedCustomerBillingRate**', (request) => {

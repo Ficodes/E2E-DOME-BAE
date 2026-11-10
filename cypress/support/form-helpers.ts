@@ -552,6 +552,19 @@ export function waitForInitialPaginatedList(apiPattern: string | string[], actio
   createRequestTracker(apiPattern, idleMs).waitForAction(action)
 }
 
+/** Open a fresh invoice list using the menus, including between billing periods. */
+export function openInvoices(): void {
+  cy.location('pathname').then(pathname => {
+    // Returning to the current route preserves Invoices and its disabled tab.
+    // Leave the page first so the next visit loads the updated billing data.
+    if (pathname === '/product-orders') openAccountPage('profile')
+  })
+  openAccountPage('orders')
+  waitForInitialPaginatedList('**/billing/customerBill?*', () => {
+    cy.getBySel('invoices').click()
+  })
+}
+
 /**
  * Switch a lifecycle tab and wait for every matching page request to settle.
  * Tab changes stay on the same view, so slow requests must not be treated as abandoned.

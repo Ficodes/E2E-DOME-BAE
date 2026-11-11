@@ -48,9 +48,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.intercept('POST', '**/billing/order/').as('postOrder')
       cy.intercept('POST', '**/shoppingCart/item/').as('postCart')
       cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
-      cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
-      cy.intercept('GET', '**/ordering/productOrder?*relatedParty.role=seller*').as('getProviderOrders')
-      cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
+      cy.intercept({ method: 'GET', pathname: /\/account\/billingAccount\/?$/ }).as('getBilling')
       cy.intercept('GET', '**/catalog/productOffering?*', (request) => {
         delete request.headers['if-none-match']
       })
@@ -112,8 +110,6 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
       cy.getBySel('cartPurchase').click()
 
       cy.deferPaymentRedirect()
-      cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
-      cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
 
       cy.wait('@getBilling')
       cy.getBySel('checkout').should('be.visible').should('not.be.disabled').click()
@@ -121,7 +117,7 @@ describe('Check order global states - Reverse test (auto and semi failed, iterat
         expect(response?.statusCode).to.eq(201)
         expect(response!.body.productOrderItem).to.have.length(3)
       })
-      cy.waitForOrdersBeforePayment()
+      waitForOrderList()
 
       // Fail the auto and semi offering
       cy.intercept('**/charging/api/orderManagement/orders/confirm/').as('checkin')

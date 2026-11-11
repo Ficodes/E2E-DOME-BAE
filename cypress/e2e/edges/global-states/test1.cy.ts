@@ -56,11 +56,10 @@ describe('Check order global states',  {
       cy.completePayment()
 
       cy.wait('@checkin')
-      cy.waitForOrdersAfterPayment()
+      waitForOrderList()
 
       waitForOrderList(() => cy.changeSessionTo('SELLER ORG'))
       openAccountPage('orders')
-      cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
       waitForOrderList(() => cy.getBySel('asProviderTab').should('be.visible').click())
       cy.getBySel('ordersTable').should('be.visible')
@@ -115,11 +114,10 @@ describe('Check order global states',  {
       cy.completePayment()
 
       cy.wait('@checkin')
-      cy.waitForOrdersAfterPayment()
+      waitForOrderList()
 
       waitForOrderList(() => cy.changeSessionTo('SELLER ORG'))
       openAccountPage('orders')
-      cy.wait('@getOrders')
       cy.getBySel('ordersTable').should('be.visible')
       waitForOrderList(() => cy.getBySel('asProviderTab').should('be.visible').click())
       cy.getBySel('ordersTable').should('be.visible')

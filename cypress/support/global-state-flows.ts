@@ -19,14 +19,16 @@ export const completed = 'completed'
 export const cancelled = 'cancelled'
 export const failed = 'failed'
 
-/** Include the billing/offering requests that enrich every order before rendering. */
-export function waitForOrderList(action: () => void): void {
-  createRequestTracker([
-    '**/ordering/productOrder?*', '**/account/billingAccount/**',
-    '**/catalog/productOffering/**', '**/catalog/productSpecification/**',
-    '**/catalog/productOfferingPrice/**',
-  ], 500, Number.POSITIVE_INFINITY).waitForAction(action)
-  cy.getBySel('ordersTable').should('be.visible')
+/** Wait for the order page's own loading state rather than its detail requests. */
+export function waitForOrderList(action: () => void = () => {}): void {
+  action()
+  cy.get('app-order-info').should($orders => {
+    // Check both in the same retried assertion. Do not require observing the
+    // spinner appear: a fast load may finish before Cypress samples the DOM.
+    expect($orders.children('[role="status"]').filter(':visible'), 'order list loading spinner')
+      .to.have.length(0)
+    expect($orders.find('[data-cy="ordersTable"]'), 'loaded orders table').to.be.visible
+  })
 }
 
 export function confirmOrderAction(): void {
@@ -139,9 +141,8 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.intercept('POST', '**/billing/order/').as('postOrder')
   cy.intercept('POST', '**/shoppingCart/item/').as('postCart')
   cy.intercept('POST', '**/ordering/productOrder').as('createOrder')
-  cy.intercept('GET', '**/ordering/productOrder*').as('getOrders')
-  cy.intercept('GET', '**/ordering/productOrder?*relatedParty.role=seller*').as('getProviderOrders')
-  cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
+  // Checkout needs the account list, not every order's account-detail request.
+  cy.intercept({ method: 'GET', pathname: /\/account\/billingAccount\/?$/ }).as('getBilling')
   cy.intercept('GET', '**/catalog/productOffering?*', (request) => {
     delete request.headers['if-none-match']
   })
@@ -191,11 +192,8 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.wait('@postCart')
 
   //MANUAL
-  const cartReadyTracker = createRequestTracker([
-    '**/shoppingCart/item/',
-    '**/catalog/productOffering/**',
-    '**/catalog/productSpecification/**',
-  ], 500)
+  // Catalogue-detail intercepts here would remain active on the orders page.
+  const cartReadyTracker = createRequestTracker('**/shoppingCart/item/', 500)
   openOfferingDrawer(offeringManualName)
   // Select the drawer that contains the manual offering name
   cartReadyTracker.waitForAction(() => {
@@ -209,6 +207,9 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
   cy.wait('@postCart')
 
   cy.getBySel('shoppingCart').click()
+  for (const name of [offeringAutoName, offeringSemiName, offeringManualName]) {
+    cy.get('#cart-drawer').contains(name).should('be.visible')
+  }
   cy.getBySel('cartPurchase').should('be.visible').should('not.be.disabled').click()
 
   cy.deferPaymentRedirect()
@@ -219,7 +220,7 @@ export function setupGlobalStateBeforeEach(params: GlobalStateSetupParams & { au
     expect(response?.statusCode).to.eq(201)
     expect(response!.body.productOrderItem).to.have.length(3)
   })
-  cy.waitForOrdersBeforePayment()
+  waitForOrderList()
 
   waitForOrderList(() => cy.changeSessionTo('SELLER ORG'))
   // Navigate to product orders as provider after the organization reload settles.

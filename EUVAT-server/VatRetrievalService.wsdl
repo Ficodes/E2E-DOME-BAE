@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:tns="urn:ec.europa.eu:taxud:tedb:services:v1:IVatRetrievalService"
+  xmlns:types="urn:ec.europa.eu:taxud:tedb:services:v1:IVatRetrievalService:types"
+  targetNamespace="urn:ec.europa.eu:taxud:tedb:services:v1:IVatRetrievalService">
+  <wsdl:types>
+    <xsd:schema targetNamespace="urn:ec.europa.eu:taxud:tedb:services:v1:IVatRetrievalService:types" elementFormDefault="qualified">
+      <xsd:complexType name="MemberStates">
+        <xsd:sequence><xsd:element name="isoCode" type="xsd:string"/></xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="Request">
+        <xsd:sequence>
+          <xsd:element name="memberStates" type="types:MemberStates"/>
+          <xsd:element name="situationOn" type="xsd:date"/>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="Country">
+        <xsd:sequence>
+          <xsd:element name="isoCode" type="xsd:string"/>
+          <xsd:element name="cnCodeProvided" type="xsd:boolean"/>
+          <xsd:element name="cpaCodeProvided" type="xsd:boolean"/>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="AdditionalInformation">
+        <xsd:sequence>
+          <xsd:element name="countries">
+            <xsd:complexType><xsd:sequence>
+              <xsd:element name="country" type="types:Country" maxOccurs="unbounded"/>
+            </xsd:sequence></xsd:complexType>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="Rate">
+        <xsd:sequence>
+          <xsd:element name="type" type="xsd:string"/>
+          <xsd:element name="value" type="xsd:double"/>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="VatRateResult">
+        <xsd:sequence>
+          <xsd:element name="memberState" type="xsd:string"/>
+          <xsd:element name="type" type="xsd:string"/>
+          <xsd:element name="rate" type="types:Rate"/>
+          <xsd:element name="situationOn" type="xsd:date"/>
+          <xsd:element name="comment" type="xsd:string" minOccurs="0" nillable="true"/>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="Response">
+        <xsd:sequence>
+          <xsd:element name="additionalInformation" type="types:AdditionalInformation"/>
+          <xsd:element name="vatRateResults" type="types:VatRateResult" maxOccurs="unbounded"/>
+        </xsd:sequence>
+      </xsd:complexType>
+    </xsd:schema>
+    <xsd:schema targetNamespace="urn:ec.europa.eu:taxud:tedb:services:v1:IVatRetrievalService" elementFormDefault="qualified">
+      <xsd:import namespace="urn:ec.europa.eu:taxud:tedb:services:v1:IVatRetrievalService:types"/>
+      <xsd:element name="retrieveVatRatesReqMsg" type="types:Request"/>
+      <xsd:element name="retrieveVatRatesRespMsg" type="types:Response"/>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="RetrieveVatRatesRequest">
+    <wsdl:part name="parameters" element="tns:retrieveVatRatesReqMsg"/>
+  </wsdl:message>
+  <wsdl:message name="RetrieveVatRatesResponse">
+    <wsdl:part name="parameters" element="tns:retrieveVatRatesRespMsg"/>
+  </wsdl:message>
+  <wsdl:portType name="VatRetrievalServicePortType">
+    <wsdl:operation name="retrieveVatRates">
+      <wsdl:input message="tns:RetrieveVatRatesRequest"/>
+      <wsdl:output message="tns:RetrieveVatRatesResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="VatRetrievalServiceBinding" type="tns:VatRetrievalServicePortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="retrieveVatRates">
+      <soap:operation soapAction="urn:ec.europa.eu:taxud:tedb:services:v1:VatRetrievalService/RetrieveVatRates"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="VatRetrievalService">
+    <wsdl:port name="VatRetrievalServicePort" binding="tns:VatRetrievalServiceBinding">
+      <soap:address location="__SERVICE_URL__"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

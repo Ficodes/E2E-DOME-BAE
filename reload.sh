@@ -28,6 +28,10 @@ echo -e "\033[35mrecreating proxy image\033[0m"
 docker build -t proxy-system-dev -f docker/Dockerfile .
 cd ..
 
+# Start EU VAT Server
+echo -e "\033[35mStarting EU VAT mock...\033[0m"
+docker compose -f EUVAT-server/docker-compose.yml up -d --build --wait || exit 1
+
 # Start Charging
 echo -e "\033[35mStarting Charging...\033[0m"
 cd charging-docker

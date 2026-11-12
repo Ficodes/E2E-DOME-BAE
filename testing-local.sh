@@ -446,6 +446,9 @@ echo -e "\033[35morganizations authorized successfully\033[0m"
 
 # TODO END
 
+echo -e "\033[35mdeploying EU VAT mock\033[0m"
+docker compose -f EUVAT-server/docker-compose.yml up -d --build --wait || { echo "EU VAT mock deployment failed."; exit 1; }
+
 echo -e "\033[35mdeploying charging\033[0m"
 cd charging-docker
 docker compose up -d > /dev/null 2>&1 || { echo -e "Docker compose up failed."; exit 1; }
@@ -533,6 +536,7 @@ if [ "$RUN_TEST" = true ]; then
             echo -e "\033[31mSaving docker logs to docker-logs/...\033[0m"
             docker logs --timestamps proxy-docker-proxy-1 > docker-logs/proxy.log 2>&1 || true
             docker logs --timestamps charging-docker-charging-1 > docker-logs/charging.log 2>&1 || true
+            docker compose -f EUVAT-server/docker-compose.yml logs --no-color --timestamps > docker-logs/euvat.log 2>&1 || true
             echo -e "\033[31msystem tests failed.\033[0m"
             exit 1
         }

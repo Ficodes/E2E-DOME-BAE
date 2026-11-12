@@ -46,6 +46,29 @@ describe('Happy Journey E2E', {
     cy.intercept('POST', '**/account/billingAccount').as('saveBilling')
     cy.intercept('GET', '**/account/billingAccount*').as('getBilling')
 
+    // Preliminary step: Complete SELLER through the modal and BUYER through Profile.
+    cy.intercept('PATCH', '**/party/organization/*').as('updateOrganization')
+    cy.visit('/dashboard')
+    cy.getBySel('organizationProfileNotice').should('be.visible')
+    cy.getBySel('organizationNoticeCountry').select('ES')
+    cy.getBySel('organizationNoticeEmail').type('seller@test.com')
+    cy.getBySel('saveOrganizationProfileNotice').click()
+    cy.wait('@updateOrganization')
+    cy.getBySel('organizationProfileNotice').should('not.exist')
+
+    cy.changeSessionTo('BUYER ORG')
+    cy.getBySel('closeOrganizationProfileNotice').click()
+    cy.visit('/profile')
+    // Reloading the page shows the incomplete organization notice again.
+    cy.getBySel('closeOrganizationProfileNotice').click()
+    cy.getBySel('orgCountry').select('ES')
+    cy.get('org-info #contactTitle').type('Email')
+    cy.get('org-info input[formControlName="email"]').filter(':visible').type('buyer@test.com')
+    cy.getBySel('saveOrgProfile').click()
+    cy.getBySel('orgUpdate').click()
+    cy.wait('@updateOrganization')
+    cy.changeSessionTo('SELLER ORG')
+
     createUsageSpec(HAPPY_JOURNEY.metric)
 
     // Leave the shared usage specification ready for usage-based offering prices.
@@ -168,20 +191,10 @@ describe('Happy Journey E2E', {
     cy.getBySel('offers').should('be.visible')
     cy.getBySel('offers').contains(offeringName).parents('[data-cy="offerRow"]').should('contain.text', 'Published')
 
-    // ============================================
-    // Step 7: Set SELLER's country and Change session to BUYER ORG
-    // ============================================
-    cy.visit('/profile')
-    cy.getBySel('orgCountry').select('ES')
-    cy.getBySel('orgUpdate').click()
-
     cy.changeSessionTo('BUYER ORG')
-    cy.visit('/profile')
-    cy.getBySel('orgCountry').select('ES')
-    cy.getBySel('orgUpdate').click()
 
     // ============================================
-    // Step 8: Add offer to cart
+    // Step 7: Add offer to cart
     // ============================================
     cy.intercept('GET', '**/shoppingCart/item/').as('cartItem')
     cy.visit('/search')
@@ -209,7 +222,7 @@ describe('Happy Journey E2E', {
     cy.getBySel('cartPurchase').click()
 
     // ============================================
-    // Step 9: create billing address
+    // Step 8: create billing address
     // ============================================
 
     createCheckoutBilling({
@@ -238,7 +251,7 @@ describe('Happy Journey E2E', {
     cy.wait('@getBilling')
 
     // ============================================
-    // Step 10: Verify Customer Bill was created
+    // Step 9: Verify Customer Bill was created
     // ============================================
 
     cy.getBySel('ordersTable').should('be.visible')
@@ -251,14 +264,14 @@ describe('Happy Journey E2E', {
     cy.getBySel('invoiceDetail').contains('INITIAL PAYMENT')
 
     // ============================================
-    // Step 11: Verify Product Inventory
+    // Step 10: Verify Product Inventory
     // ============================================
 
     cy.visit('/product-inventory')
     cy.getBySel('productInventory').contains('[data-cy="productInventory"]', offeringName).contains('active')
 
     // ============================================
-    // Step 12: Verify service Inventory
+    // Step 11: Verify service Inventory
     // ============================================
     cy.intercept('GET', '**/serviceInventory/service?*').as('getServiceInventory')
     cy.getBySel('inventoryServices').click()
@@ -268,7 +281,7 @@ describe('Happy Journey E2E', {
     cy.contains(HAPPY_JOURNEY.serviceSpec.name).should('be.visible')
 
     // ============================================
-    // Step 13: Verify resources Inventory
+    // Step 12: Verify resources Inventory
     // ============================================
     cy.intercept('GET', '**/resourceInventory/resource?*').as('getResourceInventory')
     cy.getBySel('inventoryResources').click()

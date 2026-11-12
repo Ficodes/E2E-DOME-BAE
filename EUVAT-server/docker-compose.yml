@@ -1,0 +1,19 @@
+services:
+  euvat-server:
+    build: .
+    ports:
+      - "4202:4202"
+    volumes:
+      - ./:/app:ro
+    networks:
+      - main
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4202/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+
+networks:
+  main:
+    external: true

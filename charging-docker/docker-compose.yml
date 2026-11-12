@@ -64,6 +64,7 @@ services:
         - BAE_CB_REDSYS_TERMINAL=005
         - BAE_CB_REDSYS_SECRET_KEY=sq7HjrUOBfKmC576ILgskD5srU870gJ7
         - BAE_CB_BILLING_ENGINE=local
+        - BAE_CB_VAT_URL=${BAE_CB_VAT_URL:-http://euvat-server:4202/taxation_customs/tedb/ws/}
         - BAE_CB_DPAS_CLIENT_API_URL=http://host.docker.internal:4201/api/payment-start
         - BAE_SERVICE_HOST=http://localhost:4200/
         - DPAS_KEY=test-billing-secret-key-2024
